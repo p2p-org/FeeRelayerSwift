@@ -1,0 +1,6 @@
+use_frameworks!
+target 'FeeRelayerSwift_Tests' do
+  pod 'FeeRelayerSwift', :path => '../'
+  
+  
+end
