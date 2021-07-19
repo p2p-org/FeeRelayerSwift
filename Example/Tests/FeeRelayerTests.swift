@@ -41,6 +41,45 @@ class FeeRelayerTests: XCTestCase {
         XCTAssertEqual(string, #"{"amount":10000,"sender_token_account_pubkey":"DruRdCUMQvZQLRPHPYnmBHtWabfDZqBGsdFR7RaipKQR","token_mint_pubkey":"AYemet2EiYqHUMGmrwwWx5Fhi8oM5nHmmgYJnnU9wnt8","decimals":3,"signature":"3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd","recipient_pubkey":"v7dovhZiQJrAho3gMdgBjWFLGNTtwfra2on2fMEKFWC","blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S","authority_pubkey":"9JVy3p9UZnXkho62drSdJ9nanUx5ykRYuyskTYrP6VDV"}"#)
     }
     
+    func testEncodingSwapTokenParams() throws {
+        let params = FeeRelayer.SwapTokensParams(
+            source: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
+            sourceMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            destination: "CRh1jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX",
+            destinationMint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            authority: "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG",
+            swapAccount: .init(
+                pubkey: "8KZjKCNTshjwapD4TjWQonXBdi1Jm4Eks5rgrViK9UCx", // pool.address?
+                authority: <#T##String#>, // ???
+                transferAuthority: <#T##String#>, // ???
+                source: "EDukSdAegSUtKsGi6wdKTpaBuYK9ZcVj9Uz1f39ffdgi", // pool.swapData.tokenAccountA?
+                destination: "9oaFyrMCwxKE6kBQRP5v9Jo5Uh39Y5p2fFaqGtcxnjYr", // pool.swapData.tokenAccountB?
+                poolTokenMint: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", // pool.poolTokenMint.mintAuthority?
+                poolFeeAccount: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", // pool.swapData.feeAccount?
+                amountIn: <#T##FeeRelayer.Lamports#>, // ???
+                minimumAmountOut: <#T##FeeRelayer.Lamports#> // ???
+            ),
+            feeCompensationSwapAccount: .init(
+                pubkey: <#T##String#>,
+                authority: <#T##String#>,
+                transferAuthority: <#T##String#>,
+                source: <#T##String#>,
+                destination: <#T##String#>,
+                poolTokenMint: <#T##String#>,
+                poolFeeAccount: <#T##String#>,
+                amountIn: <#T##FeeRelayer.Lamports#>,
+                minimumAmountOut: <#T##FeeRelayer.Lamports#>
+            ),
+            feePayerWSOLAccountKeypair: <#T##String#>, // ???
+            signature: "3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd",
+            blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"
+        )
+        
+        let data = try JSONEncoder().encode(params)
+        let string = String(data: data, encoding: .utf8)
+        XCTAssertEqual(string, #""#)
+    }
+    
 }
 
 enum TestError: FeeRelayerError {
