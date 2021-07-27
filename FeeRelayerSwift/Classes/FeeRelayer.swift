@@ -67,6 +67,9 @@ public struct FeeRelayer {
                     // Print
                     guard (200..<300).contains(response.statusCode) else {
                         let readableError = string.slice(from: "(", to: ")") ?? string
+                        if string.starts(with: "WrongSignature") {
+                            throw errorType.createInvalidResponseError(code: response.statusCode, message: "Wrong signature")
+                        }
                         throw errorType.createInvalidResponseError(code: response.statusCode, message: readableError)
                     }
                     return string
