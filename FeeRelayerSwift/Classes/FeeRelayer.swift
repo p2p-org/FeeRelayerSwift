@@ -66,6 +66,7 @@ public struct FeeRelayer {
                 .map { (response, string) in
                     // Print
                     guard (200..<300).contains(response.statusCode) else {
+                        debugPrint(string)
                         throw errorType.createInvalidResponseError(code: response.statusCode, message: string)
                     }
                     return string
