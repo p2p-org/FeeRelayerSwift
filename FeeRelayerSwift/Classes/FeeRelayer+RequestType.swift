@@ -30,7 +30,7 @@ extension FeeRelayer {
             return url
         }
         
-        func getParams() throws -> Data {
+        public func getParams() throws -> Data {
             switch self {
             case .transferSOL(let params):
                 return try JSONEncoder().encode(params)
