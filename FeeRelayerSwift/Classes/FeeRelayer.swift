@@ -9,22 +9,12 @@ import Foundation
 import RxSwift
 import RxAlamofire
 
-public protocol FeeRelayerError: Error {
-    static func createInvalidResponseError(code: Int, message: String) -> Self
-}
-
 public struct FeeRelayer {
     // MARK: - Constants
     static let feeRelayerUrl = "https://fee-relayer.solana.p2p.org"
     
-    // MARK: - Properties
-    private let errorType: FeeRelayerError.Type
-    
-    // MARK: - Initializer
-    public init(errorType: FeeRelayerError.Type)
-    {
-        self.errorType = errorType
-    }
+    // MARK: - Initializers
+    public init() {}
     
     // MARK: - Methods
     /// Get fee payer for free transaction
@@ -36,8 +26,8 @@ public struct FeeRelayer {
             .map { (response, string) in
                 // Print
                 guard (200..<300).contains(response.statusCode) else {
-                    let readableError = string.slice(from: "(", to: ")") ?? string
-                    throw errorType.createInvalidResponseError(code: response.statusCode, message: readableError)
+                    debugPrint(string)
+                    throw getError(responseString: string)
                 }
                 return string
             }
@@ -66,7 +56,8 @@ public struct FeeRelayer {
                 .map { (response, string) in
                     // Print
                     guard (200..<300).contains(response.statusCode) else {
-                        throw errorType.createInvalidResponseError(code: response.statusCode, message: string)
+                        debugPrint(string)
+                        throw getError(responseString: string)
                     }
                     return string
                 }
@@ -76,9 +67,30 @@ public struct FeeRelayer {
             return .error(error)
         }
     }
+    
+    /// Parse error from responseString
+    /// - Parameter responseString: string that is responded from server
+    /// - Returns: custom FeeRelayer's Error
+    private func getError(responseString: String) -> Error {
+        // get type
+        var errorType = ErrorType.unknown
+        var data: FeeRelayerErrorDataType? = responseString
+        if let rawValue = responseString.slice(to: "("),
+           let type = ErrorType(rawValue: rawValue)
+        {
+            errorType = type
+        }
+        
+        return Error(type: errorType, data: data)
+    }
 }
 
 private extension String {
+    func slice(to: String) -> String? {
+        guard let rangeTo = range(of: to)?.lowerBound else { return nil }
+        return String(self[..<rangeTo])
+    }
+    
     func slice(from: String, to: String) -> String? {
         guard let rangeFrom = range(of: from)?.upperBound else { return nil }
         guard let rangeTo = self[rangeFrom...].range(of: to)?.lowerBound else { return nil }
