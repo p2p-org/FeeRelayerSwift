@@ -71,17 +71,48 @@ public struct FeeRelayer {
     /// Parse error from responseString
     /// - Parameter responseString: string that is responded from server
     /// - Returns: custom FeeRelayer's Error
-    private func getError(responseString: String) -> Error {
+    func getError(responseString: String) -> Error {
         // get type
-        var errorType = ErrorType.unknown
+        var errorType: ErrorType?
         var data: FeeRelayerErrorDataType? = responseString
+        
         if let rawValue = responseString.slice(to: "("),
            let type = ErrorType(rawValue: rawValue)
         {
             errorType = type
         }
         
-        return Error(type: errorType, data: data)
+        else if let rawValue = responseString.slice(to: " "),
+                let type = ErrorType(rawValue: rawValue)
+        {
+            errorType = type
+        }
+        
+        if let rawValue = responseString.slice(to: "(") ?? responseString.slice(to: " "),
+           let type = ErrorType(rawValue: rawValue)
+        {
+            errorType = type
+        }
+        
+        if let errorType = errorType {
+            let dataString = responseString.replacingOccurrences(of: errorType.rawValue, with: "")
+                .replacingOccurrences(of: "\n", with: "")
+                .replacingOccurrences(of: " ", with: "")
+                .replacingOccurrences(of: "Some(", with: "")
+                .replacingOccurrences(of: "(", with: "")
+                .replacingOccurrences(of: ")", with: "")
+                .replacingOccurrences(of: ",,", with: ",")
+            data = dataString
+            
+            if let parsedData = dataString.data(using: .utf8),
+               let reason = try? JSONDecoder().decode(FeeRelayerErrorData.self, from: parsedData)
+            {
+                data = reason
+            }
+        }
+        
+        
+        return Error(type: errorType ?? .unknown, data: data)
     }
 }
 

@@ -39,7 +39,14 @@ extension FeeRelayer {
         public let data: FeeRelayerErrorDataType?
     }
     
-    public struct FeeRelayerErrorData: FeeRelayerErrorDataType {
+    public struct FeeRelayerErrorData: FeeRelayerErrorDataType, Equatable, Decodable {
+        public init(minimum: Double? = nil, actual: Double? = nil, expected: Double? = nil, found: Double? = nil) {
+            self.minimum = minimum
+            self.actual = actual
+            self.expected = expected
+            self.found = found
+        }
+        
         var minimum: Double?
         var actual: Double?
         var expected: Double?
