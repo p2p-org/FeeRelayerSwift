@@ -94,23 +94,22 @@ public struct FeeRelayer {
             errorType = type
         }
         
-        if let errorType = errorType {
-            let dataString = responseString.replacingOccurrences(of: errorType.rawValue, with: "")
-                .replacingOccurrences(of: "\n", with: "")
-                .replacingOccurrences(of: " ", with: "")
-                .replacingOccurrences(of: "Some(", with: "")
-                .replacingOccurrences(of: "(", with: "")
-                .replacingOccurrences(of: ")", with: "")
-                .replacingOccurrences(of: ",,", with: ",")
-            data = dataString
-            
-            if let parsedData = dataString.data(using: .utf8),
-               let reason = try? JSONDecoder().decode(FeeRelayerErrorData.self, from: parsedData)
-            {
-                data = reason
+        switch errorType {
+        case .clientError:
+            if let readableError = responseString.slice(from: "Error: ", to: "\"") {
+                data = readableError
             }
+        case .notEnoughTokenBalance:
+            if let expectedString = responseString.slice(from: "expected: ", to: ","),
+               let expected = Double(expectedString),
+               let foundString = responseString.slice(from: "found: Some(\n        ", to: ","),
+               let found = Double(foundString)
+            {
+                data = FeeRelayer.FeeRelayerErrorData(expected: expected, found: found)
+            }
+        default:
+            break
         }
-        
         
         return Error(type: errorType ?? .unknown, data: data)
     }

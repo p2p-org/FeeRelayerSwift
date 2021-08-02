@@ -10,6 +10,7 @@
 		0472A37440D0986441924C89 /* Pods_FeeRelayerSwift_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD522097A329574F05CB76E9 /* Pods_FeeRelayerSwift_Tests.framework */; };
 		607FACEC1AFB9204008FA782 /* FeeRelayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* FeeRelayerTests.swift */; };
 		BC28A9B526B3F41D0031BE42 /* FeeRelayerErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */; };
+		BC401B8B26B7BBD50057BF2E /* FeeRelayerClientError.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401B8A26B7BBD50057BF2E /* FeeRelayerClientError.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +23,7 @@
 		B7C2481D734C8EE3BF2AD7A5 /* Pods-FeeRelayerSwift_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FeeRelayerSwift_Tests.release.xcconfig"; path = "Target Support Files/Pods-FeeRelayerSwift_Tests/Pods-FeeRelayerSwift_Tests.release.xcconfig"; sourceTree = "<group>"; };
 		B833A12576AD3832C561F0B5 /* README.md */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = net.daringfireball.markdown; name = README.md; path = ../README.md; sourceTree = "<group>"; };
 		BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerErrorTests.swift; sourceTree = "<group>"; };
+		BC401B8A26B7BBD50057BF2E /* FeeRelayerClientError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerClientError.swift; sourceTree = "<group>"; };
 		BD522097A329574F05CB76E9 /* Pods_FeeRelayerSwift_Tests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_FeeRelayerSwift_Tests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -70,6 +72,7 @@
 			children = (
 				607FACEB1AFB9204008FA782 /* FeeRelayerTests.swift */,
 				BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */,
+				BC401B8726B7B7090057BF2E /* Strings */,
 				607FACE91AFB9204008FA782 /* Supporting Files */,
 			);
 			path = Tests;
@@ -99,6 +102,14 @@
 				BD522097A329574F05CB76E9 /* Pods_FeeRelayerSwift_Tests.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		BC401B8726B7B7090057BF2E /* Strings */ = {
+			isa = PBXGroup;
+			children = (
+				BC401B8A26B7BBD50057BF2E /* FeeRelayerClientError.swift */,
+			);
+			name = Strings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -225,6 +236,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BC401B8B26B7BBD50057BF2E /* FeeRelayerClientError.swift in Sources */,
 				BC28A9B526B3F41D0031BE42 /* FeeRelayerErrorTests.swift in Sources */,
 				607FACEC1AFB9204008FA782 /* FeeRelayerTests.swift in Sources */,
 			);

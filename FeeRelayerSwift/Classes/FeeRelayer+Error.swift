@@ -47,9 +47,9 @@ extension FeeRelayer {
             self.found = found
         }
         
-        var minimum: Double?
-        var actual: Double?
-        var expected: Double?
-        var found: Double?
+        public internal(set) var minimum: Double?
+        public internal(set) var actual: Double?
+        public internal(set) var expected: Double?
+        public internal(set) var found: Double?
     }
 }
