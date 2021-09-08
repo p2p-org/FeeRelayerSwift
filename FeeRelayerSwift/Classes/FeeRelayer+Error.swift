@@ -37,18 +37,18 @@ extension FeeRelayer {
     
     public struct Error: Swift.Error, Decodable {
         
-        let code: Int
-        let message: String
-        let data: ErrorDetail?
+        public let code: Int
+        public let message: String
+        public let data: ErrorDetail?
         
-        static var unknown: Self {
+        public static var unknown: Self {
             .init(code: -1, message: "Unknown error", data: nil)
         }
     }
     
     public struct ErrorDetail: Decodable, Equatable {
-        let type: ErrorType?
-        let data: ErrorData?
+        public let type: ErrorType?
+        public let data: ErrorData?
         
         init(type: FeeRelayer.ErrorType?, data: FeeRelayer.ErrorData?) {
             self.type = type
@@ -66,8 +66,8 @@ extension FeeRelayer {
     }
     
     public struct ErrorData: Decodable, Equatable {
-        let array: [String]?
-        let dict: [String: UInt64]?
+        public let array: [String]?
+        public let dict: [String: UInt64]?
         
         init(array: [String]? = nil, dict: [String : UInt64]? = nil) {
             self.array = array
