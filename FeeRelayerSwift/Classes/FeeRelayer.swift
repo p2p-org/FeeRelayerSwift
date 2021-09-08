@@ -8,6 +8,7 @@
 import Foundation
 import RxSwift
 import RxAlamofire
+import Alamofire
 
 public struct FeeRelayer {
     // MARK: - Constants
@@ -22,17 +23,7 @@ public struct FeeRelayer {
     public func getFeePayerPubkey() -> Single<String>
     {
         request(.get, "\(FeeRelayer.feeRelayerUrl)/fee_payer/pubkey")
-            .responseString()
-            .map { (response, string) in
-                // Print
-                guard (200..<300).contains(response.statusCode) else {
-                    debugPrint(string)
-                    throw getError(responseString: string)
-                }
-                return string
-            }
-            .take(1)
-            .asSingle()
+            .responseStringCatchFeeRelayerError()
     }
     
     /// Send transaction to fee relayer
@@ -51,79 +42,30 @@ public struct FeeRelayer {
             )
             urlRequest.httpBody = try requestType.getParams()
             
-            return RxAlamofire.request(urlRequest)
-                .responseString()
-                .map { (response, string) in
-                    // Print
-                    guard (200..<300).contains(response.statusCode) else {
-                        debugPrint(string)
-                        throw getError(responseString: string)
-                    }
-                    return string
-                }
-                .take(1)
-                .asSingle()
+            return request(urlRequest)
+                .responseStringCatchFeeRelayerError()
         } catch {
             return .error(error)
         }
     }
-    
-    /// Parse error from responseString
-    /// - Parameter responseString: string that is responded from server
-    /// - Returns: custom FeeRelayer's Error
-    func getError(responseString: String) -> Error {
-        // get type
-        var errorType: ErrorType?
-        var data: FeeRelayerErrorDataType? = responseString
-        
-        if let rawValue = responseString.slice(to: "("),
-           let type = ErrorType(rawValue: rawValue)
-        {
-            errorType = type
-        }
-        
-        else if let rawValue = responseString.slice(to: " "),
-                let type = ErrorType(rawValue: rawValue)
-        {
-            errorType = type
-        }
-        
-        if let rawValue = responseString.slice(to: "(") ?? responseString.slice(to: " "),
-           let type = ErrorType(rawValue: rawValue)
-        {
-            errorType = type
-        }
-        
-        switch errorType {
-        case .clientError:
-            if let readableError = responseString.slice(from: "Error: ", to: "\"") {
-                data = readableError
-            }
-        case .notEnoughTokenBalance:
-            if let expectedString = responseString.slice(from: "expected: ", to: ","),
-               let expected = Double(expectedString),
-               let foundString = responseString.slice(from: "found: Some(\n        ", to: ","),
-               let found = Double(foundString)
-            {
-                data = FeeRelayer.FeeRelayerErrorData(expected: expected, found: found)
-            }
-        default:
-            break
-        }
-        
-        return Error(type: errorType ?? .unknown, data: data)
-    }
 }
 
-private extension String {
-    func slice(to: String) -> String? {
-        guard let rangeTo = range(of: to)?.lowerBound else { return nil }
-        return String(self[..<rangeTo])
-    }
-    
-    func slice(from: String, to: String) -> String? {
-        guard let rangeFrom = range(of: from)?.upperBound else { return nil }
-        guard let rangeTo = self[rangeFrom...].range(of: to)?.lowerBound else { return nil }
-        return String(self[rangeFrom..<rangeTo])
+private extension ObservableType where Element == DataRequest {
+    func responseStringCatchFeeRelayerError(encoding: String.Encoding? = nil) -> Single<String> {
+        responseString(encoding: encoding)
+            .take(1)
+            .asSingle()
+            .map { (response, string) in
+                // Print
+                guard (200..<300).contains(response.statusCode) else {
+                    debugPrint(string)
+                    guard let data = string.data(using: .utf8) else {
+                        throw FeeRelayer.Error.unknown
+                    }
+                    let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
+                    throw decodedError
+                }
+                return string
+            }
     }
 }

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol FeeRelayerErrorDataType {}
+public protocol FeeRelayerErrorDataType: Decodable {}
 extension String: FeeRelayerErrorDataType {}
 
 extension FeeRelayer {
@@ -30,26 +30,54 @@ extension FeeRelayer {
         case unsupportedRecipientAddress    = "UnsupportedRecipientAddress"
         case feeCalculatorNotFound          = "FeeCalculatorNotFound"
         case notEnoughOutAmount             = "NotEnoughOutAmount"
+        case unknownSwapProgramId           = "UnknownSwapProgramId"
         
         case unknown                        = "UnknownError"
     }
     
-    public struct Error: Swift.Error {
-        public let type: ErrorType
-        public let data: FeeRelayerErrorDataType?
+    public struct Error: Swift.Error, Decodable {
+        
+        let code: Int
+        let message: String
+        let data: ErrorDetail?
+        
+        static var unknown: Self {
+            .init(code: -1, message: "Unknown error", data: nil)
+        }
     }
     
-    public struct FeeRelayerErrorData: FeeRelayerErrorDataType, Equatable, Decodable {
-        public init(minimum: Double? = nil, actual: Double? = nil, expected: Double? = nil, found: Double? = nil) {
-            self.minimum = minimum
-            self.actual = actual
-            self.expected = expected
-            self.found = found
+    public struct ErrorDetail: Decodable, Equatable {
+        let type: ErrorType?
+        let data: ErrorData?
+        
+        init(type: FeeRelayer.ErrorType?, data: FeeRelayer.ErrorData?) {
+            self.type = type
+            self.data = data
         }
         
-        public internal(set) var minimum: Double?
-        public internal(set) var actual: Double?
-        public internal(set) var expected: Double?
-        public internal(set) var found: Double?
+        public init(from decoder: Decoder) throws {
+            let values = try decoder.singleValueContainer()
+            let dict = try values.decode([String: ErrorData].self).first
+            
+            let code = dict?.key ?? "Unknown"
+            type = ErrorType(rawValue: code) ?? .unknown
+            data = dict?.value
+        }
+    }
+    
+    public struct ErrorData: Decodable, Equatable {
+        let array: [String]?
+        let dict: [String: UInt64]?
+        
+        init(array: [String]? = nil, dict: [String : UInt64]? = nil) {
+            self.array = array
+            self.dict = dict
+        }
+        
+        public init(from decoder: Decoder) throws {
+            let values = try decoder.singleValueContainer()
+            array = try? values.decode([String].self)
+            dict = try? values.decode([String: UInt64].self)
+        }
     }
 }
