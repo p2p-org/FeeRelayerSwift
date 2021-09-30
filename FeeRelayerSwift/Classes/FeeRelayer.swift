@@ -65,7 +65,8 @@ private extension ObservableType where Element == DataRequest {
                     let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
                     throw decodedError
                 }
-                return string
+                return string.replacingOccurrences(of: "[", with: "")
+                    .replacingOccurrences(of: "]", with: "")
             }
     }
 }
