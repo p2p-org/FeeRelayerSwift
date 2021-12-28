@@ -15,6 +15,10 @@ public protocol FeeRelayerType {
     func sendTransaction(
         _ requestType: FeeRelayer.RequestType
     ) -> Single<String>
+    func sendTransaction<T: Decodable>(
+        _ requestType: FeeRelayer.RequestType,
+        decodedTo: T.Type
+    ) -> Single<T>
 }
 
 public struct FeeRelayer: FeeRelayerType {
@@ -51,6 +55,36 @@ public struct FeeRelayer: FeeRelayerType {
             
             return request(urlRequest)
                 .responseStringCatchFeeRelayerError()
+        } catch {
+            return .error(error)
+        }
+    }
+    
+    public func sendTransaction<T: Decodable>(
+        _ requestType: RequestType,
+        decodedTo: T.Type
+    ) -> Single<T> {
+        do {
+            var urlRequest = try URLRequest(
+                url: requestType.url,
+                method: .post,
+                headers: ["Content-Type": "application/json"]
+            )
+            urlRequest.httpBody = try requestType.getParams()
+            
+            return request(urlRequest)
+                .responseData()
+                .take(1)
+                .asSingle()
+                .map { response, data -> T in
+                    // Print
+                    guard (200..<300).contains(response.statusCode) else {
+                        debugPrint(String(data: data, encoding: .utf8) ?? "")
+                        let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
+                        throw decodedError
+                    }
+                    return try JSONDecoder().decode(T.self, from: data)
+                }
         } catch {
             return .error(error)
         }

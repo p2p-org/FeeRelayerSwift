@@ -12,22 +12,28 @@ extension FeeRelayer {
         private static let transferSOLPath     = "/transfer_sol"
         private static let transferTokenPath   = "/transfer_spl_token"
         private static let swapTokenPath       = "/swap_spl_token_with_fee_compensation"
+        private static let relayTopUpPath      = "/relay_top_up_with_swap"
         
         case transferSOL(TransferSolParams)
         case transferSPLToken(TransferSPLTokenParams)
         case swapToken(SwapTokensParams)
+        case relayTopUp(RelayTopUpParams)
         
         var url: String {
-            var url = FeeRelayer.feeRelayerUrl
+            var endpoint = FeeRelayer.feeRelayerUrl
+            let path: String
             switch self {
             case .transferSOL:
-                url += RequestType.transferSOLPath
+                path = RequestType.transferSOLPath
             case .transferSPLToken:
-                url += RequestType.transferTokenPath
+                path = RequestType.transferTokenPath
             case .swapToken:
-                url += RequestType.swapTokenPath
+                path = RequestType.swapTokenPath
+            case .relayTopUp:
+                fatalError("New endpoint?")
+                path = RequestType.relayTopUpPath
             }
-            return url
+            return endpoint + path
         }
         
         public func getParams() throws -> Data {
@@ -37,6 +43,8 @@ extension FeeRelayer {
             case .transferSPLToken(let params):
                 return try JSONEncoder().encode(params)
             case .swapToken(let params):
+                return try JSONEncoder().encode(params)
+            case .relayTopUp(let params):
                 return try JSONEncoder().encode(params)
             }
         }
