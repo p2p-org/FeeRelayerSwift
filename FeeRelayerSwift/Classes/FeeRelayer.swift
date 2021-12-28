@@ -10,7 +10,14 @@ import RxSwift
 import RxAlamofire
 import Alamofire
 
-public struct FeeRelayer {
+public protocol FeeRelayerType {
+    func getFeePayerPubkey() -> Single<String>
+    func sendTransaction(
+        _ requestType: FeeRelayer.RequestType
+    ) -> Single<String>
+}
+
+public struct FeeRelayer: FeeRelayerType {
     // MARK: - Constants
     static let feeRelayerUrl = "https://fee-relayer.solana.p2p.org"
     
