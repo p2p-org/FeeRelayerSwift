@@ -20,7 +20,7 @@ extension FeeRelayer {
         case relayTopUp(Relay.TopUpParams)
         
         var url: String {
-            var endpoint = FeeRelayer.feeRelayerUrl
+            let endpoint = FeeRelayer.feeRelayerUrl
             let path: String
             switch self {
             case .transferSOL:
@@ -30,7 +30,6 @@ extension FeeRelayer {
             case .swapToken:
                 path = RequestType.swapTokenPath
             case .relayTopUp:
-                fatalError("New endpoint?")
                 path = RequestType.relayTopUpPath
             }
             return endpoint + path

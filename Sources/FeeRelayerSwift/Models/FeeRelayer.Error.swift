@@ -44,6 +44,10 @@ extension FeeRelayer {
         public static var unknown: Self {
             .init(code: -1, message: "Unknown error", data: nil)
         }
+        
+        public static var wrongAddress: Self {
+            .init(code: 0, message: "Wrong address", data: nil)
+        }
     }
     
     public struct ErrorDetail: Decodable, Equatable {
