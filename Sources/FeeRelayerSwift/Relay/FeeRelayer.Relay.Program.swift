@@ -56,5 +56,14 @@ extension FeeRelayer.Relay {
         ) throws -> SolanaSDK.TransactionInstruction {
             
         }
+        
+        static func createTransitTokenAccountInstruction(
+            feePayer: SolanaSDK.PublicKey,
+            userAuthority: SolanaSDK.PublicKey,
+            transitTokenAccount: SolanaSDK.PublicKey,
+            transitTokenMint: SolanaSDK.PublicKey
+        ) throws -> SolanaSDK.TransactionInstruction {
+            
+        }
     }
 }
