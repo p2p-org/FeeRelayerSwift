@@ -10,9 +10,6 @@ import XCTest
 @testable import FeeRelayerSwift
 
 class FeeRelayerErrorTests: XCTestCase {
-    let feeRelayer = FeeRelayer()
-    let bundle = Bundle(for: FeeRelayerErrorTests.self)
-    
     func testParsePubkeyError() throws {
         let string = #"{"code": 0, "message": "Wrong hash format \"ABC\": failed to decode string to hash", "data": {"ParsePubkeyError": ["ABC", "Invalid"]}}"#
         let data = string.data(using: .utf8)!

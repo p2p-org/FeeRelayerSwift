@@ -1,16 +1,37 @@
 PODS:
-  - Alamofire (4.9.1)
+  - Alamofire (5.5.0)
+  - BufferLayoutSwift (0.9.0):
+    - Runtime (~> 2.2.2)
+  - CryptoSwift (1.4.2)
   - FeeRelayerSwift (1.0.0):
     - RxAlamofire
     - RxSwift
-  - RxAlamofire (5.1.0):
-    - RxAlamofire/Core (= 5.1.0)
-  - RxAlamofire/Core (5.1.0):
-    - Alamofire (~> 4.8)
-    - RxSwift (~> 5.0)
-  - RxBlocking (5.1.1):
-    - RxSwift (~> 5)
-  - RxSwift (5.1.2)
+    - SolanaSwift
+  - Runtime (2.2.2)
+  - RxAlamofire (6.1.1):
+    - RxAlamofire/Core (= 6.1.1)
+  - RxAlamofire/Core (6.1.1):
+    - Alamofire (~> 5.4)
+    - RxSwift (~> 6.0)
+  - RxBlocking (6.2.0):
+    - RxSwift (= 6.2.0)
+  - RxCocoa (6.2.0):
+    - RxRelay (= 6.2.0)
+    - RxSwift (= 6.2.0)
+  - RxRelay (6.2.0):
+    - RxSwift (= 6.2.0)
+  - RxSwift (6.2.0)
+  - secp256k1.swift (0.1.4)
+  - SolanaSwift (1.0.0):
+    - BufferLayoutSwift (~> 0.9.0)
+    - CryptoSwift (~> 1.4.1)
+    - RxAlamofire (~> 6.1.1)
+    - RxCocoa (~> 6.2.0)
+    - secp256k1.swift (~> 0.1.0)
+    - Starscream (~> 4.0.0)
+    - TweetNacl (~> 1.0.2)
+  - Starscream (4.0.4)
+  - TweetNacl (1.0.2)
 
 DEPENDENCIES:
   - FeeRelayerSwift (from `../`)
@@ -19,21 +40,39 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - Alamofire
+    - BufferLayoutSwift
+    - CryptoSwift
+    - Runtime
     - RxAlamofire
     - RxBlocking
+    - RxCocoa
+    - RxRelay
     - RxSwift
+    - secp256k1.swift
+    - SolanaSwift
+    - Starscream
+    - TweetNacl
 
 EXTERNAL SOURCES:
   FeeRelayerSwift:
     :path: "../"
 
 SPEC CHECKSUMS:
-  Alamofire: 85e8a02c69d6020a0d734f6054870d7ecb75cf18
-  FeeRelayerSwift: 0c3d322a5d914c43bc6ab3fd9d15b04bc2c3080b
-  RxAlamofire: a2d7621de4c23a0c6e7b476b504acc32838ee341
-  RxBlocking: 5f700a78cad61ce253ebd37c9a39b5ccc76477b4
-  RxSwift: 1e2e1f9570186967f617e49128ed26ccf1bafc8e
+  Alamofire: 1c4fb5369c3fe93d2857c780d8bbe09f06f97e7c
+  BufferLayoutSwift: 94e01c016df92afb017b2f7d4bc434f9915a275a
+  CryptoSwift: a532e74ed010f8c95f611d00b8bbae42e9fe7c17
+  FeeRelayerSwift: 9815ab10c481b2a9e226286f31d7b65f375098f0
+  Runtime: 67741bd196fb4ad821c4d259ccc527bf734d8806
+  RxAlamofire: beb75a1c452d0de225651db4903f5d29d034a620
+  RxBlocking: 0b29f7d2079109a8de49c411381bed7c33ef1eeb
+  RxCocoa: 4baf94bb35f2c0ab31bc0cb9f1900155f646ba42
+  RxRelay: e72dbfd157807478401ef1982e1c61c945c94b2f
+  RxSwift: d356ab7bee873611322f134c5f9ef379fa183d8f
+  secp256k1.swift: a7e7a214f6db6ce5db32cc6b2b45e5c4dd633634
+  SolanaSwift: 0c2ebc2dfa151d76defb6149ff0264851980cf8c
+  Starscream: 5178aed56b316f13fa3bc55694e583d35dd414d9
+  TweetNacl: 3abf4d1d2082b0114e7a67410e300892448951e6
 
-PODFILE CHECKSUM: a39f5ed42adeb3489d147c6cd620652d46fba806
+PODFILE CHECKSUM: f439a789ad6d2d0ab90727364a983e7b00605be5
 
 COCOAPODS: 1.11.2

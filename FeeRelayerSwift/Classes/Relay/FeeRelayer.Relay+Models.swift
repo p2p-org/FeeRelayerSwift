@@ -9,9 +9,9 @@ import Foundation
 
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
-extension FeeRelayer {
+extension FeeRelayer.Relay {
     // MARK: - Top up
-    public struct RelayTopUpParams: Encodable {
+    public struct TopUpParams: Encodable {
         let userSourceTokenAccountPubkey: String
         let sourceTokenMintPubkey: String
         let userAuthorityPubkey: String
@@ -20,7 +20,7 @@ extension FeeRelayer {
         let signatures: SwapTransactionSignatures
         let blockhash:  String
         
-        public init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayerRelaySwapType, feeAmount: UInt64, signatures: FeeRelayer.SwapTransactionSignatures, blockhash: String) {
+        public init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayerRelaySwapType, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String) {
             self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
             self.sourceTokenMintPubkey = sourceTokenMintPubkey
             self.userAuthorityPubkey = userAuthorityPubkey
@@ -65,7 +65,7 @@ extension FeeRelayer {
         let to: DirectSwapData
         let transitTokenMintPubkey: String
         
-        public init(from: FeeRelayer.DirectSwapData, to: FeeRelayer.DirectSwapData, transitTokenMintPubkey: String) {
+        public init(from: FeeRelayer.Relay.DirectSwapData, to: FeeRelayer.Relay.DirectSwapData, transitTokenMintPubkey: String) {
             self.from = from
             self.to = to
             self.transitTokenMintPubkey = transitTokenMintPubkey

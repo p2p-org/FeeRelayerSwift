@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		0472A37440D0986441924C89 /* Pods_FeeRelayerSwift_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BD522097A329574F05CB76E9 /* Pods_FeeRelayerSwift_Tests.framework */; };
 		3B4421D2277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4421D1277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift */; };
-		607FACEC1AFB9204008FA782 /* FeeRelayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* FeeRelayerTests.swift */; };
+		3B4421DF277C293200EB8C60 /* FeeRelayerRelayEncodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4421DE277C293200EB8C60 /* FeeRelayerRelayEncodingTests.swift */; };
+		3B4421E7277C2D6F00EB8C60 /* FeeRelayerRewardEncodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4421E6277C2D6F00EB8C60 /* FeeRelayerRewardEncodingTests.swift */; };
+		3B4421EA277C2DC600EB8C60 /* FeeRelayerCompensationEncodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4421E9277C2DC600EB8C60 /* FeeRelayerCompensationEncodingTests.swift */; };
+		607FACEC1AFB9204008FA782 /* FeeRelayerAPIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACEB1AFB9204008FA782 /* FeeRelayerAPIClientTests.swift */; };
 		BC28A9B526B3F41D0031BE42 /* FeeRelayerErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */; };
 		BC401B8B26B7BBD50057BF2E /* FeeRelayerClientError.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC401B8A26B7BBD50057BF2E /* FeeRelayerClientError.swift */; };
 /* End PBXBuildFile section */
@@ -17,9 +20,12 @@
 /* Begin PBXFileReference section */
 		1AC291B65DD28502434C515A /* Pods-FeeRelayerSwift_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FeeRelayerSwift_Tests.debug.xcconfig"; path = "Target Support Files/Pods-FeeRelayerSwift_Tests/Pods-FeeRelayerSwift_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		3B4421D1277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerEncodingTests.swift; sourceTree = "<group>"; };
+		3B4421DE277C293200EB8C60 /* FeeRelayerRelayEncodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerRelayEncodingTests.swift; sourceTree = "<group>"; };
+		3B4421E6277C2D6F00EB8C60 /* FeeRelayerRewardEncodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerRewardEncodingTests.swift; sourceTree = "<group>"; };
+		3B4421E9277C2DC600EB8C60 /* FeeRelayerCompensationEncodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerCompensationEncodingTests.swift; sourceTree = "<group>"; };
 		607FACE51AFB9204008FA782 /* FeeRelayerSwift_Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FeeRelayerSwift_Tests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		607FACEA1AFB9204008FA782 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		607FACEB1AFB9204008FA782 /* FeeRelayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerTests.swift; sourceTree = "<group>"; };
+		607FACEB1AFB9204008FA782 /* FeeRelayerAPIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeeRelayerAPIClientTests.swift; sourceTree = "<group>"; };
 		9D520A3D99452DE690A06814 /* FeeRelayerSwift.podspec */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = FeeRelayerSwift.podspec; path = ../FeeRelayerSwift.podspec; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		AE51D47E9F13C4A053C0401E /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; name = LICENSE; path = ../LICENSE; sourceTree = "<group>"; };
 		B7C2481D734C8EE3BF2AD7A5 /* Pods-FeeRelayerSwift_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FeeRelayerSwift_Tests.release.xcconfig"; path = "Target Support Files/Pods-FeeRelayerSwift_Tests/Pods-FeeRelayerSwift_Tests.release.xcconfig"; sourceTree = "<group>"; };
@@ -41,6 +47,47 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3B4421D6277C26F200EB8C60 /* APIClient */ = {
+			isa = PBXGroup;
+			children = (
+				607FACEB1AFB9204008FA782 /* FeeRelayerAPIClientTests.swift */,
+			);
+			name = APIClient;
+			sourceTree = "<group>";
+		};
+		3B4421D7277C271E00EB8C60 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3B4421D1277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift */,
+				BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */,
+			);
+			name = Models;
+			sourceTree = "<group>";
+		};
+		3B4421DD277C292100EB8C60 /* Relay */ = {
+			isa = PBXGroup;
+			children = (
+				3B4421DE277C293200EB8C60 /* FeeRelayerRelayEncodingTests.swift */,
+			);
+			name = Relay;
+			sourceTree = "<group>";
+		};
+		3B4421E5277C2D5C00EB8C60 /* Reward */ = {
+			isa = PBXGroup;
+			children = (
+				3B4421E6277C2D6F00EB8C60 /* FeeRelayerRewardEncodingTests.swift */,
+			);
+			name = Reward;
+			sourceTree = "<group>";
+		};
+		3B4421E8277C2DB600EB8C60 /* Compensation */ = {
+			isa = PBXGroup;
+			children = (
+				3B4421E9277C2DC600EB8C60 /* FeeRelayerCompensationEncodingTests.swift */,
+			);
+			name = Compensation;
+			sourceTree = "<group>";
+		};
 		5DE42024AE1E6B1B45078A22 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -72,9 +119,11 @@
 		607FACE81AFB9204008FA782 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				607FACEB1AFB9204008FA782 /* FeeRelayerTests.swift */,
-				3B4421D1277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift */,
-				BC28A9B426B3F41D0031BE42 /* FeeRelayerErrorTests.swift */,
+				3B4421E8277C2DB600EB8C60 /* Compensation */,
+				3B4421E5277C2D5C00EB8C60 /* Reward */,
+				3B4421DD277C292100EB8C60 /* Relay */,
+				3B4421D6277C26F200EB8C60 /* APIClient */,
+				3B4421D7277C271E00EB8C60 /* Models */,
 				BC401B8726B7B7090057BF2E /* Strings */,
 				607FACE91AFB9204008FA782 /* Supporting Files */,
 			);
@@ -192,18 +241,36 @@
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FeeRelayerSwift_Tests/Pods-FeeRelayerSwift_Tests-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
+				"${BUILT_PRODUCTS_DIR}/BufferLayoutSwift/BufferLayoutSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/CryptoSwift/CryptoSwift.framework",
 				"${BUILT_PRODUCTS_DIR}/FeeRelayerSwift/FeeRelayerSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/Runtime/Runtime.framework",
 				"${BUILT_PRODUCTS_DIR}/RxAlamofire/RxAlamofire.framework",
 				"${BUILT_PRODUCTS_DIR}/RxBlocking/RxBlocking.framework",
+				"${BUILT_PRODUCTS_DIR}/RxCocoa/RxCocoa.framework",
+				"${BUILT_PRODUCTS_DIR}/RxRelay/RxRelay.framework",
 				"${BUILT_PRODUCTS_DIR}/RxSwift/RxSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/SolanaSwift/SolanaSwift.framework",
+				"${BUILT_PRODUCTS_DIR}/Starscream/Starscream.framework",
+				"${BUILT_PRODUCTS_DIR}/TweetNacl/TweetNacl.framework",
+				"${BUILT_PRODUCTS_DIR}/secp256k1.swift/secp256k1.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/BufferLayoutSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/CryptoSwift.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/FeeRelayerSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Runtime.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxAlamofire.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxBlocking.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxCocoa.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxRelay.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SolanaSwift.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Starscream.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/TweetNacl.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/secp256k1.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -242,7 +309,10 @@
 				BC401B8B26B7BBD50057BF2E /* FeeRelayerClientError.swift in Sources */,
 				BC28A9B526B3F41D0031BE42 /* FeeRelayerErrorTests.swift in Sources */,
 				3B4421D2277AC46C00EB8C60 /* FeeRelayerEncodingTests.swift in Sources */,
-				607FACEC1AFB9204008FA782 /* FeeRelayerTests.swift in Sources */,
+				3B4421E7277C2D6F00EB8C60 /* FeeRelayerRewardEncodingTests.swift in Sources */,
+				3B4421EA277C2DC600EB8C60 /* FeeRelayerCompensationEncodingTests.swift in Sources */,
+				607FACEC1AFB9204008FA782 /* FeeRelayerAPIClientTests.swift in Sources */,
+				3B4421DF277C293200EB8C60 /* FeeRelayerRelayEncodingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -294,7 +364,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -340,7 +410,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";

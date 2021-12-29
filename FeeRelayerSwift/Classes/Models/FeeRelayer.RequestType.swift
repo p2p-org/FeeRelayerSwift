@@ -14,10 +14,10 @@ extension FeeRelayer {
         private static let swapTokenPath       = "/swap_spl_token_with_fee_compensation"
         private static let relayTopUpPath      = "/relay_top_up_with_swap"
         
-        case transferSOL(TransferSolParams)
-        case transferSPLToken(TransferSPLTokenParams)
-        case swapToken(SwapTokensParams)
-        case relayTopUp(RelayTopUpParams)
+        case transferSOL(Reward.TransferSolParams)
+        case transferSPLToken(Reward.TransferSPLTokenParams)
+        case swapToken(Compensation.SwapTokensParams)
+        case relayTopUp(Relay.TopUpParams)
         
         var url: String {
             var endpoint = FeeRelayer.feeRelayerUrl
