@@ -7,18 +7,20 @@
 
 import Foundation
 
+public protocol FeeRelayerRelaySwapType: Encodable {}
+
 extension FeeRelayer {
     // MARK: - Top up
     public struct RelayTopUpParams: Encodable {
         let userSourceTokenAccountPubkey: String
         let sourceTokenMintPubkey: String
         let userAuthorityPubkey: String
-        let topUpSwap: SwapData
+        let topUpSwap: FeeRelayerRelaySwapType
         let feeAmount:  UInt64
         let signatures: SwapTransactionSignatures
         let blockhash:  String
         
-        public init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayer.SwapData, feeAmount: UInt64, signatures: FeeRelayer.SwapTransactionSignatures, blockhash: String) {
+        public init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayerRelaySwapType, feeAmount: UInt64, signatures: FeeRelayer.SwapTransactionSignatures, blockhash: String) {
             self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
             self.sourceTokenMintPubkey = sourceTokenMintPubkey
             self.userAuthorityPubkey = userAuthorityPubkey
@@ -37,10 +39,45 @@ extension FeeRelayer {
             case signatures = "signatures"
             case blockhash = "blockhash"
         }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(userSourceTokenAccountPubkey, forKey: .userSourceTokenAccountPubkey)
+            try container.encode(sourceTokenMintPubkey, forKey: .sourceTokenMintPubkey)
+            try container.encode(userAuthorityPubkey, forKey: .userAuthorityPubkey)
+            switch topUpSwap {
+            case let swap as DirectSwapData:
+                try container.encode(swap, forKey: .topUpSwap)
+            case let swap as TransitiveSwapData:
+                try container.encode(swap, forKey: .topUpSwap)
+            default:
+                fatalError("unsupported swap type")
+            }
+            try container.encode(feeAmount, forKey: .feeAmount)
+            try container.encode(signatures, forKey: .signatures)
+            try container.encode(blockhash, forKey: .blockhash)
+        }
     }
     
     // MARK: - Swap data
-    public struct SwapData: Encodable {
+    public struct TransitiveSwapData: FeeRelayerRelaySwapType {
+        let from: DirectSwapData
+        let to: DirectSwapData
+        let transitTokenMintPubkey: String
+        
+        public init(from: FeeRelayer.DirectSwapData, to: FeeRelayer.DirectSwapData, transitTokenMintPubkey: String) {
+            self.from = from
+            self.to = to
+            self.transitTokenMintPubkey = transitTokenMintPubkey
+        }
+        
+        enum CodingKeys: String, CodingKey {
+            case from, to
+            case transitTokenMintPubkey = "transit_token_mint_pubkey"
+        }
+    }
+    
+    public struct DirectSwapData: FeeRelayerRelaySwapType {
         let programId: String
         let accountPubkey: String
         let authorityPubkey: String
