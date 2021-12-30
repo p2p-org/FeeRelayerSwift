@@ -118,7 +118,21 @@ extension FeeRelayer.Relay {
             transitTokenAccount: SolanaSDK.PublicKey,
             transitTokenMint: SolanaSDK.PublicKey
         ) throws -> SolanaSDK.TransactionInstruction {
-            // data [3] // only index
+            .init(
+                keys: [
+                    .writable(publicKey: transitTokenAccount, isSigner: false),
+                    .readonly(publicKey: transitTokenMint, isSigner: false),
+                    .writable(publicKey: userAuthority, isSigner: true),
+                    .readonly(publicKey: feePayer, isSigner: true),
+                    .readonly(publicKey: .tokenProgramId, isSigner: false),
+                    .readonly(publicKey: .sysvarRent, isSigner: false),
+                    .readonly(publicKey: .programId, isSigner: false)
+                ],
+                programId: id,
+                data: [
+                    UInt8(3)
+                ]
+            )
         }
         
         // MARK: - Helpers
