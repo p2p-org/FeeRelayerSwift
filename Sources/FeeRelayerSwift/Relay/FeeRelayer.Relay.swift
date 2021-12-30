@@ -19,10 +19,12 @@ extension FeeRelayer {
             userAuthorityAddress: SolanaSDK.PublicKey,
             topUpSwap: FeeRelayerRelaySwapType,
             feeAmount: UInt64,
+            blockhash: String,
             minimumRelayAccountBalance: UInt64,
             minimumTokenAccountBalance: UInt64,
             needsCreateUserRelayAccount: Bool,
-            feePayerAddress: String
+            feePayerAddress: String,
+            lamportsPerSignature: UInt64
         ) throws -> String {
             // assertion
             guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: userSourceTokenAccountAddress),
@@ -142,6 +144,13 @@ extension FeeRelayer {
             default:
                 fatalError("unsupported swap type")
             }
+            
+            var transaction = SolanaSDK.Transaction()
+            transaction.instructions = instructions
+            transaction.feePayer = feePayerAddress
+            transaction.recentBlockhash = blockhash
+            let transactionFee = try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature)
+            expectedFee.transaction = transactionFee
         }
     }
 }
