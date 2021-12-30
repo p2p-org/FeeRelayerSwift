@@ -97,7 +97,19 @@ extension FeeRelayer.Relay {
             recipient: SolanaSDK.PublicKey,
             lamports: UInt64
         ) throws -> SolanaSDK.TransactionInstruction {
-            
+            .init(
+                keys: [
+                    .readonly(publicKey: userAuthorityAddress, isSigner: true),
+                    .writable(publicKey: try getUserRelayAddress(user: userAuthorityAddress), isSigner: false),
+                    .writable(publicKey: recipient, isSigner: false),
+                    .readonly(publicKey: .programId, isSigner: false),
+                ],
+                programId: id,
+                data: [
+                    UInt8(2),
+                    lamports
+                ]
+            )
         }
         
         static func createTransitTokenAccountInstruction(
