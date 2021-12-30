@@ -48,6 +48,18 @@ extension FeeRelayer {
         public static var wrongAddress: Self {
             .init(code: 0, message: "Wrong address", data: nil)
         }
+        
+        public static var swapPoolsNotFound: Self {
+            .init(code: 1, message: "Swap pools not found", data: nil)
+        }
+        
+        public static var transitTokenMintNotFound: Self {
+            .init(code: 2, message: "Transit token mint not found", data: nil)
+        }
+        
+        public static var invalidAmount: Self {
+            .init(code: 3, message: "Invalid amount", data: nil)
+        }
     }
     
     public struct ErrorDetail: Decodable, Equatable {
