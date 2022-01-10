@@ -71,12 +71,32 @@ extension FeeRelayer {
                         lamportsPerSignature: lamportsPerSignature
                     )
                     
-                    // STEP 2: modify amount
+                    // STEP 2: add top up fee into total amount
                     guard let topUpFeeInput = topUpPools.getInputAmount(minimumAmountOut: topUpFee, slippage: defaultSlippage)
                     else {throw FeeRelayer.Error.invalidAmount}
+                    
                     amount += topUpFeeInput
                     
                     // STEP 3: prepare for topUp
+                    let topUpTransaction = try self.prepareForTopUp(
+                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        userAuthorityAddress: userAuthorityAddress,
+                        userRelayAddress: userRelayAddress,
+                        topUpPools: topUpPools,
+                        amount: amount,
+                        transitTokenMintPubkey: transitTokenMintPubkey,
+                        feeAmount: topUpFee,
+                        blockhash: recentBlockhash,
+                        minimumRelayAccountBalance: minimumRelayAccountBalance,
+                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        needsCreateUserRelayAccount: needsCreateUserRelayAccount,
+                        feePayerAddress: feePayerAddress,
+                        lamportsPerSignature: lamportsPerSignature
+                    )
+                    
+                    // STEP 4: send transaction
+                    
                 }
         }
     }

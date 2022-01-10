@@ -80,17 +80,14 @@ extension FeeRelayer.Relay {
         feePayerAddress: String,
         lamportsPerSignature: UInt64
     ) throws -> UInt64 {
-        let topUpSwap = try self.prepareSwapData(
-            topUpPools: topUpPools,
-            amount: amount,
-            transitTokenMintPubkey: transitTokenMintPubkey
-        )
         let fee = try prepareForTopUp(
             userSourceTokenAccountAddress: userSourceTokenAccountAddress,
             sourceTokenMintAddress: sourceTokenMintAddress,
             userAuthorityAddress: userAuthorityAddress,
             userRelayAddress: userRelayAddress,
-            topUpSwap: topUpSwap,
+            topUpPools: topUpPools,
+            amount: amount,
+            transitTokenMintPubkey: transitTokenMintPubkey,
             feeAmount: 0, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
             minimumRelayAccountBalance: minimumRelayAccountBalance,
@@ -108,7 +105,9 @@ extension FeeRelayer.Relay {
         sourceTokenMintAddress: String,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userRelayAddress: SolanaSDK.PublicKey,
-        topUpSwap: FeeRelayerRelaySwapType,
+        topUpPools: OrcaSwap.PoolsPair,
+        amount: UInt64,
+        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         feeAmount: UInt64,
         blockhash: String,
         minimumRelayAccountBalance: UInt64,
@@ -142,6 +141,7 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
+        let topUpSwap = try prepareSwapData(topUpPools: topUpPools, amount: amount, transitTokenMintPubkey: transitTokenMintPubkey)
         switch topUpSwap {
         case let swap as DirectSwapData:
             expectedFee.accountBalances += minimumTokenAccountBalance
