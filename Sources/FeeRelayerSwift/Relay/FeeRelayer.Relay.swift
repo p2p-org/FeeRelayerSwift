@@ -105,10 +105,7 @@ extension FeeRelayer {
                     )
                     
                     // STEP 2: add top up fee into total amount
-                    guard let topUpFeeInput = topUpPools.getInputAmount(minimumAmountOut: topUpFee, slippage: defaultSlippage)
-                    else {throw FeeRelayer.Error.invalidAmount}
-                    
-                    amount += topUpFeeInput
+                    amount += topUpFee
                     
                     // STEP 3: prepare for topUp
                     let topUpTransaction = try self.prepareForTopUp(
@@ -163,11 +160,11 @@ extension FeeRelayer {
         }
         
         /// Submits a signed token swap transaction to the backend for processing
-        func swap(
-            
-        ) -> Single<[String]> {
-            
-        }
+//        func swap(
+//
+//        ) -> Single<[String]> {
+//
+//        }
     }
 }
 
