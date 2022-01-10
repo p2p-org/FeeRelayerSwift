@@ -30,6 +30,7 @@ extension FeeRelayer {
         }
         
         // MARK: - Methods
+        /// Submits a signed top up swap transaction to the backend for processing
         func topUp(
             userSourceTokenAccountAddress: String,
             sourceTokenMintAddress: String,
@@ -64,6 +65,7 @@ extension FeeRelayer {
                 // get recent blockhash
                 solanaClient.getRecentBlockhash(commitment: nil)
             )
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
@@ -138,6 +140,14 @@ extension FeeRelayer {
                         decodedTo: [String].self
                     )
                 }
+                .observe(on: MainScheduler.instance)
+        }
+        
+        /// Submits a signed token swap transaction to the backend for processing
+        func swap(
+            
+        ) -> Single<[String]> {
+            
         }
     }
 }
