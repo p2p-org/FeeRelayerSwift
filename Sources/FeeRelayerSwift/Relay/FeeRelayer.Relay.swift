@@ -17,16 +17,19 @@ extension FeeRelayer {
         private let apiClient: FeeRelayerAPIClientType
         private let solanaClient: FeeRelayerRelaySolanaClient
         private let accountStorage: SolanaSDKAccountStorage
+        private let orcaSwapClient: OrcaSwapType
         
         // MARK: - Initializers
         public init(
             apiClient: FeeRelayerAPIClientType,
             solanaClient: FeeRelayerRelaySolanaClient,
-            accountStorage: SolanaSDKAccountStorage
+            accountStorage: SolanaSDKAccountStorage,
+            orcaSwapClient: OrcaSwapType
         ) {
             self.apiClient = apiClient
             self.solanaClient = solanaClient
             self.accountStorage = accountStorage
+            self.orcaSwapClient = orcaSwapClient
         }
         
         // MARK: - Methods
@@ -34,7 +37,6 @@ extension FeeRelayer {
         func topUp(
             userSourceTokenAccountAddress: String,
             sourceTokenMintAddress: String,
-            topUpPools: OrcaSwap.PoolsPair,
             amount: UInt64,
             transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
             minimumTokenAccountBalance: UInt64,
@@ -63,11 +65,20 @@ extension FeeRelayer {
                 // get minimum relay account balance
                 solanaClient.getMinimumBalanceForRentExemption(span: 0),
                 // get recent blockhash
-                solanaClient.getRecentBlockhash(commitment: nil)
+                solanaClient.getRecentBlockhash(commitment: nil),
+                // get topup pools
+                orcaSwapClient
+                    .getTradablePoolsPairs(
+                        fromMint: sourceTokenMintAddress,
+                        toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                    )
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash in
+                .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(amount, from: availableTopUpPools) else {
+                        throw FeeRelayer.Error.swapPoolsNotFound
+                    }
                     
                     // STEP 1: calculate top up fees
                     let topUpFee = try self.calculateTopUpFee(
