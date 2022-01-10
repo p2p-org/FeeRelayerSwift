@@ -28,54 +28,63 @@ extension FeeRelayer {
             userAuthorityAddress: SolanaSDK.PublicKey,
             topUpPools: OrcaSwap.PoolsPair,
             amount: UInt64,
-            transitTokenMintPubkey: SolanaSDK.PublicKey? = nil
+            transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
+            minimumTokenAccountBalance: UInt64,
+            feePayerAddress: String,
+            lamportsPerSignature: UInt64
         ) -> Single<[String]> {
-            do {
-                // preconditions
-                guard topUpPools.count > 0 && topUpPools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
-                let defaultSlippage = 0.01
-                
-                // create transferAuthority
-                let transferAuthority = try SolanaSDK.Account(network: .mainnetBeta)
-                
-                // form topUp params
-                if topUpPools.count == 1 {
-                    let pool = topUpPools[0]
+            // get relay account
+            guard let userRelayAddress = try? Program.getUserRelayAddress(user: userAuthorityAddress) else {
+                return .error(FeeRelayer.Error.wrongAddress)
+            }
+            
+            let defaultSlippage: Double = 1
+            
+            // make amount mutable, because the final amount is equal to amount + topup fee
+            var amount = amount
+            
+            // request needed infos
+            return Single.zip(
+                // check if creating user relay account is needed
+                solanaSDK.checkAccountValidation(account: userRelayAddress.base58EncodedString),
+                // get minimum relay account balance
+                solanaSDK.getMinimumBalanceForRentExemption(span: 0)
+            )
+                .map { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
                     
-                    guard let amountIn = try pool.getInputAmount(minimumReceiveAmount: amount, slippage: defaultSlippage) else {
-                        throw FeeRelayer.Error.invalidAmount
-                    }
-                    
-                    let directSwapData = pool.getSwapData(
-                        transferAuthorityPubkey: transferAuthority.publicKey,
-                        amountIn: amountIn,
-                        minAmountOut: amount
+                    // STEP 1: calculate top up fees
+                    let topUpSwap = try self.prepareSwapData(
+                        topUpPools: topUpPools,
+                        amount: amount,
+                        transitTokenMintPubkey: transitTokenMintPubkey
                     )
-                } else {
-                    let firstPool = topUpPools[0]
-                    let secondPool = topUpPools[1]
-                    
-                    guard let transitTokenMintPubkey = transitTokenMintPubkey,
-                          let secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: amount, slippage: defaultSlippage),
-                          let firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn, slippage: defaultSlippage)
-                    else {
-                        throw FeeRelayer.Error.transitTokenMintNotFound
-                    }
-                    
-                    let transitiveSwapData = TransitiveSwapData(
-                        from: firstPool.getSwapData(
-                            transferAuthorityPubkey: transferAuthority.publicKey,
-                            amountIn: firstPoolAmountIn,
-                            minAmountOut: secondPoolAmountIn
-                        ),
-                        to: secondPool.getSwapData(
-                            transferAuthorityPubkey: transferAuthority.publicKey,
-                            amountIn: secondPoolAmountIn,
-                            minAmountOut: amount
-                        ),
-                        transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
+                    let topUpFee = try self.calculateTopUpFee(
+                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        userAuthorityAddress: userAuthorityAddress,
+                        userRelayAddress: userRelayAddress,
+                        topUpSwap: topUpSwap,
+                        minimumRelayAccountBalance: minimumRelayAccountBalance,
+                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        needsCreateUserRelayAccount: needsCreateUserRelayAccount,
+                        feePayerAddress: feePayerAddress,
+                        lamportsPerSignature: lamportsPerSignature
                     )
+                    
+                    // STEP 2: modify amount
+                    guard let topUpFeeInput = topUpPools.getInputAmount(minimumAmountOut: topUpFee, slippage: defaultSlippage)
+                    else {throw FeeRelayer.Error.invalidAmount}
+                    amount += topUpFeeInput
+                    
+                    // STEP 3: prepare for topUp
                 }
+            
+            
+            do {
+                // Request needed infos
+                
+                
                 
                 // requests
                 let getRecentBlockhashRequest = solanaSDK.getRecentBlockhash(commitment: "recent")
@@ -88,24 +97,3 @@ extension FeeRelayer {
 }
 
 extension FeeRelayer.Relay: FeeRelayerRelayType {}
-
-private extension OrcaSwap.Pool {
-    func getSwapData(
-        transferAuthorityPubkey: SolanaSDK.PublicKey,
-        amountIn: UInt64,
-        minAmountOut: UInt64
-    ) -> FeeRelayer.Relay.DirectSwapData {
-        .init(
-            programId: swapProgramId.base58EncodedString,
-            accountPubkey: account,
-            authorityPubkey: authority,
-            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
-            sourcePubkey: tokenAccountA,
-            destinationPubkey: tokenAccountB,
-            poolTokenMintPubkey: poolTokenMint,
-            poolFeeAccountPubkey: feeAccount,
-            amountIn: amountIn,
-            minimumAmountOut: minAmountOut
-        )
-    }
-}
