@@ -9,9 +9,10 @@ import Foundation
 import SolanaSwift
 import RxSwift
 
-protocol FeeRelayerRelaySolanaClient {
+public protocol FeeRelayerRelaySolanaClient {
     func checkAccountValidation(account: String) -> Single<Bool>
     func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
+    func getRecentBlockhash(commitment: SolanaSDK.Commitment?) -> Single<String>
 }
 
 extension SolanaSDK: FeeRelayerRelaySolanaClient {}

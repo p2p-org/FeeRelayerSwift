@@ -14,18 +14,25 @@ public protocol FeeRelayerRelayType {}
 extension FeeRelayer {
     public class Relay {
         // MARK: - Properties
-        private let solanaSDK: SolanaSDK
+        private let apiClient: FeeRelayerAPIClientType
+        private let solanaClient: FeeRelayerRelaySolanaClient
+        private let accountStorage: SolanaSDKAccountStorage
         
         // MARK: - Initializers
-        public init(solanaSDK: SolanaSDK) {
-            self.solanaSDK = solanaSDK
+        public init(
+            apiClient: FeeRelayerAPIClientType,
+            solanaClient: FeeRelayerRelaySolanaClient,
+            accountStorage: SolanaSDKAccountStorage
+        ) {
+            self.apiClient = apiClient
+            self.solanaClient = solanaClient
+            self.accountStorage = accountStorage
         }
         
         // MARK: - Methods
         func topUp(
             userSourceTokenAccountAddress: String,
             sourceTokenMintAddress: String,
-            userAuthorityAddress: SolanaSDK.PublicKey,
             topUpPools: OrcaSwap.PoolsPair,
             amount: UInt64,
             transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
@@ -33,8 +40,13 @@ extension FeeRelayer {
             feePayerAddress: String,
             lamportsPerSignature: UInt64
         ) -> Single<[String]> {
+            // get user account
+            guard let owner = accountStorage.account else {
+                return .error(FeeRelayer.Error.unauthorized)
+            }
+            
             // get relay account
-            guard let userRelayAddress = try? Program.getUserRelayAddress(user: userAuthorityAddress) else {
+            guard let userRelayAddress = try? Program.getUserRelayAddress(user: owner.publicKey) else {
                 return .error(FeeRelayer.Error.wrongAddress)
             }
             
@@ -46,20 +58,20 @@ extension FeeRelayer {
             // request needed infos
             return Single.zip(
                 // check if creating user relay account is needed
-                solanaSDK.checkAccountValidation(account: userRelayAddress.base58EncodedString),
+                solanaClient.checkAccountValidation(account: userRelayAddress.base58EncodedString),
                 // get minimum relay account balance
-                solanaSDK.getMinimumBalanceForRentExemption(span: 0),
+                solanaClient.getMinimumBalanceForRentExemption(span: 0),
                 // get recent blockhash
-                solanaSDK.getRecentBlockhash()
+                solanaClient.getRecentBlockhash(commitment: nil)
             )
-                .map { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash in
+                .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // STEP 1: calculate top up fees
                     let topUpFee = try self.calculateTopUpFee(
                         userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                         sourceTokenMintAddress: sourceTokenMintAddress,
-                        userAuthorityAddress: userAuthorityAddress,
+                        userAuthorityAddress: owner.publicKey,
                         userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
                         amount: amount,
@@ -81,7 +93,7 @@ extension FeeRelayer {
                     let topUpTransaction = try self.prepareForTopUp(
                         userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                         sourceTokenMintAddress: sourceTokenMintAddress,
-                        userAuthorityAddress: userAuthorityAddress,
+                        userAuthorityAddress: owner.publicKey,
                         userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
                         amount: amount,
@@ -95,8 +107,36 @@ extension FeeRelayer {
                         lamportsPerSignature: lamportsPerSignature
                     )
                     
-                    // STEP 4: send transaction
+                    var transaction = topUpTransaction.transaction
                     
+                    // STEP 4: send transaction
+                    try transaction.sign(signers: [owner, topUpTransaction.transferAuthorityAccount])
+                    guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature,
+                          let transferAuthoritySignatureData = transaction.findSignature(pubkey: topUpTransaction.transferAuthorityAccount.publicKey)?.signature
+                    else {
+                        throw FeeRelayer.Error.invalidSignature
+                    }
+                    
+                    let ownerSignature = Base58.encode(ownerSignatureData.bytes)
+                    let transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
+                    
+                    return self.apiClient.sendTransaction(
+                        .relayTopUp(
+                            .init(
+                                userSourceTokenAccountPubkey: userSourceTokenAccountAddress,
+                                sourceTokenMintPubkey: sourceTokenMintAddress,
+                                userAuthorityPubkey: owner.publicKey.base58EncodedString,
+                                topUpSwap: topUpTransaction.swapData,
+                                feeAmount: topUpFee,
+                                signatures: .init(
+                                    userAuthoritySignature: ownerSignature,
+                                    transferAuthoritySignature: transferAuthoritySignature
+                                ),
+                                blockhash: recentBlockhash
+                            )
+                        ),
+                        decodedTo: [String].self
+                    )
                 }
         }
     }

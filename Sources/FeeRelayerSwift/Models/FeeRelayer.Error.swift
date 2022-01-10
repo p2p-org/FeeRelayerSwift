@@ -60,6 +60,14 @@ extension FeeRelayer {
         public static var invalidAmount: Self {
             .init(code: 3, message: "Invalid amount", data: nil)
         }
+        
+        public static var invalidSignature: Self {
+            .init(code: 3, message: "Invalid signature", data: nil)
+        }
+        
+        public static var unauthorized: Self {
+            .init(code: 403, message: "Unauthorized", data: nil)
+        }
     }
     
     public struct ErrorDetail: Decodable, Equatable {
