@@ -38,7 +38,6 @@ extension FeeRelayer {
             userSourceTokenAccountAddress: String,
             sourceTokenMintAddress: String,
             amount: UInt64,
-            transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
             minimumTokenAccountBalance: UInt64,
             feePayerAddress: String,
             lamportsPerSignature: UInt64
@@ -76,8 +75,17 @@ extension FeeRelayer {
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    
+                    // Get best poolpairs for swapping
                     guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(amount, from: availableTopUpPools) else {
                         throw FeeRelayer.Error.swapPoolsNotFound
+                    }
+                    
+                    // Get transit token mint
+                    var transitTokenMintPubkey: SolanaSDK.PublicKey?
+                    if topUpPools.count == 2 {
+                        let interTokenName = topUpPools[0].tokenBName
+                        transitTokenMintPubkey = try SolanaSDK.PublicKey(string: self.orcaSwapClient.getMint(tokenName: interTokenName))
                     }
                     
                     // STEP 1: calculate top up fees
