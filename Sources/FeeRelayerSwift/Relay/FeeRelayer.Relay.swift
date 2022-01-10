@@ -52,8 +52,6 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.wrongAddress)
             }
             
-            let defaultSlippage: Double = 1
-            
             // make amount mutable, because the final amount is equal to amount + topup fee
             var amount = amount
             
