@@ -48,23 +48,22 @@ extension FeeRelayer {
                 // check if creating user relay account is needed
                 solanaSDK.checkAccountValidation(account: userRelayAddress.base58EncodedString),
                 // get minimum relay account balance
-                solanaSDK.getMinimumBalanceForRentExemption(span: 0)
+                solanaSDK.getMinimumBalanceForRentExemption(span: 0),
+                // get recent blockhash
+                solanaSDK.getRecentBlockhash()
             )
-                .map { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance in
+                .map { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // STEP 1: calculate top up fees
-                    let topUpSwap = try self.prepareSwapData(
-                        topUpPools: topUpPools,
-                        amount: amount,
-                        transitTokenMintPubkey: transitTokenMintPubkey
-                    )
                     let topUpFee = try self.calculateTopUpFee(
                         userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                         sourceTokenMintAddress: sourceTokenMintAddress,
                         userAuthorityAddress: userAuthorityAddress,
                         userRelayAddress: userRelayAddress,
-                        topUpSwap: topUpSwap,
+                        topUpPools: topUpPools,
+                        amount: amount,
+                        transitTokenMintPubkey: transitTokenMintPubkey,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
                         needsCreateUserRelayAccount: needsCreateUserRelayAccount,
@@ -79,19 +78,6 @@ extension FeeRelayer {
                     
                     // STEP 3: prepare for topUp
                 }
-            
-            
-            do {
-                // Request needed infos
-                
-                
-                
-                // requests
-                let getRecentBlockhashRequest = solanaSDK.getRecentBlockhash(commitment: "recent")
-            } catch {
-                return .error(error)
-            }
-            
         }
     }
 }

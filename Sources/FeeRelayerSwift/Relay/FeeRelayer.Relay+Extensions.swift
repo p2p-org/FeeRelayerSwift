@@ -71,13 +71,20 @@ extension FeeRelayer.Relay {
         sourceTokenMintAddress: String,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userRelayAddress: SolanaSDK.PublicKey,
-        topUpSwap: FeeRelayerRelaySwapType,
+        topUpPools: OrcaSwap.PoolsPair,
+        amount: UInt64,
+        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         minimumRelayAccountBalance: UInt64,
         minimumTokenAccountBalance: UInt64,
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: String,
         lamportsPerSignature: UInt64
     ) throws -> UInt64 {
+        let topUpSwap = try self.prepareSwapData(
+            topUpPools: topUpPools,
+            amount: amount,
+            transitTokenMintPubkey: transitTokenMintPubkey
+        )
         let fee = try prepareForTopUp(
             userSourceTokenAccountAddress: userSourceTokenAccountAddress,
             sourceTokenMintAddress: sourceTokenMintAddress,
