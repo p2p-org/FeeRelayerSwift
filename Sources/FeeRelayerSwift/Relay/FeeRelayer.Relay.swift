@@ -33,16 +33,14 @@ extension FeeRelayer {
         }
         
         // MARK: - Methods
-        /// Submits a signed top up swap transaction to the backend for processing
-        func topUp(
+        public func topUpAndSwap(
             userSourceTokenAccountAddress: String,
             sourceTokenMintAddress: String,
-            amount: UInt64,
-            minimumTokenAccountBalance: UInt64,
-            feePayerAddress: String,
-            lamportsPerSignature: UInt64
+            userDestinationAddress: String,
+            destinationTokenMintAddress: String,
+            inputAmount: UInt64
         ) -> Single<[String]> {
-            // get user account
+            // get owner
             guard let owner = accountStorage.account else {
                 return .error(FeeRelayer.Error.unauthorized)
             }
@@ -52,6 +50,91 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.wrongAddress)
             }
             
+            // request needed infos
+            return Single.zip(
+                // get minimum token account balance
+                solanaClient.getMinimumBalanceForRentExemption(span: 165),
+                // get fee payer address
+                apiClient.getFeePayerPubkey(),
+                // get lamportsPerSignature
+                solanaClient.getLamportsPerSignature(),
+                // get topup pools
+                orcaSwapClient
+                    .getTradablePoolsPairs(
+                        fromMint: sourceTokenMintAddress,
+                        toMint: destinationTokenMintAddress
+                    ),
+                // get relayAccount's status
+                checkRelayAccountStatus(relayAccountAddress: userRelayAddress)
+            )
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
+                .flatMap { [weak self] minimumTokenAccountBalance, feePayerAddress, lamportsPerSignature, availableSwapPools, relayAccountStatus in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    
+                    // Get best poolpairs for swapping
+                    guard let pools = try self.orcaSwapClient.findBestPoolsPairForInputAmount(inputAmount, from: availableSwapPools)
+                    else { throw FeeRelayer.Error.swapPoolsNotFound }
+                    
+                    // Get transit token mint
+                    var transitTokenMintPubkey: SolanaSDK.PublicKey?
+                    if pools.count == 2 {
+                        let interTokenName = pools[0].tokenBName
+                        transitTokenMintPubkey = try SolanaSDK.PublicKey(string: self.orcaSwapClient.getMint(tokenName: interTokenName))
+                    }
+                    
+                    // in case swapping to SOL, an WSOL account needs to be created
+                    var userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
+                    if owner.publicKey.base58EncodedString == userDestinationAddress {
+                        userDestinationAccountOwnerAddress = try SolanaSDK.Account(network: self.solanaClient.endpoint.network)
+                            .publicKey
+                    }
+                    
+                    // STEP 1: Calculate swapping fee
+                    let swappingFee = try self.calculateSwappingFee(
+                        network: self.solanaClient.endpoint.network,
+                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                        userDestinationAddress: userDestinationAddress,
+                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        destinationTokenMintAddress: destinationTokenMintAddress,
+                        userAuthorityAddress: owner.publicKey,
+                        userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
+                        pools: pools,
+                        inputAmount: inputAmount,
+                        transitTokenMintPubkey: transitTokenMintPubkey,
+                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        needsCreateDestinationTokenAccount: <#T##Bool#>,
+                        feePayerAddress: feePayerAddress,
+                        lamportsPerSignature: lamportsPerSignature
+                    )
+                    
+                    // STEP 2: Check if relay account has already had enough balance to cover swapping fee
+                    // STEP 2.1: If relay account has not been created or has not have enough balance, do top up
+                    // STEP 2.2: Else, skip top up
+                    
+                    // STEP 3: If relay account has already had enough balance, move to next step
+                    
+                    // STEP 4: If not, do top up
+                }
+        }
+        
+        /// Check relay account status
+        func checkRelayAccountStatus(
+            relayAccountAddress: SolanaSDK.PublicKey
+        ) -> Single<RelayAccountStatus> {
+            
+        }
+        
+        /// Submits a signed top up swap transaction to the backend for processing
+        func topUp(
+            owner: SolanaSDK.Account,
+            userRelayAddress: SolanaSDK.PublicKey,
+            userSourceTokenAccountAddress: String,
+            sourceTokenMintAddress: String,
+            amount: UInt64,
+            minimumTokenAccountBalance: UInt64,
+            feePayerAddress: String,
+            lamportsPerSignature: UInt64
+        ) -> Single<[String]> {
             // make amount mutable, because the final amount is equal to amount + topup fee
             var amount = amount
             
@@ -156,9 +239,6 @@ extension FeeRelayer {
                 }
                 .observe(on: MainScheduler.instance)
         }
-        
-        /// Submits a signed token swap transaction to the backend for processing
-        
     }
 }
 

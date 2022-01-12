@@ -139,4 +139,18 @@ extension FeeRelayer.Relay {
         let feeAmount: FeeRelayer.FeeAmount
         let transferAuthorityAccount: SolanaSDK.Account
     }
+    
+    enum RelayAccountStatus: Equatable {
+        case notYetCreated
+        case created(balance: UInt64)
+        
+        var balance: UInt64? {
+            switch self {
+            case .notYetCreated:
+                return nil
+            case .created(let balance):
+                return balance
+            }
+        }
+    }
 }

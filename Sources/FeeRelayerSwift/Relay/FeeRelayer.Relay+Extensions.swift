@@ -13,6 +13,7 @@ extension FeeRelayer.Relay {
     // MARK: - Top up
     /// Prepare swap data from topUpPools
     func prepareSwapData(
+        network: SolanaSDK.Network,
         pools: OrcaSwap.PoolsPair,
         amount: UInt64,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil
@@ -22,7 +23,7 @@ extension FeeRelayer.Relay {
         let defaultSlippage = 0.01
         
         // create transferAuthority
-        let transferAuthority = try SolanaSDK.Account(network: .mainnetBeta)
+        let transferAuthority = try SolanaSDK.Account(network: network)
         
         // form topUp params
         if pools.count == 1 {
@@ -68,6 +69,7 @@ extension FeeRelayer.Relay {
     
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(
+        network: SolanaSDK.Network,
         userSourceTokenAccountAddress: String,
         sourceTokenMintAddress: String,
         userAuthorityAddress: SolanaSDK.PublicKey,
@@ -82,6 +84,7 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> UInt64 {
         let fee = try prepareForTopUp(
+            network: network,
             userSourceTokenAccountAddress: userSourceTokenAccountAddress,
             sourceTokenMintAddress: sourceTokenMintAddress,
             userAuthorityAddress: userAuthorityAddress,
@@ -102,6 +105,7 @@ extension FeeRelayer.Relay {
     
     /// Prepare transaction and expected fee for a given relay transaction
     func prepareForTopUp(
+        network: SolanaSDK.Network,
         userSourceTokenAccountAddress: String,
         sourceTokenMintAddress: String,
         userAuthorityAddress: SolanaSDK.PublicKey,
@@ -142,7 +146,7 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
-        let topUpSwap = try prepareSwapData(pools: topUpPools, amount: amount, transitTokenMintPubkey: transitTokenMintPubkey)
+        let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, amount: amount, transitTokenMintPubkey: transitTokenMintPubkey)
         switch topUpSwap.swapData {
         case let swap as DirectSwapData:
             expectedFee.accountBalances += minimumTokenAccountBalance
@@ -250,7 +254,47 @@ extension FeeRelayer.Relay {
     }
     
     // MARK: - Swap
+    func calculateSwappingFee(
+        network: SolanaSDK.Network,
+        userSourceTokenAccountAddress: String,
+        userDestinationAddress: String,
+        sourceTokenMintAddress: String,
+        destinationTokenMintAddress: String,
+        userAuthorityAddress: SolanaSDK.PublicKey,
+        userDestinationAccountOwnerAddress: String?,
+        
+        pools: OrcaSwap.PoolsPair,
+        inputAmount: UInt64,
+        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
+        
+        minimumTokenAccountBalance: UInt64,
+        needsCreateDestinationTokenAccount: Bool,
+        feePayerAddress: String,
+        lamportsPerSignature: UInt64
+    ) throws -> UInt64 {
+        let fee = try prepareForSwapping(
+            network: network,
+            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+            userDestinationAddress: userDestinationAddress,
+            sourceTokenMintAddress: sourceTokenMintAddress,
+            destinationTokenMintAddress: destinationTokenMintAddress,
+            userAuthorityAddress: userAuthorityAddress,
+            userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
+            pools: pools,
+            inputAmount: inputAmount,
+            transitTokenMintPubkey: transitTokenMintPubkey,
+            feeAmount: 0, // fake
+            blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", //fake
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
+            feePayerAddress: feePayerAddress,
+            lamportsPerSignature: lamportsPerSignature
+        ).feeAmount
+        return fee.transaction + fee.accountBalances
+    }
+    
     func prepareForSwapping(
+        network: SolanaSDK.Network,
         userSourceTokenAccountAddress: String,
         userDestinationAddress: String,
         sourceTokenMintAddress: String,
@@ -303,7 +347,7 @@ extension FeeRelayer.Relay {
         }
         
         // swap
-        let swap = try prepareSwapData(pools: pools, amount: inputAmount, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(network: network, pools: pools, amount: inputAmount, transitTokenMintPubkey: transitTokenMintPubkey)
         let userTransferAuthority = swap.transferAuthorityAccount.publicKey
         
         switch swap.swapData {
