@@ -92,7 +92,6 @@ extension FeeRelayer.Relay {
         }
         
         static func transferSolInstruction(
-            topUpSwap: FeeRelayerRelaySwapType,
             userAuthorityAddress: SolanaSDK.PublicKey,
             recipient: SolanaSDK.PublicKey,
             lamports: UInt64
