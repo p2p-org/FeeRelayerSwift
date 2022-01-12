@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SolanaSwift
 
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
@@ -129,5 +130,13 @@ extension FeeRelayer.Relay {
             case userAuthoritySignature = "user_authority_signature"
             case transferAuthoritySignature = "transfer_authority_signature"
         }
+    }
+    
+    // MARK: - Others
+    struct PreparedParams {
+        let swapData: FeeRelayerRelaySwapType
+        let transaction: SolanaSDK.Transaction
+        let feeAmount: FeeRelayer.FeeAmount
+        let transferAuthorityAccount: SolanaSDK.Account
     }
 }

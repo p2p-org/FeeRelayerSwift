@@ -116,7 +116,7 @@ extension FeeRelayer.Relay {
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: String,
         lamportsPerSignature: UInt64
-    ) throws -> (swapData: FeeRelayerRelaySwapType, transaction: SolanaSDK.Transaction, feeAmount: FeeRelayer.FeeAmount, transferAuthorityAccount: SolanaSDK.Account) {
+    ) throws -> PreparedParams {
         // assertion
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: userSourceTokenAccountAddress),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceTokenMintAddress),
@@ -243,7 +243,12 @@ extension FeeRelayer.Relay {
         let transactionFee = try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature)
         expectedFee.transaction = transactionFee
         
-        return (swapData: topUpSwap.swapData, transaction: transaction, feeAmount: expectedFee, transferAuthorityAccount: topUpSwap.transferAuthorityAccount)
+        return .init(
+            swapData: topUpSwap.swapData,
+            transaction: transaction,
+            feeAmount: expectedFee,
+            transferAuthorityAccount: topUpSwap.transferAuthorityAccount
+        )
     }
     
     // MARK: - Swap
@@ -264,7 +269,7 @@ extension FeeRelayer.Relay {
         minimumTokenAccountBalance: UInt64,
         needsCreateDestinationTokenAccount: Bool,
         feePayerAddress: String
-    ) throws -> (swapData: FeeRelayerRelaySwapType, transaction: SolanaSDK.Transaction, feeAmount: FeeRelayer.FeeAmount, transferAuthorityAccount: SolanaSDK.Account) {
+    ) throws -> PreparedParams {
         // assertion
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: userSourceTokenAccountAddress),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceTokenMintAddress),
