@@ -250,7 +250,7 @@ extension FeeRelayer.Relay {
     }
     
     // MARK: - Swap
-    func swap(
+    func prepareForSwapping(
         userSourceTokenAccountAddress: String,
         userDestinationAddress: String,
         sourceTokenMintAddress: String,
@@ -263,11 +263,10 @@ extension FeeRelayer.Relay {
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         
         feeAmount: UInt64,
-        blockString: String,
+        blockhash: String,
         minimumTokenAccountBalance: UInt64,
         needsCreateDestinationTokenAccount: Bool,
         feePayerAddress: String,
-        blockhash: String,
         lamportsPerSignature: UInt64
     ) throws -> PreparedParams {
         // assertion
