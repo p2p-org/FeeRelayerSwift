@@ -158,11 +158,7 @@ extension FeeRelayer {
         }
         
         /// Submits a signed token swap transaction to the backend for processing
-//        func swap(
-//
-//        ) -> Single<[String]> {
-//
-//        }
+        
     }
 }
 
