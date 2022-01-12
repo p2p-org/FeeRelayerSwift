@@ -89,10 +89,9 @@ extension FeeRelayer {
                     let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
                     
                     if owner.publicKey.base58EncodedString == destinationTokenAddress {
-                        userDestinationAccountOwnerAddress = try SolanaSDK.Account(network: self.solanaClient.endpoint.network).publicKey
-                        needsCreateDestinationTokenAccount = false
-                        userDestinationAddress = userDestinationAccountOwnerAddress!.base58EncodedString
-                            
+                        userDestinationAccountOwnerAddress = owner.publicKey
+                        needsCreateDestinationTokenAccount = true
+                        userDestinationAddress = owner.publicKey.base58EncodedString
                     } else {
                         userDestinationAccountOwnerAddress = nil
                         if let address = destinationTokenAddress {
@@ -126,12 +125,18 @@ extension FeeRelayer {
                     )
                     
                     // STEP 2: Check if relay account has already had enough balance to cover swapping fee
-                    // STEP 2.1: If relay account has not been created or has not have enough balance, do top up
-                    // STEP 2.2: Else, skip top up
-                    
-                    // STEP 3: If relay account has already had enough balance, move to next step
-                    
-                    // STEP 4: If not, do top up
+                    // STEP 2.1: If relay account has enough balance to cover swapping fee
+                    if let relayAccountBalance = relayAccountStatus.balance,
+                        balance >= swappingFee {
+                        // STEP 2.1.1: Swap
+                        
+                    }
+                    // STEP 2.2: Else
+                    else {
+                        // STEP 2.2.1: Top up
+                        
+                        // STEP 2.2.2: Swap
+                    }
                 }
         }
         
