@@ -9,7 +9,7 @@ import Foundation
 import SolanaSwift
 
 extension FeeRelayer.Relay {
-    struct Program {
+    enum Program {
         static let id: SolanaSDK.PublicKey = "24tpHRcbGKGYFGMYq66G3hfH8GQEYGTysXqiJyaCy9eR"
         
         static func getUserRelayAddress(
@@ -135,6 +135,63 @@ extension FeeRelayer.Relay {
             )
         }
         
+        static func createRelaySwapInstruction(
+            transitiveSwap: TransitiveSwapData,
+            userAuthorityAddressPubkey: SolanaSDK.PublicKey,
+            sourceAddressPubkey: SolanaSDK.PublicKey,
+            transitTokenAccount: SolanaSDK.PublicKey,
+            destinationAddressPubkey: SolanaSDK.PublicKey,
+            feePayerPubkey: SolanaSDK.PublicKey
+        ) throws -> SolanaSDK.TransactionInstruction {
+            let transferAuthorityPubkey = try SolanaSDK.PublicKey(string: transitiveSwap.from.transferAuthorityPubkey)
+            let transitTokenMintPubkey = try SolanaSDK.PublicKey(string: transitiveSwap.transitTokenMintPubkey)
+            let swapFromProgramId = try SolanaSDK.PublicKey(string: transitiveSwap.from.programId)
+            let swapFromAccount = try SolanaSDK.PublicKey(string: transitiveSwap.from.accountPubkey)
+            let swapFromAuthority = try SolanaSDK.PublicKey(string: transitiveSwap.from.authorityPubkey)
+            let swapFromSource = try SolanaSDK.PublicKey(string: transitiveSwap.from.sourcePubkey)
+            let swapFromDestination = try SolanaSDK.PublicKey(string: transitiveSwap.from.destinationPubkey)
+            let swapFromTokenMint = try SolanaSDK.PublicKey(string: transitiveSwap.from.poolTokenMintPubkey)
+            let swapFromPoolFeeAccount = try SolanaSDK.PublicKey(string: transitiveSwap.from.poolFeeAccountPubkey)
+            let swapToProgramId = try SolanaSDK.PublicKey(string: transitiveSwap.to.programId)
+            let swapToAccount = try SolanaSDK.PublicKey(string: transitiveSwap.to.accountPubkey)
+            let swapToAuthority = try SolanaSDK.PublicKey(string: transitiveSwap.to.authorityPubkey)
+            let swapToSource = try SolanaSDK.PublicKey(string: transitiveSwap.to.sourcePubkey)
+            let swapToDestination = try SolanaSDK.PublicKey(string: transitiveSwap.to.destinationPubkey)
+            let swapToPoolTokenMint = try SolanaSDK.PublicKey(string: transitiveSwap.to.poolTokenMintPubkey)
+            let swapToPoolFeeAccount = try SolanaSDK.PublicKey(string: transitiveSwap.to.poolFeeAccountPubkey)
+            let amountIn = transitiveSwap.from.amountIn
+            let transitMinimumAmount = transitiveSwap.from.minimumAmountOut
+            let minimumAmountOut = transitiveSwap.to.minimumAmountOut
+            
+            
+            return try splSwapTransitiveInstruction(
+                feePayer: feePayerPubkey,
+                userAuthority: userAuthorityAddressPubkey,
+                userTransferAuthority: transferAuthorityPubkey,
+                userSourceTokenAccount: sourceAddressPubkey,
+                userTransitTokenAccount: transitTokenAccount,
+                userDestinationTokenAccount: destinationAddressPubkey,
+                transitTokenMint: transitTokenMintPubkey,
+                swapFromProgramId: swapFromProgramId,
+                swapFromAccount: swapFromAccount,
+                swapFromAuthority: swapFromAuthority,
+                swapFromSource: swapFromSource,
+                swapFromDestination: swapFromDestination,
+                swapFromPoolTokenMint: swapFromTokenMint,
+                swapFromPoolFeeAccount: swapFromPoolFeeAccount,
+                swapToProgramId: swapToProgramId,
+                swapToAccount: swapToAccount,
+                swapToAuthority: swapToAuthority,
+                swapToSource: swapToSource,
+                swapToDestination: swapToDestination,
+                swapToPoolTokenMint: swapToPoolTokenMint,
+                swapToPoolFeeAccount: swapToPoolFeeAccount,
+                amountIn: amountIn,
+                transitMinimumAmount: transitMinimumAmount,
+                minimumAmountOut: minimumAmountOut
+            )
+        }
+        
         // MARK: - Helpers
         private static func topUpWithSPLSwapDirectInstruction(
             feePayer: SolanaSDK.PublicKey,
@@ -239,6 +296,64 @@ extension FeeRelayer.Relay {
                 programId: id,
                 data: [
                     UInt8(1),
+                    amountIn,
+                    transitMinimumAmount,
+                    minimumAmountOut
+                ]
+            )
+        }
+        
+        private static func splSwapTransitiveInstruction(
+            feePayer: SolanaSDK.PublicKey,
+            userAuthority: SolanaSDK.PublicKey,
+            userTransferAuthority: SolanaSDK.PublicKey,
+            userSourceTokenAccount: SolanaSDK.PublicKey,
+            userTransitTokenAccount: SolanaSDK.PublicKey,
+            userDestinationTokenAccount: SolanaSDK.PublicKey,
+            transitTokenMint: SolanaSDK.PublicKey,
+            swapFromProgramId: SolanaSDK.PublicKey,
+            swapFromAccount: SolanaSDK.PublicKey,
+            swapFromAuthority: SolanaSDK.PublicKey,
+            swapFromSource: SolanaSDK.PublicKey,
+            swapFromDestination: SolanaSDK.PublicKey,
+            swapFromPoolTokenMint: SolanaSDK.PublicKey,
+            swapFromPoolFeeAccount: SolanaSDK.PublicKey,
+            swapToProgramId: SolanaSDK.PublicKey,
+            swapToAccount: SolanaSDK.PublicKey,
+            swapToAuthority: SolanaSDK.PublicKey,
+            swapToSource: SolanaSDK.PublicKey,
+            swapToDestination: SolanaSDK.PublicKey,
+            swapToPoolTokenMint: SolanaSDK.PublicKey,
+            swapToPoolFeeAccount: SolanaSDK.PublicKey,
+            amountIn: UInt64,
+            transitMinimumAmount: UInt64,
+            minimumAmountOut: UInt64
+        ) throws -> SolanaSDK.TransactionInstruction {
+            .init(
+                keys: [
+                    .writable(publicKey: feePayer, isSigner: true),
+                    .readonly(publicKey: .tokenProgramId, isSigner: false),
+                    .readonly(publicKey: userTransferAuthority, isSigner: true),
+                    .writable(publicKey: userSourceTokenAccount, isSigner: false),
+                    .writable(publicKey: userTransitTokenAccount, isSigner: false),
+                    .writable(publicKey: userDestinationTokenAccount, isSigner: false),
+                    .readonly(publicKey: swapFromProgramId, isSigner: false),
+                    .readonly(publicKey: swapFromAccount, isSigner: false),
+                    .readonly(publicKey: swapFromAuthority, isSigner: false),
+                    .writable(publicKey: swapFromSource, isSigner: false),
+                    .writable(publicKey: swapFromDestination, isSigner: false),
+                    .writable(publicKey: swapFromPoolTokenMint, isSigner: false),
+                    .writable(publicKey: swapFromPoolTokenMint, isSigner: false),
+                    .readonly(publicKey: swapToProgramId, isSigner: false),
+                    .readonly(publicKey: swapToAccount, isSigner: false),
+                    .readonly(publicKey: swapToAuthority, isSigner: false),
+                    .writable(publicKey: swapToSource, isSigner: false),
+                    .writable(publicKey: swapToDestination, isSigner: false),
+                    .writable(publicKey: swapToPoolTokenMint, isSigner: false),
+                    .writable(publicKey: swapToPoolFeeAccount, isSigner: false),
+                ],
+                programId: Program.id,
+                data: [
                     amountIn,
                     transitMinimumAmount,
                     minimumAmountOut

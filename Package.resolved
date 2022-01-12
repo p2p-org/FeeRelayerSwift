@@ -78,8 +78,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
           "branch": null,
-          "revision": "95fa3be11727893adc796393cd50fb14f583751e",
-          "version": "1.1.2"
+          "revision": "ca59e8acca433a4a21e7b4ea6ac37583c1bb6cde",
+          "version": "1.1.3"
         }
       },
       {

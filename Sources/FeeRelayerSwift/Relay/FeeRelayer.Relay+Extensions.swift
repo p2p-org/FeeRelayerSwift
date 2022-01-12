@@ -301,21 +301,81 @@ extension FeeRelayer.Relay {
         let swap = try prepareSwapData(pools: pools, amount: inputAmount, transitTokenMintPubkey: transitTokenMintPubkey)
         switch swap.swapData {
         case let swap as DirectSwapData:
+            guard let pool = pools.first else {throw FeeRelayer.Error.swapPoolsNotFound}
+            let userTransferAuthority = try SolanaSDK.PublicKey(string: swap.transferAuthorityPubkey)
+            
             // approve
             instructions.append(
                 SolanaSDK.TokenProgram.approveInstruction(
                     tokenProgramId: .tokenProgramId,
                     account: userSourceTokenAccountAddress,
-                    delegate: try SolanaSDK.PublicKey(string: swap.transferAuthorityPubkey),
+                    delegate: userTransferAuthority,
                     owner: userAuthorityAddress,
                     amount: swap.amountIn
                 )
             )
             
             // swap
-            
+            instructions.append(
+                try pool.createSwapInstruction(
+                    userTransferAuthorityPubkey: userTransferAuthority,
+                    sourceTokenAddress: userSourceTokenAccountAddress,
+                    destinationTokenAddress: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
+                    amountIn: swap.amountIn,
+                    minAmountOut: swap.minimumAmountOut
+                )
+            )
         case let swap as TransitiveSwapData:
-            break
+            let userTransferAuthority = try SolanaSDK.PublicKey(string: swap.from.transferAuthorityPubkey)
+            
+            // approve
+            instructions.append(
+                SolanaSDK.TokenProgram.approveInstruction(
+                    tokenProgramId: .tokenProgramId,
+                    account: userSourceTokenAccountAddress,
+                    delegate: userTransferAuthority,
+                    owner: userAuthorityAddress,
+                    amount: swap.from.amountIn
+                )
+            )
+            
+            // create transit token account
+            let transitTokenMint = try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey)
+            let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+                user: userAuthorityAddress,
+                transitTokenMint: transitTokenMint
+            )
+            
+            instructions.append(
+                try Program.createTransitTokenAccountInstruction(
+                    feePayer: feePayerAddress,
+                    userAuthority: userAuthorityAddress,
+                    transitTokenAccount: transitTokenAccountAddress,
+                    transitTokenMint: transitTokenMint
+                )
+            )
+            
+            // relay swap
+            instructions.append(
+                try Program.createRelaySwapInstruction(
+                    transitiveSwap: swap,
+                    userAuthorityAddressPubkey: userAuthorityAddress,
+                    sourceAddressPubkey: userSourceTokenAccountAddress,
+                    transitTokenAccount: transitTokenAccountAddress,
+                    destinationAddressPubkey: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
+                    feePayerPubkey: feePayerAddress
+                )
+            )
+            
+            // close transit token account
+            instructions.append(
+                SolanaSDK.TokenProgram.closeAccountInstruction(
+                    account: transitTokenAccountAddress,
+                    destination: feePayerAddress,
+                    owner: feePayerAddress
+                )
+            )
+            
         default:
             fatalError("unsupported swap type")
         }
