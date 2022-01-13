@@ -187,7 +187,17 @@ extension FeeRelayer {
         func checkRelayAccountStatus(
             relayAccountAddress: SolanaSDK.PublicKey
         ) -> Single<RelayAccountStatus> {
-            
+            solanaClient.getTokenAccountBalance(pubkey: relayAccountAddress.base58EncodedString, commitment: nil)
+                .map { balance in
+                    guard let amount = UInt64(balance.amount) else {return .notYetCreated}
+                    return .created(balance: amount)
+                }
+                .catch { error in
+                    if error.isEqualTo(SolanaSDK.Error.couldNotRetrieveAccountInfo) {
+                        return .just(.notYetCreated)
+                    }
+                    throw error
+                }
         }
         
         /// Submits a signed top up swap transaction to the backend for processing

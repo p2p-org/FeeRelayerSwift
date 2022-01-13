@@ -10,6 +10,7 @@ import SolanaSwift
 import RxSwift
 
 public protocol FeeRelayerRelaySolanaClient {
+    func getTokenAccountBalance(pubkey: String, commitment: SolanaSDK.Commitment?) -> Single<SolanaSDK.TokenAccountBalance>
     func checkAccountValidation(account: String) -> Single<Bool>
     func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
     func getRecentBlockhash(commitment: SolanaSDK.Commitment?) -> Single<String>
