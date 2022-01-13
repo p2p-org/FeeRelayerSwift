@@ -154,13 +154,13 @@ extension FeeRelayer.Relay {
         }
     }
     
-    public struct Token {
+    public struct TokenInfo {
+        public init(address: String, mint: String) {
+            self.address = address
+            self.mint = mint
+        }
+        
         let address: String
-        let mint: String
-    }
-    
-    public struct OptionalAddressToken {
-        let address: String?
         let mint: String
     }
 }

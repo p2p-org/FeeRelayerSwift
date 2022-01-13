@@ -70,8 +70,7 @@ extension FeeRelayer.Relay {
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(
         network: SolanaSDK.Network,
-        userSourceTokenAccountAddress: String,
-        sourceTokenMintAddress: String,
+        sourceToken: TokenInfo,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userRelayAddress: SolanaSDK.PublicKey,
         topUpPools: OrcaSwap.PoolsPair,
@@ -85,8 +84,7 @@ extension FeeRelayer.Relay {
     ) throws -> UInt64 {
         let fee = try prepareForTopUp(
             network: network,
-            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
-            sourceTokenMintAddress: sourceTokenMintAddress,
+            sourceToken: sourceToken,
             userAuthorityAddress: userAuthorityAddress,
             userRelayAddress: userRelayAddress,
             topUpPools: topUpPools,
@@ -106,8 +104,7 @@ extension FeeRelayer.Relay {
     /// Prepare transaction and expected fee for a given relay transaction
     func prepareForTopUp(
         network: SolanaSDK.Network,
-        userSourceTokenAccountAddress: String,
-        sourceTokenMintAddress: String,
+        sourceToken: TokenInfo,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userRelayAddress: SolanaSDK.PublicKey,
         topUpPools: OrcaSwap.PoolsPair,
@@ -122,8 +119,8 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> PreparedParams {
         // assertion
-        guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: userSourceTokenAccountAddress),
-              let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceTokenMintAddress),
+        guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
+              let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
               let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
               let associatedTokenAddress = try? SolanaSDK.PublicKey.associatedTokenAddress(walletAddress: feePayerAddress, tokenMintAddress: sourceTokenMintAddress),
               userSourceTokenAccountAddress != associatedTokenAddress
@@ -256,10 +253,8 @@ extension FeeRelayer.Relay {
     // MARK: - Swap
     func calculateSwappingFee(
         network: SolanaSDK.Network,
-        userSourceTokenAccountAddress: String,
-        userDestinationAddress: String,
-        sourceTokenMintAddress: String,
-        destinationTokenMintAddress: String,
+        sourceToken: TokenInfo,
+        destinationToken: TokenInfo,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userDestinationAccountOwnerAddress: String?,
         
@@ -275,10 +270,8 @@ extension FeeRelayer.Relay {
     ) throws -> UInt64 {
         let fee = try prepareForSwapping(
             network: network,
-            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
-            userDestinationAddress: userDestinationAddress,
-            sourceTokenMintAddress: sourceTokenMintAddress,
-            destinationTokenMintAddress: destinationTokenMintAddress,
+            sourceToken: sourceToken,
+            destinationToken: destinationToken,
             userAuthorityAddress: userAuthorityAddress,
             userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
             pools: pools,
@@ -297,10 +290,8 @@ extension FeeRelayer.Relay {
     
     func prepareForSwapping(
         network: SolanaSDK.Network,
-        userSourceTokenAccountAddress: String,
-        userDestinationAddress: String,
-        sourceTokenMintAddress: String,
-        destinationTokenMintAddress: String,
+        sourceToken: TokenInfo,
+        destinationToken: TokenInfo,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userDestinationAccountOwnerAddress: String?,
         
@@ -317,23 +308,23 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> PreparedParams {
         // assertion
-        guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: userSourceTokenAccountAddress),
-              let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceTokenMintAddress),
+        guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
+              let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
               let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
               let associatedTokenAddress = try? SolanaSDK.PublicKey.associatedTokenAddress(walletAddress: feePayerAddress, tokenMintAddress: sourceTokenMintAddress),
               userSourceTokenAccountAddress != associatedTokenAddress
         else { throw FeeRelayer.Error.wrongAddress }
-        let destinationTokenMintAddress = try SolanaSDK.PublicKey(string: destinationTokenMintAddress)
+        let destinationTokenMintAddress = try SolanaSDK.PublicKey(string: destinationToken.mint)
         
         // forming transaction and count fees
         var expectedFee = FeeRelayer.FeeAmount(transaction: 0, accountBalances: 0)
         var instructions = [SolanaSDK.TransactionInstruction]()
         
         // create destination address
-        var userDestinationTokenAccountAddress = userDestinationAddress
+        var userDestinationTokenAccountAddress = destinationToken.address
         if needsCreateDestinationTokenAccount {
             let associatedAccount = try SolanaSDK.PublicKey.associatedTokenAddress(
-                walletAddress: try SolanaSDK.PublicKey(string: userDestinationAddress),
+                walletAddress: try SolanaSDK.PublicKey(string: destinationToken.address),
                 tokenMintAddress: destinationTokenMintAddress
             )
             instructions.append(

@@ -34,9 +34,10 @@ extension FeeRelayer {
         
         // MARK: - Methods
         public func topUpAndSwap(
-            sourceToken: Token, // WARNING: currently does not support native SOL
-            destinationToken: OptionalAddressToken,
-            payingFeeToken: Token,
+            sourceToken: TokenInfo, // WARNING: currently does not support native SOL
+            destinationTokenMint: String,
+            destinationAddress: String?,
+            payingFeeToken: TokenInfo,
             pools: OrcaSwap.PoolsPair,
             inputAmount: UInt64,
             slippage: Double
@@ -63,7 +64,7 @@ extension FeeRelayer {
                 orcaSwapClient
                     .getTradablePoolsPairs(
                         fromMint: sourceToken.mint,
-                        toMint: destinationToken.mint
+                        toMint: destinationTokenMint
                     ),
                 // get relayAccount's status
                 checkRelayAccountStatus(relayAccountAddress: userRelayAddress)
@@ -81,36 +82,35 @@ extension FeeRelayer {
                         transitTokenMintPubkey = nil
                     }
                     
-                    // Define destination
+                    // Redefine destination
                     let needsCreateDestinationTokenAccount: Bool
                     let userDestinationAddress: String
                     let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
                     
-                    if owner.publicKey.base58EncodedString == destinationToken.address {
+                    if owner.publicKey.base58EncodedString == destinationAddress {
                         userDestinationAccountOwnerAddress = owner.publicKey
                         needsCreateDestinationTokenAccount = true
                         userDestinationAddress = owner.publicKey.base58EncodedString // placeholder, ignore it
                     } else {
                         userDestinationAccountOwnerAddress = nil
-                        if let address = destinationToken.address {
+                        if let address = destinationAddress {
                             userDestinationAddress = address
                             needsCreateDestinationTokenAccount = false
                         } else {
                             userDestinationAddress = try SolanaSDK.PublicKey.associatedTokenAddress(
                                 walletAddress: owner.publicKey,
-                                tokenMintAddress: try SolanaSDK.PublicKey(string: destinationToken.mint)
+                                tokenMintAddress: try SolanaSDK.PublicKey(string: destinationTokenMint)
                             ).base58EncodedString
                             needsCreateDestinationTokenAccount = true
                         }
                     }
+                    let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
                     
                     // STEP 1: Calculate swapping fee and forming transaction
                     let swappingFee = try self.calculateSwappingFee(
                         network: self.solanaClient.endpoint.network,
-                        userSourceTokenAccountAddress: sourceToken.address,
-                        userDestinationAddress: userDestinationAddress,
-                        sourceTokenMintAddress: sourceToken.mint,
-                        destinationTokenMintAddress: destinationToken.mint,
+                        sourceToken: sourceToken,
+                        destinationToken: destinationToken,
                         userAuthorityAddress: owner.publicKey,
                         userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
                         pools: pools,
@@ -132,10 +132,8 @@ extension FeeRelayer {
                         return self.swap(
                             network: self.solanaClient.endpoint.network,
                             owner: owner,
-                            userSourceTokenAccountAddress: sourceToken.address,
-                            userDestinationAddress: userDestinationAddress,
-                            sourceTokenMintAddress: sourceToken.mint,
-                            destinationTokenMintAddress: destinationToken.mint,
+                            sourceToken: sourceToken,
+                            destinationToken: destinationToken,
                             userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
                             pools: pools,
                             inputAmount: inputAmount,
@@ -157,8 +155,7 @@ extension FeeRelayer {
                         return self.topUp(
                             owner: owner,
                             userRelayAddress: userRelayAddress,
-                            userSourceTokenAccountAddress: payingFeeToken.address,
-                            sourceTokenMintAddress: payingFeeToken.mint,
+                            sourceToken: payingFeeToken,
                             amount: topUpAmount,
                             minimumTokenAccountBalance: minimumTokenAccountBalance,
                             feePayerAddress: feePayerAddress,
@@ -169,10 +166,8 @@ extension FeeRelayer {
                                 self.swap(
                                     network: self.solanaClient.endpoint.network,
                                     owner: owner,
-                                    userSourceTokenAccountAddress: sourceToken.address,
-                                    userDestinationAddress: userDestinationAddress,
-                                    sourceTokenMintAddress: sourceToken.mint,
-                                    destinationTokenMintAddress: destinationToken.mint,
+                                    sourceToken: sourceToken,
+                                    destinationToken: destinationToken,
                                     userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
                                     pools: pools,
                                     inputAmount: inputAmount,
@@ -200,8 +195,7 @@ extension FeeRelayer {
         func topUp(
             owner: SolanaSDK.Account,
             userRelayAddress: SolanaSDK.PublicKey,
-            userSourceTokenAccountAddress: String,
-            sourceTokenMintAddress: String,
+            sourceToken: TokenInfo,
             amount: UInt64,
             minimumTokenAccountBalance: UInt64,
             feePayerAddress: String,
@@ -221,7 +215,7 @@ extension FeeRelayer {
                 // get topup pools
                 orcaSwapClient
                     .getTradablePoolsPairs(
-                        fromMint: sourceTokenMintAddress,
+                        fromMint: sourceToken.mint,
                         toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
                     )
             )
@@ -244,8 +238,7 @@ extension FeeRelayer {
                     // STEP 1: calculate top up fees
                     let topUpFee = try self.calculateTopUpFee(
                         network: self.solanaClient.endpoint.network,
-                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
-                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        sourceToken: sourceToken,
                         userAuthorityAddress: owner.publicKey,
                         userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
@@ -264,8 +257,7 @@ extension FeeRelayer {
                     // STEP 3: prepare for topUp
                     let topUpTransaction = try self.prepareForTopUp(
                         network: self.solanaClient.endpoint.network,
-                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
-                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        sourceToken: sourceToken,
                         userAuthorityAddress: owner.publicKey,
                         userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
@@ -289,8 +281,8 @@ extension FeeRelayer {
                     return self.apiClient.sendTransaction(
                         .relayTopUp(
                             .init(
-                                userSourceTokenAccountPubkey: userSourceTokenAccountAddress,
-                                sourceTokenMintPubkey: sourceTokenMintAddress,
+                                userSourceTokenAccountPubkey: sourceToken.address,
+                                sourceTokenMintPubkey: sourceToken.mint,
                                 userAuthorityPubkey: owner.publicKey.base58EncodedString,
                                 topUpSwap: topUpTransaction.swapData,
                                 feeAmount: topUpFee,
@@ -308,10 +300,8 @@ extension FeeRelayer {
         func swap(
             network: SolanaSDK.Network,
             owner: SolanaSDK.Account,
-            userSourceTokenAccountAddress: String,
-            userDestinationAddress: String,
-            sourceTokenMintAddress: String,
-            destinationTokenMintAddress: String,
+            sourceToken: TokenInfo,
+            destinationToken: TokenInfo,
             userDestinationAccountOwnerAddress: String?,
             
             pools: OrcaSwap.PoolsPair,
@@ -330,10 +320,8 @@ extension FeeRelayer {
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     let swapTransaction = try self.prepareForSwapping(
                         network: self.solanaClient.endpoint.network,
-                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
-                        userDestinationAddress: userDestinationAddress,
-                        sourceTokenMintAddress: sourceTokenMintAddress,
-                        destinationTokenMintAddress: destinationTokenMintAddress,
+                        sourceToken: sourceToken,
+                        destinationToken: destinationToken,
                         userAuthorityAddress: owner.publicKey,
                         userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
                         pools: pools,
