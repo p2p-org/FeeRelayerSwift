@@ -2,7 +2,7 @@ import XCTest
 import FeeRelayerSwift
 import RxBlocking
 
-class FeeRelayerAPIClientTests: XCTestCase {
+class APIClientTests: XCTestCase {
     let feeRelayer = FeeRelayer.APIClient()
     
     func testGetFeeRelayerPubkey() throws {

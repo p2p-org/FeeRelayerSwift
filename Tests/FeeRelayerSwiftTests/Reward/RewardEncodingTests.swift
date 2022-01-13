@@ -1,16 +1,8 @@
-//
-//  FeeRelayerRewardEncodingTests.swift
-//  FeeRelayerSwift_Tests
-//
-//  Created by Chung Tran on 29/12/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 import FeeRelayerSwift
 
-class FeeRelayerRewardEncodingTests: XCTestCase {
+class RewardEncodingTests: XCTestCase {
     func testEncodingTransferSOLParams() throws {
         let params = FeeRelayer.Reward.TransferSolParams(
             sender: "JAmdLePQthdecE7rbgVbz1WUuCT3Q2g74vPbiQWSLxiH",

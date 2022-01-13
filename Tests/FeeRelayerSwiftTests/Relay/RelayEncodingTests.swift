@@ -1,16 +1,8 @@
-//
-//  FeeRelayerRelayEncodingTests.swift
-//  FeeRelayerSwift_Tests
-//
-//  Created by Chung Tran on 29/12/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 import FeeRelayerSwift
 
-class FeeRelayerRelayEncodingTests: XCTestCase {
+class RelayEncodingTests: XCTestCase {
     func testEncodingTopUpWithDirectSwapParams() throws {
         let params = FeeRelayer.Relay.TopUpParams(
             userSourceTokenAccountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",

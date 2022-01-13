@@ -1,15 +1,7 @@
-//
-//  FeeRelayerErrorTests.swift
-//  FeeRelayerSwift_Tests
-//
-//  Created by Chung Tran on 30/07/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import XCTest
 @testable import FeeRelayerSwift
 
-class FeeRelayerErrorTests: XCTestCase {
+class ErrorTests: XCTestCase {
     func testParsePubkeyError() throws {
         let string = #"{"code": 0, "message": "Wrong hash format \"ABC\": failed to decode string to hash", "data": {"ParsePubkeyError": ["ABC", "Invalid"]}}"#
         let data = string.data(using: .utf8)!

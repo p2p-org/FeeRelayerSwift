@@ -1,16 +1,8 @@
-//
-//  FeeRelayerCompensationEncodingTests.swift
-//  FeeRelayerSwift_Tests
-//
-//  Created by Chung Tran on 29/12/2021.
-//  Copyright © 2021 CocoaPods. All rights reserved.
-//
-
 import Foundation
 import XCTest
 import FeeRelayerSwift
 
-class FeeRelayerCompensationEncodingTests: XCTestCase {
+class CompensationEncodingTests: XCTestCase {
     func testEncodingSwapTokenParams() throws {
         let params = FeeRelayer.Compensation.SwapTokensParams(
             source: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
