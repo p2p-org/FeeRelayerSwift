@@ -38,6 +38,7 @@ extension FeeRelayer {
             sourceTokenMintAddress: String,
             destinationTokenAddress: String?,
             destinationTokenMintAddress: String,
+            pools: OrcaSwap.PoolsPair,
             inputAmount: UInt64,
             slippage: Double
         ) -> Single<[String]> {
@@ -72,10 +73,7 @@ extension FeeRelayer {
                 .flatMap { [weak self] minimumTokenAccountBalance, feePayerAddress, lamportsPerSignature, availableSwapPools, relayAccountStatus in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
-                    // Get best poolpairs for swapping
-                    guard let pools = try self.orcaSwapClient.findBestPoolsPairForInputAmount(inputAmount, from: availableSwapPools)
-                    else { throw FeeRelayer.Error.swapPoolsNotFound }
-                    
+                    // get transit token mint
                     let transitTokenMintPubkey: SolanaSDK.PublicKey?
                     if pools.count == 2 {
                         let interTokenName = pools[0].tokenBName
@@ -107,7 +105,7 @@ extension FeeRelayer {
                         }
                     }
                     
-                    // STEP 1: Calculate swapping fee
+                    // STEP 1: Calculate swapping fee and forming transaction
                     let swappingFee = try self.calculateSwappingFee(
                         network: self.solanaClient.endpoint.network,
                         userSourceTokenAccountAddress: userSourceTokenAccountAddress,
@@ -132,7 +130,24 @@ extension FeeRelayer {
                        relayAccountBalance >= swappingFee
                     {
                         // STEP 2.1.1: Swap
-                        
+                        return try self.swap(
+                            network: self.solanaClient.endpoint.network,
+                            owner: owner,
+                            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                            userDestinationAddress: userDestinationAddress,
+                            sourceTokenMintAddress: sourceTokenMintAddress,
+                            destinationTokenMintAddress: destinationTokenMintAddress,
+                            userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
+                            pools: pools,
+                            inputAmount: inputAmount,
+                            slippage: slippage,
+                            transitTokenMintPubkey: transitTokenMintPubkey,
+                            feeAmount: swappingFee,
+                            minimumTokenAccountBalance: minimumTokenAccountBalance,
+                            needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
+                            feePayerAddress: feePayerAddress,
+                            lamportsPerSignature: lamportsPerSignature
+                        )
                     }
                     // STEP 2.2: Else
                     else {
@@ -234,19 +249,12 @@ extension FeeRelayer {
                         lamportsPerSignature: lamportsPerSignature
                     )
                     
-                    var transaction = topUpTransaction.transaction
-                    
                     // STEP 4: send transaction
-                    try transaction.sign(signers: [owner, topUpTransaction.transferAuthorityAccount])
-                    guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature,
-                          let transferAuthoritySignatureData = transaction.findSignature(pubkey: topUpTransaction.transferAuthorityAccount.publicKey)?.signature
-                    else {
-                        throw FeeRelayer.Error.invalidSignature
-                    }
-                    
-                    let ownerSignature = Base58.encode(ownerSignatureData.bytes)
-                    let transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
-                    
+                    let signatures = try self.getSignatures(
+                        transaction: topUpTransaction.transaction,
+                        owner: owner,
+                        transferAuthorityAccount: topUpTransaction.transferAuthorityAccount
+                    )
                     return self.apiClient.sendTransaction(
                         .relayTopUp(
                             .init(
@@ -255,10 +263,7 @@ extension FeeRelayer {
                                 userAuthorityPubkey: owner.publicKey.base58EncodedString,
                                 topUpSwap: topUpTransaction.swapData,
                                 feeAmount: topUpFee,
-                                signatures: .init(
-                                    userAuthoritySignature: ownerSignature,
-                                    transferAuthoritySignature: transferAuthoritySignature
-                                ),
+                                signatures: signatures,
                                 blockhash: recentBlockhash
                             )
                         ),
@@ -266,6 +271,84 @@ extension FeeRelayer {
                     )
                 }
                 .observe(on: MainScheduler.instance)
+        }
+        
+        /// Submits a signed token swap transaction to the backend for processing
+        func swap(
+            network: SolanaSDK.Network,
+            owner: SolanaSDK.Account,
+            userSourceTokenAccountAddress: String,
+            userDestinationAddress: String,
+            sourceTokenMintAddress: String,
+            destinationTokenMintAddress: String,
+            userDestinationAccountOwnerAddress: String?,
+            
+            pools: OrcaSwap.PoolsPair,
+            inputAmount: UInt64,
+            slippage: Double,
+            transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
+            
+            feeAmount: UInt64,
+            minimumTokenAccountBalance: UInt64,
+            needsCreateDestinationTokenAccount: Bool,
+            feePayerAddress: String,
+            lamportsPerSignature: UInt64
+        ) throws -> Single<[String]> {
+            solanaClient.getRecentBlockhash(commitment: nil)
+                .flatMap { [weak self] blockhash in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    let swapTransaction = try self.prepareForSwapping(
+                        network: self.solanaClient.endpoint.network,
+                        userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                        userDestinationAddress: userDestinationAddress,
+                        sourceTokenMintAddress: sourceTokenMintAddress,
+                        destinationTokenMintAddress: destinationTokenMintAddress,
+                        userAuthorityAddress: owner.publicKey,
+                        userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
+                        pools: pools,
+                        inputAmount: inputAmount,
+                        slippage: slippage,
+                        transitTokenMintPubkey: transitTokenMintPubkey,
+                        feeAmount: feeAmount,
+                        blockhash: blockhash,
+                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
+                        feePayerAddress: feePayerAddress,
+                        lamportsPerSignature: lamportsPerSignature
+                    )
+                    
+                    let signatures = try self.getSignatures(
+                        transaction: swapTransaction.transaction,
+                        owner: owner,
+                        transferAuthorityAccount: swapTransaction.transferAuthorityAccount
+                    )
+                    
+                    return self.apiClient.sendTransaction(
+                        .relayTopUp(<#T##TopUpParams#>),
+                        decodedTo: [String].self
+                    )
+                }
+        }
+        
+        /// Send swap transaction to server
+        private func getSignatures(
+            transaction: SolanaSDK.Transaction,
+            owner: SolanaSDK.Account,
+            transferAuthorityAccount: SolanaSDK.Account
+        ) throws -> SwapTransactionSignatures {
+            var transaction = transaction
+            
+            try transaction.sign(signers: [owner, transferAuthorityAccount])
+            guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature,
+                  let transferAuthoritySignatureData = transaction.findSignature(pubkey: transferAuthorityAccount.publicKey)?.signature
+            else {
+                throw FeeRelayer.Error.invalidSignature
+            }
+            
+            let ownerSignature = Base58.encode(ownerSignatureData.bytes)
+            let transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
+            
+            return .init(userAuthoritySignature: ownerSignature, transferAuthoritySignature: transferAuthoritySignature)
         }
     }
 }
