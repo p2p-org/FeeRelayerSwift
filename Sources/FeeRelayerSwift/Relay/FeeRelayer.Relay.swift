@@ -38,7 +38,8 @@ extension FeeRelayer {
             sourceTokenMintAddress: String,
             destinationTokenAddress: String?,
             destinationTokenMintAddress: String,
-            inputAmount: UInt64
+            inputAmount: UInt64,
+            slippage: Double
         ) -> Single<[String]> {
             // get owner
             guard let owner = accountStorage.account else {
@@ -117,6 +118,7 @@ extension FeeRelayer {
                         userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
                         pools: pools,
                         inputAmount: inputAmount,
+                        slippage: slippage,
                         transitTokenMintPubkey: transitTokenMintPubkey,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
                         needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,

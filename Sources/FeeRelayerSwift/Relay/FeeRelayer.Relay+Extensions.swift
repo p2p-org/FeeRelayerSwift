@@ -16,11 +16,11 @@ extension FeeRelayer.Relay {
         network: SolanaSDK.Network,
         pools: OrcaSwap.PoolsPair,
         amount: UInt64,
+        slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
-        let defaultSlippage = 0.01
         
         // create transferAuthority
         let transferAuthority = try SolanaSDK.Account(network: network)
@@ -29,7 +29,7 @@ extension FeeRelayer.Relay {
         if pools.count == 1 {
             let pool = pools[0]
             
-            guard let amountIn = try pool.getInputAmount(minimumReceiveAmount: amount, slippage: defaultSlippage) else {
+            guard let amountIn = try pool.getInputAmount(minimumReceiveAmount: amount, slippage: slippage) else {
                 throw FeeRelayer.Error.invalidAmount
             }
             
@@ -44,8 +44,8 @@ extension FeeRelayer.Relay {
             let secondPool = pools[1]
             
             guard let transitTokenMintPubkey = transitTokenMintPubkey,
-                  let secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: amount, slippage: defaultSlippage),
-                  let firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn, slippage: defaultSlippage)
+                  let secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: amount, slippage: slippage),
+                  let firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn, slippage: slippage)
             else {
                 throw FeeRelayer.Error.transitTokenMintNotFound
             }
@@ -146,7 +146,7 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
-        let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, amount: amount, transitTokenMintPubkey: transitTokenMintPubkey)
+        let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, amount: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
         switch topUpSwap.swapData {
         case let swap as DirectSwapData:
             expectedFee.accountBalances += minimumTokenAccountBalance
@@ -265,6 +265,7 @@ extension FeeRelayer.Relay {
         
         pools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
+        slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         
         minimumTokenAccountBalance: UInt64,
@@ -282,6 +283,7 @@ extension FeeRelayer.Relay {
             userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
             pools: pools,
             inputAmount: inputAmount,
+            slippage: slippage,
             transitTokenMintPubkey: transitTokenMintPubkey,
             feeAmount: 0, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", //fake
@@ -304,6 +306,7 @@ extension FeeRelayer.Relay {
         
         pools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
+        slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         
         feeAmount: UInt64,
@@ -347,7 +350,7 @@ extension FeeRelayer.Relay {
         }
         
         // swap
-        let swap = try prepareSwapData(network: network, pools: pools, amount: inputAmount, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(network: network, pools: pools, amount: inputAmount, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
         let userTransferAuthority = swap.transferAuthorityAccount.publicKey
         
         switch swap.swapData {
