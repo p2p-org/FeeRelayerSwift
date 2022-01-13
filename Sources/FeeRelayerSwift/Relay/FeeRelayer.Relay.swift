@@ -73,7 +73,7 @@ extension FeeRelayer {
                 .flatMap { [weak self] minimumTokenAccountBalance, feePayerAddress, lamportsPerSignature, availableSwapPools, relayAccountStatus in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
-                    // get transit token mint
+                    // get transit token mint (intermediary token in transitive swap, or nil in direct swap)
                     let transitTokenMintPubkey: SolanaSDK.PublicKey?
                     if pools.count == 2 {
                         let interTokenName = pools[0].tokenBName
@@ -88,15 +88,19 @@ extension FeeRelayer {
                     let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
                     
                     if owner.publicKey.base58EncodedString == destinationAddress {
+                        // Swap to native SOL account
                         userDestinationAccountOwnerAddress = owner.publicKey
                         needsCreateDestinationTokenAccount = true
                         userDestinationAddress = owner.publicKey.base58EncodedString // placeholder, ignore it
                     } else {
+                        // Swap to other SPL
                         userDestinationAccountOwnerAddress = nil
                         if let address = destinationAddress {
+                            // SPL token has ALREADY been created
                             userDestinationAddress = address
                             needsCreateDestinationTokenAccount = false
                         } else {
+                            // SPL token has NOT been created
                             userDestinationAddress = try SolanaSDK.PublicKey.associatedTokenAddress(
                                 walletAddress: owner.publicKey,
                                 tokenMintAddress: try SolanaSDK.PublicKey(string: destinationTokenMint)
@@ -104,6 +108,7 @@ extension FeeRelayer {
                             needsCreateDestinationTokenAccount = true
                         }
                     }
+                    
                     let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
                     
                     // STEP 1: Calculate swapping fee and forming transaction
@@ -123,12 +128,9 @@ extension FeeRelayer {
                         lamportsPerSignature: lamportsPerSignature
                     )
                     
-                    // STEP 2: Check if relay account has already had enough balance to cover swapping fee
-                    // STEP 2.1: If relay account has enough balance to cover swapping fee
-                    if let relayAccountBalance = relayAccountStatus.balance,
-                       relayAccountBalance >= swappingFee
-                    {
-                        // STEP 2.1.1: Swap
+                    // prepare handler
+                    let swap: () -> Single<[String]> = { [weak self] in
+                        guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                         return self.swap(
                             network: self.solanaClient.endpoint.network,
                             owner: owner,
@@ -146,6 +148,15 @@ extension FeeRelayer {
                             lamportsPerSignature: lamportsPerSignature
                         )
                     }
+                    
+                    // STEP 2: Check if relay account has already had enough balance to cover swapping fee
+                    // STEP 2.1: If relay account has enough balance to cover swapping fee
+                    if let relayAccountBalance = relayAccountStatus.balance,
+                       relayAccountBalance >= swappingFee
+                    {
+                        // STEP 2.1.1: Swap
+                        return swap()
+                    }
                     // STEP 2.2: Else
                     else {
                         // Get needed amount
@@ -162,24 +173,7 @@ extension FeeRelayer {
                             lamportsPerSignature: lamportsPerSignature
                         )
                         // STEP 2.2.2: Swap
-                            .flatMap {_ in
-                                self.swap(
-                                    network: self.solanaClient.endpoint.network,
-                                    owner: owner,
-                                    sourceToken: sourceToken,
-                                    destinationToken: destinationToken,
-                                    userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
-                                    pools: pools,
-                                    inputAmount: inputAmount,
-                                    slippage: slippage,
-                                    transitTokenMintPubkey: transitTokenMintPubkey,
-                                    feeAmount: swappingFee,
-                                    minimumTokenAccountBalance: minimumTokenAccountBalance,
-                                    needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-                                    feePayerAddress: feePayerAddress,
-                                    lamportsPerSignature: lamportsPerSignature
-                                )
-                            }
+                            .flatMap {_ in swap()}
                     }
                 }
         }
