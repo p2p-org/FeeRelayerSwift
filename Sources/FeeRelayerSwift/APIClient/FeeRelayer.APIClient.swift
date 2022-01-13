@@ -11,7 +11,7 @@ import RxAlamofire
 import Alamofire
 
 public protocol FeeRelayerAPIClientType {
-    func getFeePayerPubkey() -> Single<String>
+    func getFeePayerPubkey(version: Int) -> Single<String>
     func sendTransaction(
         _ requestType: FeeRelayer.RequestType
     ) -> Single<String>
@@ -30,9 +30,14 @@ extension FeeRelayer {
         // MARK: - Methods
         /// Get fee payer for free transaction
         /// - Returns: Account's public key that is responsible for paying fee
-        public func getFeePayerPubkey() -> Single<String>
+        public func getFeePayerPubkey(version: Int) -> Single<String>
         {
-            request(.get, "\(FeeRelayer.feeRelayerUrl)/fee_payer/pubkey")
+            var url = FeeRelayer.feeRelayerUrl
+            if version > 1 {
+                url += "/v\(version)"
+            }
+            url += "/fee_payer/pubkey"
+            return request(.get, url)
                 .responseStringCatchFeeRelayerError()
         }
         

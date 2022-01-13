@@ -4,7 +4,7 @@ import SolanaSwift
 import FeeRelayerSwift
 import RxSwift
 
-class RelayTopUpAndSwapTests: XCTestCase {
+class RelayTests: XCTestCase {
     private var relayService: FeeRelayer.Relay!
 
     override func setUpWithError() throws {

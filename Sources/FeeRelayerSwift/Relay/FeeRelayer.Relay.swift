@@ -83,7 +83,7 @@ extension FeeRelayer {
                 // get minimum token account balance
                 solanaClient.getMinimumBalanceForRentExemption(span: 165),
                 // get fee payer address
-                apiClient.getFeePayerPubkey(),
+                apiClient.getFeePayerPubkey(version: 2),
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
                 // get topup pools
