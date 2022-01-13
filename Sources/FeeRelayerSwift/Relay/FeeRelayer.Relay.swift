@@ -91,7 +91,7 @@ extension FeeRelayer {
                     if owner.publicKey.base58EncodedString == destinationTokenAddress {
                         userDestinationAccountOwnerAddress = owner.publicKey
                         needsCreateDestinationTokenAccount = true
-                        userDestinationAddress = owner.publicKey.base58EncodedString // placeholder, can ignore
+                        userDestinationAddress = owner.publicKey.base58EncodedString // placeholder, ignore it
                     } else {
                         userDestinationAccountOwnerAddress = nil
                         if let address = destinationTokenAddress {
@@ -127,7 +127,8 @@ extension FeeRelayer {
                     // STEP 2: Check if relay account has already had enough balance to cover swapping fee
                     // STEP 2.1: If relay account has enough balance to cover swapping fee
                     if let relayAccountBalance = relayAccountStatus.balance,
-                       relayAccountBalance >= swappingFee {
+                       relayAccountBalance >= swappingFee
+                    {
                         // STEP 2.1.1: Swap
                         
                     }
