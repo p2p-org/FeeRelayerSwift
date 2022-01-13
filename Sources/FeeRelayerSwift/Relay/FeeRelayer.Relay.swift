@@ -9,10 +9,31 @@ import Foundation
 import RxSwift
 import SolanaSwift
 
-public protocol FeeRelayerRelayType {}
+public protocol FeeRelayerRelayType {
+    /// Top up relay account (if needed) and swap
+    /// STEP 0: Prepare pools and needed fee calculator
+    /// STEP 1: Calculate swapping fee
+        // STEP 1.1: Check free fee supported or not
+    /// STEP 2: Check if relay account has already had enough balance to cover swapping fee
+        /// STEP 2.1: If relay account has not been created or has not have enough balance, do top up
+            /// STEP 2.1.1: Top up with needed amount
+            /// STEP 2.1.2: Swap
+        /// STEP 2.2: Else, skip top up
+            /// STEP 2.2.1: Swap
+    /// - Returns: Array of strings contain transactions' signatures
+    func topUpAndSwap(
+        sourceToken: FeeRelayer.Relay.TokenInfo,
+        destinationTokenMint: String,
+        destinationAddress: String?,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo,
+        pools: OrcaSwap.PoolsPair,
+        inputAmount: UInt64,
+        slippage: Double
+    ) -> Single<[String]>
+}
 
 extension FeeRelayer {
-    public class Relay {
+    public class Relay: FeeRelayerRelayType {
         // MARK: - Properties
         private let apiClient: FeeRelayerAPIClientType
         private let solanaClient: FeeRelayerRelaySolanaClient
@@ -52,7 +73,7 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.unsupportedSwap)
             }
             
-            // get relay account
+            // get relay account (account that will hold the SOL for paying fee after topping up)
             guard let userRelayAddress = try? Program.getUserRelayAddress(user: owner.publicKey) else {
                 return .error(FeeRelayer.Error.wrongAddress)
             }
@@ -391,5 +412,3 @@ extension FeeRelayer {
         }
     }
 }
-
-extension FeeRelayer.Relay: FeeRelayerRelayType {}
