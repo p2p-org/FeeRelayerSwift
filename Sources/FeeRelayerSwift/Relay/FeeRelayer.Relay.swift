@@ -278,7 +278,7 @@ extension FeeRelayer {
                         transferAuthorityAccount: topUpTransaction.transferAuthorityAccount
                     )
                     return self.apiClient.sendTransaction(
-                        .relayTopUp(
+                        .relayTopUpWithSwap(
                             .init(
                                 userSourceTokenAccountPubkey: sourceToken.address,
                                 sourceTokenMintPubkey: sourceToken.mint,
@@ -342,7 +342,18 @@ extension FeeRelayer {
                     )
                     
                     return self.apiClient.sendTransaction(
-                        .relayTopUp(<#T##TopUpParams#>),
+                        .relaySwap(.init(
+                            userSourceTokenAccountPubkey: sourceToken.address,
+                            userDestinationPubkey: destinationToken.address,
+                            userDestinationAccountOwner: userDestinationAccountOwnerAddress,
+                            sourceTokenMintPubkey: sourceToken.mint,
+                            destinationTokenMintPubkey: destinationToken.mint,
+                            userAuthorityPubkey: owner.publicKey.base58EncodedString,
+                            userSwap: swapTransaction.swapData,
+                            feeAmount: feeAmount,
+                            signatures: signatures,
+                            blockhash: blockhash
+                        )),
                         decodedTo: [String].self
                     )
                 }
