@@ -40,7 +40,8 @@ extension FeeRelayer {
             destinationTokenMintAddress: String,
             pools: OrcaSwap.PoolsPair,
             inputAmount: UInt64,
-            slippage: Double
+            slippage: Double,
+            payingFeeToken: PayingFeeToken
         ) -> Single<[String]> {
             // get owner
             guard let owner = accountStorage.account else {
@@ -130,7 +131,7 @@ extension FeeRelayer {
                        relayAccountBalance >= swappingFee
                     {
                         // STEP 2.1.1: Swap
-                        return try self.swap(
+                        return self.swap(
                             network: self.solanaClient.endpoint.network,
                             owner: owner,
                             userSourceTokenAccountAddress: userSourceTokenAccountAddress,
@@ -151,9 +152,41 @@ extension FeeRelayer {
                     }
                     // STEP 2.2: Else
                     else {
-                        // STEP 2.2.1: Top up
+                        // Get needed amount
+                        let topUpAmount = swappingFee - (relayAccountStatus.balance ?? 0)
                         
+                        // STEP 2.2.1: Top up
+                        return self.topUp(
+                            owner: owner,
+                            userRelayAddress: userRelayAddress,
+                            userSourceTokenAccountAddress: payingFeeToken.address,
+                            sourceTokenMintAddress: payingFeeToken.mint,
+                            amount: topUpAmount,
+                            minimumTokenAccountBalance: minimumTokenAccountBalance,
+                            feePayerAddress: feePayerAddress,
+                            lamportsPerSignature: lamportsPerSignature
+                        )
                         // STEP 2.2.2: Swap
+                            .flatMap {_ in
+                                self.swap(
+                                    network: self.solanaClient.endpoint.network,
+                                    owner: owner,
+                                    userSourceTokenAccountAddress: userSourceTokenAccountAddress,
+                                    userDestinationAddress: userDestinationAddress,
+                                    sourceTokenMintAddress: sourceTokenMintAddress,
+                                    destinationTokenMintAddress: destinationTokenMintAddress,
+                                    userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
+                                    pools: pools,
+                                    inputAmount: inputAmount,
+                                    slippage: slippage,
+                                    transitTokenMintPubkey: transitTokenMintPubkey,
+                                    feeAmount: swappingFee,
+                                    minimumTokenAccountBalance: minimumTokenAccountBalance,
+                                    needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
+                                    feePayerAddress: feePayerAddress,
+                                    lamportsPerSignature: lamportsPerSignature
+                                )
+                            }
                     }
                 }
         }
@@ -293,7 +326,7 @@ extension FeeRelayer {
             needsCreateDestinationTokenAccount: Bool,
             feePayerAddress: String,
             lamportsPerSignature: UInt64
-        ) throws -> Single<[String]> {
+        ) -> Single<[String]> {
             solanaClient.getRecentBlockhash(commitment: nil)
                 .flatMap { [weak self] blockhash in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
