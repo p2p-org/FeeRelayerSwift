@@ -34,7 +34,7 @@ extension FeeRelayer {
         
         // MARK: - Methods
         public func topUpAndSwap(
-            sourceToken: TokenInfo, // WARNING: currently does not support native SOL
+            sourceToken: TokenInfo,
             destinationTokenMint: String,
             destinationAddress: String?,
             payingFeeToken: TokenInfo,
@@ -45,6 +45,11 @@ extension FeeRelayer {
             // get owner
             guard let owner = accountStorage.account else {
                 return .error(FeeRelayer.Error.unauthorized)
+            }
+            
+            // TODO: Remove later, currently does not support swap from native SOL
+            guard sourceToken.address != owner.publicKey.base58EncodedString else {
+                return .error(FeeRelayer.Error.unsupportedSwap)
             }
             
             // get relay account

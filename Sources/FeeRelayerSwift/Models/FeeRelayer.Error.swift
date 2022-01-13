@@ -65,6 +65,10 @@ extension FeeRelayer {
             .init(code: 3, message: "Invalid signature", data: nil)
         }
         
+        public static var unsupportedSwap: Self {
+            .init(code: 3, message: "Unssuported swap", data: nil)
+        }
+        
         public static var unauthorized: Self {
             .init(code: 403, message: "Unauthorized", data: nil)
         }
