@@ -18,7 +18,7 @@ extension FeeRelayer {
     
     public struct RequestType {
         // MARK: - Properties
-        private let path: String
+        let path: String
         private let params: EncodableWrapper
         
         // MARK: - Initializer
@@ -28,10 +28,6 @@ extension FeeRelayer {
         }
         
         // MARK: - Getters
-        public var url: String {
-            FeeRelayer.feeRelayerUrl + path
-        }
-        
         public func getParams() throws -> Data {
             try JSONEncoder().encode(params)
         }
@@ -50,11 +46,11 @@ extension FeeRelayer {
         }
         
         public static func relayTopUpWithSwap(_ params: Relay.TopUpParams) -> RequestType {
-            .init(path: "/v2/relay_top_up_with_swap", params: params)
+            .init(path: "/relay_top_up_with_swap", params: params)
         }
         
         public static func relaySwap(_ params: Relay.SwapParams) -> RequestType {
-            .init(path: "/v2/relay_swap", params: params)
+            .init(path: "/relay_swap", params: params)
         }
         
         

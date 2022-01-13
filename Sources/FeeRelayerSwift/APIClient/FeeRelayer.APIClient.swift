@@ -13,10 +13,12 @@ import Alamofire
 public protocol FeeRelayerAPIClientType {
     func getFeePayerPubkey(version: Int) -> Single<String>
     func sendTransaction(
-        _ requestType: FeeRelayer.RequestType
+        _ requestType: FeeRelayer.RequestType,
+        version: Int
     ) -> Single<String>
     func sendTransaction<T: Decodable>(
         _ requestType: FeeRelayer.RequestType,
+        version: Int,
         decodedTo: T.Type
     ) -> Single<T>
 }
@@ -47,11 +49,13 @@ extension FeeRelayer {
         ///   - params: request's parameters
         /// - Returns: transaction id
         public func sendTransaction(
-            _ requestType: RequestType
+            _ requestType: RequestType,
+            version: Int
         ) -> Single<String> {
             do {
+                let url = FeeRelayer.feeRelayerUrl + "/v\(version)" + requestType.path
                 var urlRequest = try URLRequest(
-                    url: requestType.url,
+                    url: url,
                     method: .post,
                     headers: ["Content-Type": "application/json"]
                 )
@@ -66,11 +70,13 @@ extension FeeRelayer {
         
         public func sendTransaction<T: Decodable>(
             _ requestType: RequestType,
+            version: Int,
             decodedTo: T.Type
         ) -> Single<T> {
             do {
+                let url = FeeRelayer.feeRelayerUrl + "/v\(version)" + requestType.path
                 var urlRequest = try URLRequest(
-                    url: requestType.url,
+                    url: url,
                     method: .post,
                     headers: ["Content-Type": "application/json"]
                 )
