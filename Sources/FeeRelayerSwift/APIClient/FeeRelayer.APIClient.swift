@@ -74,7 +74,11 @@ extension FeeRelayer {
             decodedTo: T.Type
         ) -> Single<T> {
             do {
-                let url = FeeRelayer.feeRelayerUrl + "/v\(version)" + requestType.path
+                var url = FeeRelayer.feeRelayerUrl
+                if version > 1 {
+                    url += "/v\(version)"
+                }
+                url += requestType.path
                 var urlRequest = try URLRequest(
                     url: url,
                     method: .post,
