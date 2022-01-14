@@ -1,14 +1,14 @@
 import Foundation
 import XCTest
-import FeeRelayerSwift
+@testable import FeeRelayerSwift
 
 class RelayEncodingTests: XCTestCase {
     func testEncodingTopUpWithDirectSwapParams() throws {
-        let params = FeeRelayer.Relay.TopUpParams(
+        let params = FeeRelayer.Relay.TopUpWithSwapParams(
             userSourceTokenAccountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
             sourceTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             userAuthorityPubkey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
-            topUpSwap: createRelayDirectSwapParams(index: 0),
+            topUpSwap: .init(createRelayDirectSwapParams(index: 0)),
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"
@@ -21,15 +21,15 @@ class RelayEncodingTests: XCTestCase {
     }
     
     func testEncodingTopUpWithTransitiveSwapParams() throws {
-        let params = FeeRelayer.Relay.TopUpParams(
+        let params = FeeRelayer.Relay.TopUpWithSwapParams(
             userSourceTokenAccountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
             sourceTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             userAuthorityPubkey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
-            topUpSwap: FeeRelayer.Relay.TransitiveSwapData(
+            topUpSwap: .init(FeeRelayer.Relay.TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
                 transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
-            ),
+            )),
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"
@@ -49,7 +49,7 @@ class RelayEncodingTests: XCTestCase {
             sourceTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             destinationTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             userAuthorityPubkey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
-            userSwap: createRelayDirectSwapParams(index: 0),
+            userSwap: .init(createRelayDirectSwapParams(index: 0)),
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"
@@ -69,11 +69,11 @@ class RelayEncodingTests: XCTestCase {
             sourceTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             destinationTokenMintPubkey: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
             userAuthorityPubkey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
-            userSwap: FeeRelayer.Relay.TransitiveSwapData(
+            userSwap: .init(FeeRelayer.Relay.TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
                 transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
-            ),
+            )),
             feeAmount: 50000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"

@@ -329,7 +329,7 @@ extension FeeRelayer {
                                 userSourceTokenAccountPubkey: sourceToken.address,
                                 sourceTokenMintPubkey: sourceToken.mint,
                                 userAuthorityPubkey: owner.publicKey.base58EncodedString,
-                                topUpSwap: topUpTransaction.swapData,
+                                topUpSwap: .init(topUpTransaction.swapData),
                                 feeAmount: topUpFee,
                                 signatures: signatures,
                                 blockhash: recentBlockhash
@@ -397,7 +397,7 @@ extension FeeRelayer {
                             sourceTokenMintPubkey: sourceToken.mint,
                             destinationTokenMintPubkey: destinationToken.mint,
                             userAuthorityPubkey: owner.publicKey.base58EncodedString,
-                            userSwap: swapTransaction.swapData,
+                            userSwap: .init(swapTransaction.swapData),
                             feeAmount: feeAmount,
                             signatures: signatures,
                             blockhash: blockhash

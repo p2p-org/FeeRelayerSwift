@@ -12,24 +12,14 @@ public protocol FeeRelayerRelaySwapType: Encodable {}
 
 extension FeeRelayer.Relay {
     // MARK: - Top up
-    public struct TopUpParams: Encodable {
+    public struct TopUpWithSwapParams: Encodable {
         let userSourceTokenAccountPubkey: String
         let sourceTokenMintPubkey: String
         let userAuthorityPubkey: String
-        let topUpSwap: FeeRelayerRelaySwapType
+        let topUpSwap: SwapData
         let feeAmount:  UInt64
         let signatures: SwapTransactionSignatures
         let blockhash:  String
-        
-        public init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayerRelaySwapType, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String) {
-            self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
-            self.sourceTokenMintPubkey = sourceTokenMintPubkey
-            self.userAuthorityPubkey = userAuthorityPubkey
-            self.topUpSwap = topUpSwap
-            self.feeAmount = feeAmount
-            self.signatures = signatures
-            self.blockhash = blockhash
-        }
         
         enum CodingKeys: String, CodingKey {
             case userSourceTokenAccountPubkey = "user_source_token_account_pubkey"
@@ -39,24 +29,6 @@ extension FeeRelayer.Relay {
             case feeAmount = "fee_amount"
             case signatures = "signatures"
             case blockhash = "blockhash"
-        }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(userSourceTokenAccountPubkey, forKey: .userSourceTokenAccountPubkey)
-            try container.encode(sourceTokenMintPubkey, forKey: .sourceTokenMintPubkey)
-            try container.encode(userAuthorityPubkey, forKey: .userAuthorityPubkey)
-            switch topUpSwap {
-            case let swap as DirectSwapData:
-                try container.encode(swap, forKey: .topUpSwap)
-            case let swap as TransitiveSwapData:
-                try container.encode(swap, forKey: .topUpSwap)
-            default:
-                fatalError("unsupported swap type")
-            }
-            try container.encode(feeAmount, forKey: .feeAmount)
-            try container.encode(signatures, forKey: .signatures)
-            try container.encode(blockhash, forKey: .blockhash)
         }
     }
     
@@ -68,23 +40,10 @@ extension FeeRelayer.Relay {
         let sourceTokenMintPubkey: String
         let destinationTokenMintPubkey: String
         let userAuthorityPubkey: String
-        let userSwap: FeeRelayerRelaySwapType
+        let userSwap: SwapData
         let feeAmount: UInt64
         let signatures: SwapTransactionSignatures
         let blockhash: String
-        
-        public init(userSourceTokenAccountPubkey: String, userDestinationPubkey: String, userDestinationAccountOwner: String?, sourceTokenMintPubkey: String, destinationTokenMintPubkey: String, userAuthorityPubkey: String, userSwap: FeeRelayerRelaySwapType, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String) {
-            self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
-            self.userDestinationPubkey = userDestinationPubkey
-            self.userDestinationAccountOwner = userDestinationAccountOwner
-            self.sourceTokenMintPubkey = sourceTokenMintPubkey
-            self.destinationTokenMintPubkey = destinationTokenMintPubkey
-            self.userAuthorityPubkey = userAuthorityPubkey
-            self.userSwap = userSwap
-            self.feeAmount = feeAmount
-            self.signatures = signatures
-            self.blockhash = blockhash
-        }
         
         enum CodingKeys: String, CodingKey {
             case userSourceTokenAccountPubkey = "user_source_token_account_pubkey"
@@ -98,29 +57,27 @@ extension FeeRelayer.Relay {
             case signatures = "signatures"
             case blockhash = "blockhash"
         }
-        
-        public func encode(to encoder: Encoder) throws {
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(userSourceTokenAccountPubkey, forKey: .userSourceTokenAccountPubkey)
-            try container.encode(userDestinationPubkey, forKey: .userDestinationPubkey)
-            try container.encode(sourceTokenMintPubkey, forKey: .sourceTokenMintPubkey)
-            try container.encode(destinationTokenMintPubkey, forKey: .destinationTokenMintPubkey)
-            try container.encode(userAuthorityPubkey, forKey: .userAuthorityPubkey)
-            switch userSwap {
-            case let swap as DirectSwapData:
-                try container.encode(swap, forKey: .userSwap)
-            case let swap as TransitiveSwapData:
-                try container.encode(swap, forKey: .userSwap)
-            default:
-                fatalError("unsupported swap type")
-            }
-            try container.encode(feeAmount, forKey: .feeAmount)
-            try container.encode(signatures, forKey: .signatures)
-            try container.encode(blockhash, forKey: .blockhash)
-        }
     }
     
     // MARK: - Swap data
+    public struct SwapData: Encodable {
+        public init(_ swap: FeeRelayerRelaySwapType) {
+            switch swap {
+            case let swap as DirectSwapData:
+                self.Spl = swap
+                self.SplTransitive = nil
+            case let swap as TransitiveSwapData:
+                self.Spl = nil
+                self.SplTransitive = swap
+            default:
+                fatalError("unsupported swap type")
+            }
+        }
+        
+        public let Spl: DirectSwapData?
+        public let SplTransitive: TransitiveSwapData?
+    }
+    
     public struct TransitiveSwapData: FeeRelayerRelaySwapType {
         let from: DirectSwapData
         let to: DirectSwapData

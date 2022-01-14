@@ -45,7 +45,7 @@ extension FeeRelayer {
             .init(path: "/swap_spl_token_with_fee_compensation", params: params)
         }
         
-        public static func relayTopUpWithSwap(_ params: Relay.TopUpParams) -> RequestType {
+        public static func relayTopUpWithSwap(_ params: Relay.TopUpWithSwapParams) -> RequestType {
             .init(path: "/relay_top_up_with_swap", params: params)
         }
         
