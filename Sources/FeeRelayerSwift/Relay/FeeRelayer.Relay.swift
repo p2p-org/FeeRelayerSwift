@@ -265,7 +265,7 @@ extension FeeRelayer {
                     )
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] needsCreateUserRelayAccount, minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
+                .flatMap { [weak self] isRelayAccountValid, minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // Get best poolpairs for swapping
@@ -291,7 +291,7 @@ extension FeeRelayer {
                         transitTokenMintPubkey: transitTokenMintPubkey,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
-                        needsCreateUserRelayAccount: needsCreateUserRelayAccount,
+                        needsCreateUserRelayAccount: !isRelayAccountValid,
                         feePayerAddress: feePayerAddress,
                         lamportsPerSignature: lamportsPerSignature
                     )
@@ -312,7 +312,7 @@ extension FeeRelayer {
                         blockhash: recentBlockhash,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
-                        needsCreateUserRelayAccount: needsCreateUserRelayAccount,
+                        needsCreateUserRelayAccount: !isRelayAccountValid,
                         feePayerAddress: feePayerAddress,
                         lamportsPerSignature: lamportsPerSignature
                     )
