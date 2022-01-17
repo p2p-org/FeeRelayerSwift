@@ -3,13 +3,14 @@ import FeeRelayerSwift
 import RxBlocking
 
 class APIClientTests: XCTestCase {
-    let feeRelayer = FeeRelayer.APIClient()
     
     func testGetFeeRelayerPubkey() throws {
-        let result = try feeRelayer.getFeePayerPubkey(version: 1).toBlocking().first()
+        var feeRelayer = FeeRelayer.APIClient(version: 1)
+        let result = try feeRelayer.getFeePayerPubkey().toBlocking().first()
         XCTAssertEqual(result?.isEmpty, false)
         
-        let result2 = try feeRelayer.getFeePayerPubkey(version: 2).toBlocking().first()
+        feeRelayer = FeeRelayer.APIClient(version: 2)
+        let result2 = try feeRelayer.getFeePayerPubkey().toBlocking().first()
         XCTAssertEqual(result2?.isEmpty, false)
         
         XCTAssertNotEqual(result, result2)

@@ -22,7 +22,6 @@ public protocol FeeRelayerRelayType {
             /// STEP 2.2.1: Swap
     /// - Returns: Array of strings contain transactions' signatures
     func topUpAndSwap(
-        apiVersion: Int,
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
@@ -56,7 +55,6 @@ extension FeeRelayer {
         
         // MARK: - Methods
         public func topUpAndSwap(
-            apiVersion: Int,
             sourceToken: TokenInfo,
             destinationTokenMint: String,
             destinationAddress: String?,
@@ -85,7 +83,7 @@ extension FeeRelayer {
                 // get minimum token account balance
                 solanaClient.getMinimumBalanceForRentExemption(span: 165),
                 // get fee payer address
-                apiClient.getFeePayerPubkey(version: apiVersion),
+                apiClient.getFeePayerPubkey(),
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
                 // get topup pools
@@ -160,7 +158,6 @@ extension FeeRelayer {
                     let swap: () -> Single<[String]> = { [weak self] in
                         guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                         return self.swap(
-                            apiVersion: apiVersion,
                             network: self.solanaClient.endpoint.network,
                             owner: owner,
                             sourceToken: sourceToken,
@@ -193,7 +190,6 @@ extension FeeRelayer {
                         
                         // STEP 2.2.1: Top up
                         return self.topUp(
-                            apiVersion: apiVersion,
                             owner: owner,
                             userRelayAddress: userRelayAddress,
                             sourceToken: payingFeeToken,
@@ -210,7 +206,6 @@ extension FeeRelayer {
         
         /// Submits a signed top up swap transaction to the backend for processing
         func topUp(
-            apiVersion: Int,
             owner: SolanaSDK.Account,
             userRelayAddress: SolanaSDK.PublicKey,
             sourceToken: TokenInfo,
@@ -302,7 +297,6 @@ extension FeeRelayer {
                                 blockhash: recentBlockhash
                             )
                         ),
-                        version: apiVersion,
                         decodedTo: [String].self
                     )
                 }
@@ -311,7 +305,6 @@ extension FeeRelayer {
         
         /// Submits a signed token swap transaction to the backend for processing
         func swap(
-            apiVersion: Int,
             network: SolanaSDK.Network,
             owner: SolanaSDK.Account,
             sourceToken: TokenInfo,
@@ -369,7 +362,6 @@ extension FeeRelayer {
                             signatures: signatures,
                             blockhash: blockhash
                         )),
-                        version: apiVersion,
                         decodedTo: [String].self
                     )
                 }

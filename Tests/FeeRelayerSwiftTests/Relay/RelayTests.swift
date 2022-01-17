@@ -24,7 +24,7 @@ class RelayTests: XCTestCase {
         )
         
         relayService = .init(
-            apiClient: FeeRelayer.APIClient(),
+            apiClient: FeeRelayer.APIClient(version: 1),
             solanaClient: solanaClient,
             accountStorage: accountStorage,
             orcaSwapClient: orcaSwap
@@ -53,7 +53,6 @@ class RelayTests: XCTestCase {
         
         // request
         _ = try relayService.topUpAndSwap(
-            apiVersion: 1,
             sourceToken: .init(
                 address: testInfo.sourceAddress,
                 mint: testInfo.fromMint

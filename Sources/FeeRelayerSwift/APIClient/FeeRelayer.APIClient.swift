@@ -11,28 +11,27 @@ import RxAlamofire
 import Alamofire
 
 public protocol FeeRelayerAPIClientType {
-    func getFeePayerPubkey(version: Int) -> Single<String>
-    func sendTransaction(
-        _ requestType: FeeRelayer.RequestType,
-        version: Int
-    ) -> Single<String>
-    func sendTransaction<T: Decodable>(
-        _ requestType: FeeRelayer.RequestType,
-        version: Int,
-        decodedTo: T.Type
-    ) -> Single<T>
+    var version: Int {get}
+    func getFeePayerPubkey() -> Single<String>
+    func sendTransaction(_ requestType: FeeRelayer.RequestType) -> Single<String>
+    func sendTransaction<T: Decodable>(_ requestType: FeeRelayer.RequestType, decodedTo: T.Type) -> Single<T>
 }
 
 
 extension FeeRelayer {
     public struct APIClient: FeeRelayerAPIClientType {
+        // MARK: - Properties
+        public  let version: Int
+        
         // MARK: - Initializers
-        public init() {}
+        public init(version: Int) {
+            self.version = version
+        }
         
         // MARK: - Methods
         /// Get fee payer for free transaction
         /// - Returns: Account's public key that is responsible for paying fee
-        public func getFeePayerPubkey(version: Int) -> Single<String>
+        public func getFeePayerPubkey() -> Single<String>
         {
             var url = FeeRelayer.feeRelayerUrl
             if version > 1 {
@@ -48,10 +47,7 @@ extension FeeRelayer {
         ///   - path: additional path for request
         ///   - params: request's parameters
         /// - Returns: transaction id
-        public func sendTransaction(
-            _ requestType: RequestType,
-            version: Int
-        ) -> Single<String> {
+        public func sendTransaction(_ requestType: RequestType) -> Single<String> {
             do {
                 let url = FeeRelayer.feeRelayerUrl + "/v\(version)" + requestType.path
                 var urlRequest = try URLRequest(
@@ -70,7 +66,6 @@ extension FeeRelayer {
         
         public func sendTransaction<T: Decodable>(
             _ requestType: RequestType,
-            version: Int,
             decodedTo: T.Type
         ) -> Single<T> {
             do {
