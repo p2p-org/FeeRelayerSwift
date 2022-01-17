@@ -375,6 +375,7 @@ extension FeeRelayer.Relay {
                 ],
                 programId: Program.id(network: network),
                 data: [
+                    UInt8(4),
                     amountIn,
                     transitMinimumAmount,
                     minimumAmountOut
