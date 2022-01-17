@@ -9,13 +9,13 @@ class RelaySolanaClientTests: XCTestCase {
     }
     
     func testGetRelayAccountStatusNotYetCreated() throws {
-        let relayAccount = try FeeRelayer.Relay.Program.getUserRelayAddress(user: "B4PdyoVU39hoCaiTLPtN9nJxy6rEpbciE3BNPvHkCeE2")
+        let relayAccount = try FeeRelayer.Relay.Program.getUserRelayAddress(user: "B4PdyoVU39hoCaiTLPtN9nJxy6rEpbciE3BNPvHkCeE2", network: solanaClient.endpoint.network)
         let result = try solanaClient.getRelayAccountStatus(relayAccount.base58EncodedString).toBlocking().first()!
         XCTAssertEqual(result, .notYetCreated)
     }
     
     func testGetRelayAccountStatusCreated() throws {
-        let relayAccount = try FeeRelayer.Relay.Program.getUserRelayAddress(user: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V")
+        let relayAccount = try FeeRelayer.Relay.Program.getUserRelayAddress(user: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", network: solanaClient.endpoint.network)
         let result = try solanaClient.getRelayAccountStatus(relayAccount.base58EncodedString).toBlocking().first()!
         XCTAssertNotEqual(result, .notYetCreated)
         XCTAssertNotEqual(result.balance, nil)

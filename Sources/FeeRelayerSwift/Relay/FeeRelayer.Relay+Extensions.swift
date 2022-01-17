@@ -161,6 +161,7 @@ extension FeeRelayer.Relay {
             // top up
             instructions.append(
                 try Program.topUpSwapInstruction(
+                    network: network,
                     topUpSwap: swap,
                     userAuthorityAddress: userAuthorityAddress,
                     userSourceTokenAccountAddress: userSourceTokenAccountAddress,
@@ -173,7 +174,8 @@ extension FeeRelayer.Relay {
                 try Program.transferSolInstruction(
                     userAuthorityAddress: userAuthorityAddress,
                     recipient: feePayerAddress,
-                    lamports: feeAmount
+                    lamports: feeAmount,
+                    network: network
                 )
             )
         case let swap as TransitiveSwapData:
@@ -190,14 +192,16 @@ extension FeeRelayer.Relay {
             // create transit token account
             let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
                 user: userAuthorityAddress,
-                transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey)
+                transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
+                network: network
             )
             instructions.append(
                 try Program.createTransitTokenAccountInstruction(
                     feePayer: feePayerAddress,
                     userAuthority: userAuthorityAddress,
                     transitTokenAccount: transitTokenAccountAddress,
-                    transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey)
+                    transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
+                    network: network
                 )
             )
             
@@ -207,6 +211,7 @@ extension FeeRelayer.Relay {
             // top up
             instructions.append(
                 try Program.topUpSwapInstruction(
+                    network: network,
                     topUpSwap: swap,
                     userAuthorityAddress: userAuthorityAddress,
                     userSourceTokenAccountAddress: userSourceTokenAccountAddress,
@@ -228,7 +233,8 @@ extension FeeRelayer.Relay {
                 try Program.transferSolInstruction(
                     userAuthorityAddress: userAuthorityAddress,
                     recipient: feePayerAddress,
-                    lamports: feeAmount
+                    lamports: feeAmount,
+                    network: network
                 )
             )
         default:
@@ -385,7 +391,8 @@ extension FeeRelayer.Relay {
             let transitTokenMint = try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey)
             let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
                 user: userAuthorityAddress,
-                transitTokenMint: transitTokenMint
+                transitTokenMint: transitTokenMint,
+                network: network
             )
             
             instructions.append(
@@ -393,7 +400,8 @@ extension FeeRelayer.Relay {
                     feePayer: feePayerAddress,
                     userAuthority: userAuthorityAddress,
                     transitTokenAccount: transitTokenAccountAddress,
-                    transitTokenMint: transitTokenMint
+                    transitTokenMint: transitTokenMint,
+                    network: network
                 )
             )
             
@@ -405,7 +413,8 @@ extension FeeRelayer.Relay {
                     sourceAddressPubkey: userSourceTokenAccountAddress,
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
-                    feePayerPubkey: feePayerAddress
+                    feePayerPubkey: feePayerAddress,
+                    network: network
                 )
             )
             
@@ -450,7 +459,8 @@ extension FeeRelayer.Relay {
             try Program.transferSolInstruction(
                 userAuthorityAddress: userAuthorityAddress,
                 recipient: feePayerAddress,
-                lamports: feeAmount
+                lamports: feeAmount,
+                network: network
             )
         )
         

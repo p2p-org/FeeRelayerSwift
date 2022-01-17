@@ -76,7 +76,7 @@ extension FeeRelayer {
             }
             
             // get relay account (account that will hold the SOL for paying fee after topping up)
-            guard let userRelayAddress = try? Program.getUserRelayAddress(user: owner.publicKey) else {
+            guard let userRelayAddress = try? Program.getUserRelayAddress(user: owner.publicKey, network: solanaClient.endpoint.network) else {
                 return .error(FeeRelayer.Error.wrongAddress)
             }
             
