@@ -423,10 +423,21 @@ extension FeeRelayer {
                 throw FeeRelayer.Error.invalidSignature
             }
             
+            if let decodedTransaction = transaction.jsonString {
+                Logger.log(message: decodedTransaction, event: .info)
+            }
+            
             let ownerSignature = Base58.encode(ownerSignatureData.bytes)
             let transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
             
             return .init(userAuthoritySignature: ownerSignature, transferAuthoritySignature: transferAuthoritySignature)
         }
+    }
+}
+
+extension Encodable {
+    var jsonString: String? {
+        guard let data = try? JSONEncoder().encode(self) else {return nil}
+        return String(data: data, encoding: .utf8)
     }
 }
