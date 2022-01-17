@@ -95,7 +95,7 @@ extension FeeRelayer {
                         toMint: destinationTokenMint
                     ),
                 // get relayAccount's status
-                checkRelayAccountStatus(relayAccountAddress: userRelayAddress)
+                solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] minimumTokenAccountBalance, feePayerAddress, lamportsPerSignature, availableSwapPools, relayAccountStatus in
@@ -205,33 +205,6 @@ extension FeeRelayer {
                         // STEP 2.2.2: Swap
                             .flatMap {_ in swap()}
                     }
-                }
-        }
-        
-        /// Check relay account status
-        func checkRelayAccountStatus(
-            relayAccountAddress: SolanaSDK.PublicKey
-        ) -> Single<RelayAccountStatus> {
-            solanaClient.getTokenAccountBalance(pubkey: relayAccountAddress.base58EncodedString, commitment: nil)
-                .map { balance in
-                    guard let amount = UInt64(balance.amount) else {return .notYetCreated}
-                    return .created(balance: amount)
-                }
-                .catch { error in
-                    if error.isEqualTo(SolanaSDK.Error.couldNotRetrieveAccountInfo) {
-                        return .just(.notYetCreated)
-                    }
-                    if let error = error as? SolanaSDK.Error {
-                        switch error {
-                        case .invalidResponse(let response):
-                            if response.message == "Invalid param: could not find account" {
-                                return .just(.notYetCreated)
-                            }
-                        default:
-                            break
-                        }
-                    }
-                    throw error
                 }
         }
         

@@ -75,7 +75,7 @@ class RelayTests: XCTestCase {
 // MARK: - Helpers
 private let endpoint = SolanaSDK.APIEndPoint(address: "https://api.mainnet-beta.solana.com", network: .mainnetBeta)
 
-private class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
+class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
     func getAccount() -> OrcaSwap.Account? {
         account
     }

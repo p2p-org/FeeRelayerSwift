@@ -157,7 +157,7 @@ extension FeeRelayer.Relay {
         let transferAuthorityAccount: SolanaSDK.Account
     }
     
-    enum RelayAccountStatus: Equatable {
+    public enum RelayAccountStatus: Equatable {
         case notYetCreated
         case created(balance: UInt64)
         
