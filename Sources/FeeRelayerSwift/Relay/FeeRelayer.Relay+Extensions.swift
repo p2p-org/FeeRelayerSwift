@@ -423,7 +423,8 @@ extension FeeRelayer.Relay {
                 SolanaSDK.TokenProgram.closeAccountInstruction(
                     account: transitTokenAccountAddress,
                     destination: feePayerAddress,
-                    owner: feePayerAddress
+                    owner: feePayerAddress,
+                    signers: []
                 )
             )
             
@@ -438,7 +439,8 @@ extension FeeRelayer.Relay {
                     SolanaSDK.TokenProgram.closeAccountInstruction(
                         account: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
                         destination: ownerAddress,
-                        owner: ownerAddress
+                        owner: ownerAddress,
+                        signers: []
                     )
                 )
                 
