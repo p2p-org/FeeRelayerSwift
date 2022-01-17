@@ -65,7 +65,7 @@ class RelayTests: XCTestCase {
                 mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
             ),
             pools: pools,
-            inputAmount: 1,
+            inputAmount: inputAmount,
             slippage: 0.05
         ).toBlocking().first()
     }
