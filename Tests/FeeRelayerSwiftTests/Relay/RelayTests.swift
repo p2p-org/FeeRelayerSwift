@@ -43,11 +43,6 @@ class RelayTests: XCTestCase {
         let testInfo = testsInfo.splToCreatedSpl
         try loadWithTest(testInfo)
         
-//        let kuroMint = "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn"
-//        let slimMint = "xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW"
-//
-//        let inputAmount: UInt64 = 1000000 // 1 KURO
-        
         // get pools pair
         let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
         
@@ -55,7 +50,7 @@ class RelayTests: XCTestCase {
         let pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         
         // request
-        let request = try relayService.topUpAndSwap(
+        _ = try relayService.topUpAndSwap(
             apiVersion: 1,
             sourceToken: .init(
                 address: testInfo.sourceAddress,
