@@ -364,7 +364,7 @@ extension FeeRelayer.Relay {
                     .writable(publicKey: swapFromSource, isSigner: false),
                     .writable(publicKey: swapFromDestination, isSigner: false),
                     .writable(publicKey: swapFromPoolTokenMint, isSigner: false),
-                    .writable(publicKey: swapFromPoolTokenMint, isSigner: false),
+                    .writable(publicKey: swapFromPoolFeeAccount, isSigner: false),
                     .readonly(publicKey: swapToProgramId, isSigner: false),
                     .readonly(publicKey: swapToAccount, isSigner: false),
                     .readonly(publicKey: swapToAuthority, isSigner: false),
