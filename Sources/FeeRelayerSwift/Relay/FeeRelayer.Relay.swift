@@ -246,11 +246,8 @@ extension FeeRelayer {
             feePayerAddress: String,
             lamportsPerSignature: UInt64
         ) -> Single<[String]> {
-            // make amount mutable, because the final amount is equal to amount + topup fee
-            var amount = amount
-            
             // request needed infos
-            return Single.zip(
+            Single.zip(
                 // check if creating user relay account is needed
                 solanaClient.checkAccountValidation(account: userRelayAddress.base58EncodedString),
                 // get minimum relay account balance
@@ -295,9 +292,6 @@ extension FeeRelayer {
                         feePayerAddress: feePayerAddress,
                         lamportsPerSignature: lamportsPerSignature
                     )
-                    
-                    // STEP 2: add top up fee into total amount
-                    amount += topUpFee
                     
                     // STEP 3: prepare for topUp
                     let topUpTransaction = try self.prepareForTopUp(
