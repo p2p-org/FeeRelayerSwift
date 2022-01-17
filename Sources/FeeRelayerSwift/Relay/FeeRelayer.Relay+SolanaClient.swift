@@ -31,16 +31,6 @@ extension SolanaSDK: FeeRelayerRelaySolanaClient {
                 if error.isEqualTo(SolanaSDK.Error.couldNotRetrieveAccountInfo) {
                     return .just(.notYetCreated)
                 }
-                if let error = error as? SolanaSDK.Error {
-                    switch error {
-                    case .invalidResponse(let response):
-                        if response.message == "Invalid param: could not find account" {
-                            return .just(.notYetCreated)
-                        }
-                    default:
-                        break
-                    }
-                }
                 throw error
             }
     }
