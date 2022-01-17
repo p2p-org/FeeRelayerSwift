@@ -5,18 +5,17 @@ import FeeRelayerSwift
 import RxSwift
 
 class RelayTests: XCTestCase {
+    private var solanaClient: SolanaSDK!
     private var orcaSwap: OrcaSwapType!
     private var relayService: FeeRelayer.Relay!
-
-    override func setUpWithError() throws {
-        let accountStorage = FakeAccountStorage()
-        let solanaClient = SolanaSDK(
-            endpoint: endpoint,
-            accountStorage: accountStorage
-        )
-        
+    
+    private func loadWithTest(_ relayTest: RelayTestInfo) throws {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
         orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: solanaClient.endpoint.network.cluster),
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
             solanaClient: solanaClient,
             accountProvider: accountStorage,
             notificationHandler: FakeNotificationHandler()
@@ -33,49 +32,60 @@ class RelayTests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        solanaClient = nil
         orcaSwap = nil
         relayService = nil
     }
-
+    
     // MARK: - TopUpAndSwap
     func testTopUpAndSwapToCreatedToken() throws {
-        // Swap KURO to SLIM
-        let kuroMint = "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn"
-        let slimMint = "xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW"
+        // load test
+        let testInfo = testsInfo.splToCreatedSpl
+        try loadWithTest(testInfo)
         
-        let inputAmount: UInt64 = 1000000 // 1 KURO
+//        let kuroMint = "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn"
+//        let slimMint = "xxxxa1sKNGwFtw2kFn8XauW9xq8hBZ5kVtcSesTT9fW"
+//
+//        let inputAmount: UInt64 = 1000000 // 1 KURO
         
         // get pools pair
-        let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: kuroMint, toMint: slimMint).toBlocking().first()!
+        let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
         
         // get best pool pair
-        let pools = try orcaSwap.findBestPoolsPairForInputAmount(inputAmount, from: poolPairs)!
+        let pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         
         // request
         let request = try relayService.topUpAndSwap(
             apiVersion: 1,
             sourceToken: .init(
-                address: "C5B13tQA4pq1zEVSVkWbWni51xdWB16C2QsC72URq9AJ",
-                mint: kuroMint
+                address: testInfo.sourceAddress,
+                mint: testInfo.fromMint
             ),
-            destinationTokenMint: slimMint,
-            destinationAddress: "FH58UXMZnj9HTAWusB9zmYCtqUCCLP351ao4S687pxD6",
+            destinationTokenMint: testInfo.toMint,
+            destinationAddress: testInfo.destinationAddress,
             payingFeeToken: .init(
-                address: "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
-                mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+                address: testInfo.payingTokenAddress,
+                mint: testInfo.payingTokenMint
             ),
             pools: pools,
-            inputAmount: inputAmount,
+            inputAmount: testInfo.inputAmount,
             slippage: 0.05
         ).toBlocking().first()
     }
-
 }
 
 // MARK: - Helpers
-private let endpoint = SolanaSDK.APIEndPoint(address: "https://api.mainnet-beta.solana.com", network: .mainnetBeta)
+private let testsInfo = try! getDataFromJSONTestResourceFile(fileName: "relay-tests", decodedTo: RelayTestsInfo.self)
 
 class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
+    private let seedPhrase: String
+    private let network: SolanaSDK.Network
+    
+    init(seedPhrase: String, network: SolanaSDK.Network) {
+        self.seedPhrase = seedPhrase
+        self.network = network
+    }
+    
     func getAccount() -> OrcaSwap.Account? {
         account
     }
@@ -85,8 +95,7 @@ class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
     }
     
     var account: SolanaSDK.Account? {
-        fatalError()
-//                .init(phrase: <#T##[String]#>, network: <#T##SolanaSDK.Network#>, derivablePath: <#T##SolanaSDK.DerivablePath?#>)
+        try! .init(phrase: seedPhrase.components(separatedBy: " "), network: network, derivablePath: .default)
     }
 }
 

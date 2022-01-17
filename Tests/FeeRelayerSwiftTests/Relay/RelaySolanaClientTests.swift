@@ -5,7 +5,7 @@ import SolanaSwift
 class RelaySolanaClientTests: XCTestCase {
     var solanaClient: FeeRelayerRelaySolanaClient!
     override func setUpWithError() throws {
-        solanaClient = SolanaSDK(endpoint: .defaultEndpoints.first!, accountStorage: FakeAccountStorage())
+        solanaClient = SolanaSDK(endpoint: .defaultEndpoints.first!, accountStorage: FakeAccountStorage(seedPhrase: "", network: .mainnetBeta))
     }
     
     func testGetRelayAccountStatusNotYetCreated() throws {
