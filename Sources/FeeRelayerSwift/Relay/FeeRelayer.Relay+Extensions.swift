@@ -15,12 +15,14 @@ extension FeeRelayer.Relay {
     func prepareSwapData(
         network: SolanaSDK.Network,
         pools: OrcaSwap.PoolsPair,
-        amount: UInt64,
+        inputAmount: UInt64?,
+        minAmountOut: UInt64?,
         slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
+        guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayer.Error.invalidAmount }
         
         // create transferAuthority
         let transferAuthority = try SolanaSDK.Account(network: network)
@@ -29,25 +31,42 @@ extension FeeRelayer.Relay {
         if pools.count == 1 {
             let pool = pools[0]
             
-            guard let amountIn = try pool.getInputAmount(minimumReceiveAmount: amount, slippage: slippage) else {
-                throw FeeRelayer.Error.invalidAmount
-            }
+            guard let amountIn = try inputAmount ?? pool.getInputAmount(minimumReceiveAmount: minAmountOut!, slippage: slippage),
+                  let minAmountOut = try minAmountOut ?? pool.getMinimumAmountOut(inputAmount: inputAmount!, slippage: slippage)
+            else { throw FeeRelayer.Error.invalidAmount }
             
             let directSwapData = pool.getSwapData(
                 transferAuthorityPubkey: transferAuthority.publicKey,
                 amountIn: amountIn,
-                minAmountOut: amount
+                minAmountOut: minAmountOut
             )
             return (swapData: directSwapData, transferAuthorityAccount: transferAuthority)
         } else {
             let firstPool = pools[0]
             let secondPool = pools[1]
             
-            guard let transitTokenMintPubkey = transitTokenMintPubkey,
-                  let secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: amount, slippage: slippage),
-                  let firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn, slippage: slippage)
-            else {
+            guard let transitTokenMintPubkey = transitTokenMintPubkey else {
                 throw FeeRelayer.Error.transitTokenMintNotFound
+            }
+            
+            // if input amount is provided
+            var firstPoolAmountIn = inputAmount
+            var secondPoolAmountIn: UInt64?
+            var secondPoolAmountOut = minAmountOut
+            
+            if let inputAmount = inputAmount {
+                secondPoolAmountIn = try firstPool.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage) ?? 0
+                secondPoolAmountOut = try secondPool.getMinimumAmountOut(inputAmount: secondPoolAmountIn!, slippage: slippage)
+            } else if let minAmountOut = minAmountOut {
+                secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: minAmountOut, slippage: slippage) ?? 0
+                firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn!, slippage: slippage)
+            }
+            
+            guard let firstPoolAmountIn = firstPoolAmountIn,
+                  let secondPoolAmountIn = secondPoolAmountIn,
+                  let secondPoolAmountOut = secondPoolAmountOut
+            else {
+                throw FeeRelayer.Error.invalidAmount
             }
             
             let transitiveSwapData = TransitiveSwapData(
@@ -59,7 +78,7 @@ extension FeeRelayer.Relay {
                 to: secondPool.getSwapData(
                     transferAuthorityPubkey: transferAuthority.publicKey,
                     amountIn: secondPoolAmountIn,
-                    minAmountOut: amount
+                    minAmountOut: secondPoolAmountOut
                 ),
                 transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
             )
@@ -143,7 +162,7 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
-        let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, amount: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
+        let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
         switch topUpSwap.swapData {
         case let swap as DirectSwapData:
             expectedFee.accountBalances += minimumTokenAccountBalance
@@ -347,7 +366,7 @@ extension FeeRelayer.Relay {
         }
         
         // swap
-        let swap = try prepareSwapData(network: network, pools: pools, amount: inputAmount, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(network: network, pools: pools, inputAmount: inputAmount, minAmountOut: nil, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
         let userTransferAuthority = swap.transferAuthorityAccount.publicKey
         
         switch swap.swapData {
