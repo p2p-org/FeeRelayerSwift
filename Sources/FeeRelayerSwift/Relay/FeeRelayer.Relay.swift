@@ -22,6 +22,9 @@ import SolanaSwift
 /// - Returns: Array of strings contain transactions' signatures
 
 public protocol FeeRelayerRelayType {
+    /// Load all needed info for relay operations, need to be completed before any operation
+    func load() -> Completable
+    
     /// Top up relay account (if needed) and swap
     func topUpAndSwap(
         sourceToken: FeeRelayer.Relay.TokenInfo,
@@ -37,6 +40,8 @@ public protocol FeeRelayerRelayType {
 extension FeeRelayer {
     public class Relay: FeeRelayerRelayType {
         // MARK: - Properties
+        private var info: RelayInfo? // All info needed to perform actions, works as a cache
+        private let userRelayAddress: SolanaSDK.PublicKey
         private let apiClient: FeeRelayerAPIClientType
         private let solanaClient: FeeRelayerRelaySolanaClient
         private let accountStorage: SolanaSDKAccountStorage
@@ -48,14 +53,43 @@ extension FeeRelayer {
             solanaClient: FeeRelayerRelaySolanaClient,
             accountStorage: SolanaSDKAccountStorage,
             orcaSwapClient: OrcaSwapType
-        ) {
+        ) throws {
+            guard let owner = accountStorage.account else { throw FeeRelayer.Error.unauthorized }
             self.apiClient = apiClient
             self.solanaClient = solanaClient
             self.accountStorage = accountStorage
             self.orcaSwapClient = orcaSwapClient
+            let userRelayAddress = try Program.getUserRelayAddress(user: owner.publicKey, network: solanaClient.endpoint.network)
+            self.userRelayAddress = userRelayAddress
         }
         
         // MARK: - Methods
+        public func load() -> Completable {
+            Single.zip(
+                // get minimum token account balance
+                solanaClient.getMinimumBalanceForRentExemption(span: 165),
+                // get minimum relay account balance
+                solanaClient.getMinimumBalanceForRentExemption(span: 0),
+                // get fee payer address
+                apiClient.getFeePayerPubkey(),
+                // get lamportsPerSignature
+                solanaClient.getLamportsPerSignature(),
+                // get relayAccount's status
+                solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+            )
+                .observe(on: MainScheduler.instance)
+                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, relayAccountStatus in
+                    self?.info = .init(
+                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        minimumRelayAccountBalance: minimumRelayAccountBalance,
+                        feePayerAddress: feePayerAddress,
+                        lamportsPerSignature: lamportsPerSignature,
+                        relayAccountStatus: relayAccountStatus
+                    )
+                })
+                .asCompletable()
+        }
+        
         public func topUpAndSwap(
             sourceToken: TokenInfo,
             destinationTokenMint: String,
@@ -75,31 +109,22 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.unsupportedSwap)
             }
             
-            // get relay account (account that will hold the SOL for paying fee after topping up)
-            guard let userRelayAddress = try? Program.getUserRelayAddress(user: owner.publicKey, network: solanaClient.endpoint.network) else {
-                return .error(FeeRelayer.Error.wrongAddress)
-            }
-            
-            // request needed infos
-            return Single.zip(
-                // get minimum token account balance
-                solanaClient.getMinimumBalanceForRentExemption(span: 165),
-                // get fee payer address
-                apiClient.getFeePayerPubkey(),
-                // get lamportsPerSignature
-                solanaClient.getLamportsPerSignature(),
-                // get topup pools
-                orcaSwapClient
-                    .getTradablePoolsPairs(
-                        fromMint: sourceToken.mint,
-                        toMint: destinationTokenMint
-                    ),
-                // get relayAccount's status
-                solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
-            )
+            // reload needed info
+            return load()
+                .andThen(
+                    orcaSwapClient
+                        .getTradablePoolsPairs(
+                            fromMint: sourceToken.mint,
+                            toMint: destinationTokenMint
+                        )
+                )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] minimumTokenAccountBalance, feePayerAddress, lamportsPerSignature, availableSwapPools, relayAccountStatus in
+                .flatMap { [weak self] availableSwapPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    // get needed info
+                    guard let info = self.info else {
+                        return .error(FeeRelayer.Error.relayInfoMissing)
+                    }
                     
                     // get transit token mint (intermediary token in transitive swap, or nil in direct swap)
                     let transitTokenMintPubkey: SolanaSDK.PublicKey?
@@ -150,10 +175,10 @@ extension FeeRelayer {
                         inputAmount: inputAmount,
                         slippage: slippage,
                         transitTokenMintPubkey: transitTokenMintPubkey,
-                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        minimumTokenAccountBalance: info.minimumTokenAccountBalance,
                         needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-                        feePayerAddress: feePayerAddress,
-                        lamportsPerSignature: lamportsPerSignature
+                        feePayerAddress: info.feePayerAddress,
+                        lamportsPerSignature: info.lamportsPerSignature
                     )
                     
                     // prepare handler
@@ -170,16 +195,16 @@ extension FeeRelayer {
                             slippage: slippage,
                             transitTokenMintPubkey: transitTokenMintPubkey,
                             feeAmount: swappingFee,
-                            minimumTokenAccountBalance: minimumTokenAccountBalance,
+                            minimumTokenAccountBalance: info.minimumTokenAccountBalance,
                             needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-                            feePayerAddress: feePayerAddress,
-                            lamportsPerSignature: lamportsPerSignature
+                            feePayerAddress: info.feePayerAddress,
+                            lamportsPerSignature: info.lamportsPerSignature
                         )
                     }
                     
                     // STEP 2: Check if relay account has already had enough balance to cover swapping fee
                     // STEP 2.1: If relay account has enough balance to cover swapping fee
-                    if let relayAccountBalance = relayAccountStatus.balance,
+                    if let relayAccountBalance = info.relayAccountStatus.balance,
                        relayAccountBalance >= swappingFee
                     {
                         // STEP 2.1.1: Swap
@@ -188,40 +213,31 @@ extension FeeRelayer {
                     // STEP 2.2: Else
                     else {
                         // Get needed amount
-                        let topUpAmount = swappingFee - (relayAccountStatus.balance ?? 0)
+                        let topUpAmount = swappingFee - (info.relayAccountStatus.balance ?? 0)
                         
                         // STEP 2.2.1: Top up
                         return self.topUp(
                             owner: owner,
-                            userRelayAddress: userRelayAddress,
-                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                            needsCreateUserRelayAddress: info.relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
-                            amount: topUpAmount,
-                            minimumTokenAccountBalance: minimumTokenAccountBalance,
-                            feePayerAddress: feePayerAddress,
-                            lamportsPerSignature: lamportsPerSignature
+                            amount: topUpAmount
                         )
                         // STEP 2.2.2: Swap
                             .flatMap {_ in swap()}
                     }
                 }
+                .observe(on: MainScheduler.instance)
         }
         
         /// Submits a signed top up swap transaction to the backend for processing
         func topUp(
             owner: SolanaSDK.Account,
-            userRelayAddress: SolanaSDK.PublicKey,
             needsCreateUserRelayAddress: Bool,
             sourceToken: TokenInfo,
-            amount: UInt64,
-            minimumTokenAccountBalance: UInt64,
-            feePayerAddress: String,
-            lamportsPerSignature: UInt64
+            amount: UInt64
         ) -> Single<[String]> {
             // request needed infos
             Single.zip(
-                // get minimum relay account balance
-                solanaClient.getMinimumBalanceForRentExemption(span: 0),
                 // get recent blockhash
                 solanaClient.getRecentBlockhash(commitment: nil),
                 // get topup pools
@@ -232,8 +248,9 @@ extension FeeRelayer {
                     )
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
+                .flatMap { [weak self] recentBlockhash, availableTopUpPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let info = self.info else { throw FeeRelayer.Error.relayInfoMissing }
                     
                     // Get best poolpairs for swapping
                     guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(amount, from: availableTopUpPools) else {
@@ -243,10 +260,10 @@ extension FeeRelayer {
                     // STEP 1: calculate top up fees
                     let topUpFee = try self.calculateTopUpFee(
                         topUpPools: topUpPools,
-                        minimumRelayAccountBalance: minimumRelayAccountBalance,
-                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        minimumRelayAccountBalance: info.minimumRelayAccountBalance,
+                        minimumTokenAccountBalance: info.minimumTokenAccountBalance,
                         needsCreateUserRelayAccount: needsCreateUserRelayAddress,
-                        lamportsPerSignature: lamportsPerSignature
+                        lamportsPerSignature: info.lamportsPerSignature
                     )
                     
                     // STEP 3: prepare for topUp
@@ -254,16 +271,16 @@ extension FeeRelayer {
                         network: self.solanaClient.endpoint.network,
                         sourceToken: sourceToken,
                         userAuthorityAddress: owner.publicKey,
-                        userRelayAddress: userRelayAddress,
+                        userRelayAddress: self.userRelayAddress,
                         topUpPools: topUpPools,
                         amount: amount,
                         feeAmount: topUpFee,
                         blockhash: recentBlockhash,
-                        minimumRelayAccountBalance: minimumRelayAccountBalance,
-                        minimumTokenAccountBalance: minimumTokenAccountBalance,
+                        minimumRelayAccountBalance: info.minimumRelayAccountBalance,
+                        minimumTokenAccountBalance: info.minimumTokenAccountBalance,
                         needsCreateUserRelayAccount: needsCreateUserRelayAddress,
-                        feePayerAddress: feePayerAddress,
-                        lamportsPerSignature: lamportsPerSignature
+                        feePayerAddress: info.feePayerAddress,
+                        lamportsPerSignature: info.lamportsPerSignature
                     )
                     
                     // STEP 4: send transaction

@@ -11,6 +11,15 @@ import SolanaSwift
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
 extension FeeRelayer.Relay {
+    // MARK: - Relay info
+    public struct RelayInfo {
+        var minimumTokenAccountBalance: UInt64
+        var minimumRelayAccountBalance: UInt64
+        var feePayerAddress: String
+        var lamportsPerSignature: UInt64
+        var relayAccountStatus: RelayAccountStatus
+    }
+    
     // MARK: - Top up
     public struct TopUpWithSwapParams: Encodable {
         let userSourceTokenAccountPubkey: String

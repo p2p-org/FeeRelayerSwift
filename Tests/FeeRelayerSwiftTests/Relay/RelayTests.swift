@@ -23,7 +23,7 @@ class RelayTests: XCTestCase {
             notificationHandler: FakeNotificationHandler()
         )
         
-        relayService = .init(
+        relayService = try .init(
             apiClient: FeeRelayer.APIClient(version: 1),
             solanaClient: solanaClient,
             accountStorage: accountStorage,
@@ -31,6 +31,7 @@ class RelayTests: XCTestCase {
         )
         
         _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
     }
 
     override func tearDownWithError() throws {
