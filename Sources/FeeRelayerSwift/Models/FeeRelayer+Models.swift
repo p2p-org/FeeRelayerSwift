@@ -14,5 +14,8 @@ extension FeeRelayer {
     public struct FeeAmount {
         public var transaction: UInt64
         public var accountBalances: UInt64
+        public var total: UInt64 {
+            transaction + accountBalances
+        }
     }
 }

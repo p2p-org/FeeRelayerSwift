@@ -11,7 +11,7 @@ import SolanaSwift
 
 extension FeeRelayer.Relay {
     // MARK: - Top up
-    /// Prepare swap data from topUpPools
+    /// Prepare swap data from swap pools
     func prepareSwapData(
         network: SolanaSDK.Network,
         pools: OrcaSwap.PoolsPair,
@@ -87,13 +87,8 @@ extension FeeRelayer.Relay {
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(
-        topUpPools: OrcaSwap.PoolsPair,
-        minimumRelayAccountBalance: UInt64,
-        minimumTokenAccountBalance: UInt64,
-        needsCreateUserRelayAccount: Bool,
-        lamportsPerSignature: UInt64
-    ) throws -> UInt64 {
+    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair) throws -> UInt64 {
+        guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
             network: .mainnetBeta, // fake
             sourceToken: .init(
@@ -106,11 +101,11 @@ extension FeeRelayer.Relay {
             amount: 10000, // fake
             feeAmount: 0, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            needsCreateUserRelayAccount: needsCreateUserRelayAccount,
+            minimumRelayAccountBalance: info.minimumRelayAccountBalance,
+            minimumTokenAccountBalance: info.minimumTokenAccountBalance,
+            needsCreateUserRelayAccount: info.relayAccountStatus == .notYetCreated,
             feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
-            lamportsPerSignature: lamportsPerSignature
+            lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount
         return fee.transaction + fee.accountBalances
     }
@@ -272,38 +267,27 @@ extension FeeRelayer.Relay {
     
     // MARK: - Swap
     func calculateSwappingFee(
-        network: SolanaSDK.Network,
         sourceToken: TokenInfo,
         destinationToken: TokenInfo,
-        userAuthorityAddress: SolanaSDK.PublicKey,
         userDestinationAccountOwnerAddress: String?,
-        
         pools: OrcaSwap.PoolsPair,
-        inputAmount: UInt64,
-        slippage: Double,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
-        
-        minimumTokenAccountBalance: UInt64,
-        needsCreateDestinationTokenAccount: Bool,
-        feePayerAddress: String,
-        lamportsPerSignature: UInt64
+        needsCreateDestinationTokenAccount: Bool
     ) throws -> UInt64 {
+        guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForSwapping(
-            network: network,
+            network: .mainnetBeta, // fake
             sourceToken: sourceToken,
             destinationToken: destinationToken,
-            userAuthorityAddress: userAuthorityAddress,
             userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
             pools: pools,
-            inputAmount: inputAmount,
-            slippage: slippage,
-            transitTokenMintPubkey: transitTokenMintPubkey,
+            inputAmount: 10000, //fake
+            slippage: 0.05, // fake
             feeAmount: 0, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", //fake
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            minimumTokenAccountBalance: info.minimumTokenAccountBalance,
             needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-            feePayerAddress: feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature
+            feePayerAddress: info.feePayerAddress,
+            lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount
         return fee.transaction + fee.accountBalances
     }
@@ -312,13 +296,11 @@ extension FeeRelayer.Relay {
         network: SolanaSDK.Network,
         sourceToken: TokenInfo,
         destinationToken: TokenInfo,
-        userAuthorityAddress: SolanaSDK.PublicKey,
         userDestinationAccountOwnerAddress: String?,
         
         pools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         
         feeAmount: UInt64,
         blockhash: String,
@@ -328,6 +310,7 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> PreparedParams {
         // assertion
+        guard let userAuthorityAddress = accountStorage.account?.publicKey else {throw FeeRelayer.Error.unauthorized}
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
               let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
@@ -361,6 +344,7 @@ extension FeeRelayer.Relay {
         }
         
         // swap
+        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
         let swap = try prepareSwapData(network: network, pools: pools, inputAmount: inputAmount, minAmountOut: nil, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
         let userTransferAuthority = swap.transferAuthorityAccount.publicKey
         
