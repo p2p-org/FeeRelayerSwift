@@ -25,7 +25,8 @@ public protocol FeeRelayerRelayType {
     /// Load all needed info for relay operations, need to be completed before any operation
     func load() -> Completable
     
-    /// Calculate prepared params
+    // MARK: - TopUpAndSwap
+    /// Calculate prepared params, get all pools, fees, topUp amount for swapping
     func prepareForTopUpAndSwap(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
@@ -33,6 +34,11 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo,
         swapPools: OrcaSwap.PoolsPair
     ) -> Single<FeeRelayer.Relay.TopUpAndActionPreparedParams>
+    
+    /// Calculate needed fee that needs to be taken from payingToken
+    public func calculateNeededFee(
+        preparedParams: TopUpAndActionPreparedParams
+    ) -> UInt64?
     
     /// Top up relay account (if needed) and swap
     func topUpAndSwap(
@@ -156,6 +162,13 @@ extension FeeRelayer {
                         topUpAmount: topUpAmount
                     )
                 }
+        }
+        
+        public func calculateNeededFee(
+            preparedParams: TopUpAndActionPreparedParams
+        ) -> UInt64? {
+            guard let amountInSOL = preparedParams.topUpAmount else {return nil}
+            return preparedParams.topUpFeesAndPools?.poolsPair.getInputAmount(minimumAmountOut: amountInSOL, slippage: 0.01)
         }
         
         public func topUpAndSwap(
