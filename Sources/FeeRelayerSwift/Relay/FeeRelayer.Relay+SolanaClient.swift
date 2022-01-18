@@ -12,7 +12,6 @@ import RxSwift
 public protocol FeeRelayerRelaySolanaClient {
     func getRelayAccountStatus(_ relayAccountAddress: String) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     func getTokenAccountBalance(pubkey: String, commitment: SolanaSDK.Commitment?) -> Single<SolanaSDK.TokenAccountBalance>
-    func checkAccountValidation(account: String) -> Single<Bool>
     func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
     func getRecentBlockhash(commitment: SolanaSDK.Commitment?) -> Single<String>
     func getLamportsPerSignature() -> Single<UInt64>

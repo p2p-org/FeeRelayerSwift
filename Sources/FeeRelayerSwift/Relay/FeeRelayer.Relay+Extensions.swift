@@ -88,33 +88,28 @@ extension FeeRelayer.Relay {
     
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(
-        network: SolanaSDK.Network,
-        sourceToken: TokenInfo,
-        userAuthorityAddress: SolanaSDK.PublicKey,
-        userRelayAddress: SolanaSDK.PublicKey,
         topUpPools: OrcaSwap.PoolsPair,
-        amount: UInt64,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         minimumRelayAccountBalance: UInt64,
         minimumTokenAccountBalance: UInt64,
         needsCreateUserRelayAccount: Bool,
-        feePayerAddress: String,
         lamportsPerSignature: UInt64
     ) throws -> UInt64 {
         let fee = try prepareForTopUp(
-            network: network,
-            sourceToken: sourceToken,
-            userAuthorityAddress: userAuthorityAddress,
-            userRelayAddress: userRelayAddress,
+            network: .mainnetBeta, // fake
+            sourceToken: .init(
+                address: "C5B13tQA4pq1zEVSVkWbWni51xdWB16C2QsC72URq9AJ", // fake
+                mint: "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn" // fake
+            ),
+            userAuthorityAddress: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", // fake
+            userRelayAddress: "EfS3E3jBF6iio6zQDVWswj3mtoHMGEq57iqpPRgTBVUt", // fake
             topUpPools: topUpPools,
-            amount: amount,
-            transitTokenMintPubkey: transitTokenMintPubkey,
+            amount: 10000, // fake
             feeAmount: 0, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
             minimumRelayAccountBalance: minimumRelayAccountBalance,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             needsCreateUserRelayAccount: needsCreateUserRelayAccount,
-            feePayerAddress: feePayerAddress,
+            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
             lamportsPerSignature: lamportsPerSignature
         ).feeAmount
         return fee.transaction + fee.accountBalances
@@ -128,7 +123,6 @@ extension FeeRelayer.Relay {
         userRelayAddress: SolanaSDK.PublicKey,
         topUpPools: OrcaSwap.PoolsPair,
         amount: UInt64,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
         feeAmount: UInt64,
         blockhash: String,
         minimumRelayAccountBalance: UInt64,
@@ -162,6 +156,7 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
+        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: topUpPools)
         let topUpSwap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
         switch topUpSwap.swapData {
         case let swap as DirectSwapData:
@@ -498,6 +493,16 @@ extension FeeRelayer.Relay {
             feeAmount: expectedFee,
             transferAuthorityAccount: swap.transferAuthorityAccount
         )
+    }
+    
+    // MARK: - Helpers
+    private func getTransitTokenMintPubkey(pools: OrcaSwap.PoolsPair) throws -> SolanaSDK.PublicKey? {
+        var transitTokenMintPubkey: SolanaSDK.PublicKey?
+        if pools.count == 2 {
+            let interTokenName = pools[0].tokenBName
+            transitTokenMintPubkey = try SolanaSDK.PublicKey(string: orcaSwapClient.getMint(tokenName: interTokenName))
+        }
+        return transitTokenMintPubkey
     }
 }
 

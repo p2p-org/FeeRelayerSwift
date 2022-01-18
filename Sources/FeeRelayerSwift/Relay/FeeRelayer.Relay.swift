@@ -9,18 +9,20 @@ import Foundation
 import RxSwift
 import SolanaSwift
 
+/// Top up and make a transaction
+/// STEP 0: Prepare all information needed for the transaction
+/// STEP 1: Calculate fee needed for transaction
+    // STEP 1.1: Check free fee supported or not
+/// STEP 2: Check if relay account has already had enough balance to cover transaction fee
+    /// STEP 2.1: If relay account has not been created or has not have enough balance, do top up
+        /// STEP 2.1.1: Top up with needed amount
+        /// STEP 2.1.2: Make transaction
+    /// STEP 2.2: Else, skip top up
+        /// STEP 2.2.1: Make transaction
+/// - Returns: Array of strings contain transactions' signatures
+
 public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and swap
-    /// STEP 0: Prepare pools and needed fee calculator
-    /// STEP 1: Calculate swapping fee
-        // STEP 1.1: Check free fee supported or not
-    /// STEP 2: Check if relay account has already had enough balance to cover swapping fee
-        /// STEP 2.1: If relay account has not been created or has not have enough balance, do top up
-            /// STEP 2.1.1: Top up with needed amount
-            /// STEP 2.1.2: Swap
-        /// STEP 2.2: Else, skip top up
-            /// STEP 2.2.1: Swap
-    /// - Returns: Array of strings contain transactions' signatures
     func topUpAndSwap(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
@@ -38,7 +40,7 @@ extension FeeRelayer {
         private let apiClient: FeeRelayerAPIClientType
         private let solanaClient: FeeRelayerRelaySolanaClient
         private let accountStorage: SolanaSDKAccountStorage
-        private let orcaSwapClient: OrcaSwapType
+        let orcaSwapClient: OrcaSwapType
         
         // MARK: - Initializers
         public init(
@@ -192,6 +194,7 @@ extension FeeRelayer {
                         return self.topUp(
                             owner: owner,
                             userRelayAddress: userRelayAddress,
+                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
                             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -208,6 +211,7 @@ extension FeeRelayer {
         func topUp(
             owner: SolanaSDK.Account,
             userRelayAddress: SolanaSDK.PublicKey,
+            needsCreateUserRelayAddress: Bool,
             sourceToken: TokenInfo,
             amount: UInt64,
             minimumTokenAccountBalance: UInt64,
@@ -216,8 +220,6 @@ extension FeeRelayer {
         ) -> Single<[String]> {
             // request needed infos
             Single.zip(
-                // check if creating user relay account is needed
-                solanaClient.checkAccountValidation(account: userRelayAddress.base58EncodedString),
                 // get minimum relay account balance
                 solanaClient.getMinimumBalanceForRentExemption(span: 0),
                 // get recent blockhash
@@ -230,7 +232,7 @@ extension FeeRelayer {
                     )
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] isRelayAccountValid, minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
+                .flatMap { [weak self] minimumRelayAccountBalance, recentBlockhash, availableTopUpPools in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // Get best poolpairs for swapping
@@ -238,26 +240,12 @@ extension FeeRelayer {
                         throw FeeRelayer.Error.swapPoolsNotFound
                     }
                     
-                    // Get transit token mint
-                    var transitTokenMintPubkey: SolanaSDK.PublicKey?
-                    if topUpPools.count == 2 {
-                        let interTokenName = topUpPools[0].tokenBName
-                        transitTokenMintPubkey = try SolanaSDK.PublicKey(string: self.orcaSwapClient.getMint(tokenName: interTokenName))
-                    }
-                    
                     // STEP 1: calculate top up fees
                     let topUpFee = try self.calculateTopUpFee(
-                        network: self.solanaClient.endpoint.network,
-                        sourceToken: sourceToken,
-                        userAuthorityAddress: owner.publicKey,
-                        userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
-                        amount: amount,
-                        transitTokenMintPubkey: transitTokenMintPubkey,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
-                        needsCreateUserRelayAccount: !isRelayAccountValid,
-                        feePayerAddress: feePayerAddress,
+                        needsCreateUserRelayAccount: needsCreateUserRelayAddress,
                         lamportsPerSignature: lamportsPerSignature
                     )
                     
@@ -269,12 +257,11 @@ extension FeeRelayer {
                         userRelayAddress: userRelayAddress,
                         topUpPools: topUpPools,
                         amount: amount,
-                        transitTokenMintPubkey: transitTokenMintPubkey,
                         feeAmount: topUpFee,
                         blockhash: recentBlockhash,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
-                        needsCreateUserRelayAccount: !isRelayAccountValid,
+                        needsCreateUserRelayAccount: needsCreateUserRelayAddress,
                         feePayerAddress: feePayerAddress,
                         lamportsPerSignature: lamportsPerSignature
                     )

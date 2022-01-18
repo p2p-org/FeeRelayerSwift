@@ -52,7 +52,7 @@ class RelayTests: XCTestCase {
         let pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         
         // request
-        _ = try relayService.topUpAndSwap(
+        let signatures = try relayService.topUpAndSwap(
             sourceToken: .init(
                 address: testInfo.sourceAddress,
                 mint: testInfo.fromMint
@@ -66,6 +66,10 @@ class RelayTests: XCTestCase {
             pools: pools,
             inputAmount: testInfo.inputAmount,
             slippage: 0.05
-        ).toBlocking().first()
+        ).toBlocking().first()!
+        
+        print(signatures)
+        XCTAssertTrue(signatures.count > 0)
+        
     }
 }
