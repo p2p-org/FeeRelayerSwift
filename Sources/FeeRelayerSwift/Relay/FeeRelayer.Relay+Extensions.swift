@@ -87,7 +87,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair) throws -> UInt64 {
+    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair) throws -> FeeRelayer.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
             network: .mainnetBeta, // fake
@@ -107,7 +107,7 @@ extension FeeRelayer.Relay {
             feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
             lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount
-        return fee.transaction + fee.accountBalances
+        return fee
     }
     
     /// Prepare transaction and expected fee for a given relay transaction
@@ -272,7 +272,7 @@ extension FeeRelayer.Relay {
         userDestinationAccountOwnerAddress: String?,
         pools: OrcaSwap.PoolsPair,
         needsCreateDestinationTokenAccount: Bool
-    ) throws -> UInt64 {
+    ) throws -> FeeRelayer.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForSwapping(
             network: .mainnetBeta, // fake
@@ -289,7 +289,7 @@ extension FeeRelayer.Relay {
             feePayerAddress: info.feePayerAddress,
             lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount
-        return fee.transaction + fee.accountBalances
+        return fee
     }
     
     func prepareForSwapping(

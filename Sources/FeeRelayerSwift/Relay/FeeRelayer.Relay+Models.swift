@@ -189,4 +189,15 @@ extension FeeRelayer.Relay {
         let address: String
         let mint: String
     }
+    
+    public struct TopUpAndActionPreparedParams {
+        public let topUpFeesAndPools: FeesAndPools?
+        public let actionFeesAndPools: FeesAndPools
+        public let topUpAmount: UInt64?
+    }
+    
+    public struct FeesAndPools {
+        public let fee: FeeRelayer.FeeAmount
+        public let poolsPair: OrcaSwap.PoolsPair
+    }
 }

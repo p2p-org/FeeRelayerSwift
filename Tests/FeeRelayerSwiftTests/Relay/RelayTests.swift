@@ -1,7 +1,7 @@
 import XCTest
 import RxBlocking
 import SolanaSwift
-import FeeRelayerSwift
+@testable import FeeRelayerSwift
 import RxSwift
 
 class RelayTests: XCTestCase {
@@ -53,18 +53,30 @@ class RelayTests: XCTestCase {
         let pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         
         // request
-        let signatures = try relayService.topUpAndSwap(
-            sourceToken: .init(
-                address: testInfo.sourceAddress,
-                mint: testInfo.fromMint
-            ),
+        let sourceToken = FeeRelayer.Relay.TokenInfo(
+            address: testInfo.sourceAddress,
+            mint: testInfo.fromMint
+        )
+        
+        let payingToken = FeeRelayer.Relay.TokenInfo(
+            address: testInfo.payingTokenAddress,
+            mint: testInfo.payingTokenMint
+        )
+        
+        let preparedParams = try relayService.prepareForTopUpAndSwap(
+            sourceToken: sourceToken,
             destinationTokenMint: testInfo.toMint,
             destinationAddress: testInfo.destinationAddress,
-            payingFeeToken: .init(
-                address: testInfo.payingTokenAddress,
-                mint: testInfo.payingTokenMint
-            ),
-            pools: pools,
+            payingFeeToken: payingToken,
+            swapPools: pools
+        ).toBlocking().first()!
+        
+        let signatures = try relayService.topUpAndSwap(
+            sourceToken: sourceToken,
+            destinationTokenMint: testInfo.toMint,
+            destinationAddress: testInfo.destinationAddress,
+            payingFeeToken: payingToken,
+            preparedParams: preparedParams,
             inputAmount: testInfo.inputAmount,
             slippage: 0.05
         ).toBlocking().first()!
