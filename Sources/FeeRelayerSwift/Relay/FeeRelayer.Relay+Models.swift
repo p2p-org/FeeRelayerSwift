@@ -17,7 +17,6 @@ extension FeeRelayer.Relay {
         var minimumRelayAccountBalance: UInt64
         var feePayerAddress: String
         var lamportsPerSignature: UInt64
-        var relayAccountStatus: RelayAccountStatus
     }
     
     // MARK: - Top up
@@ -217,5 +216,12 @@ extension FeeRelayer.Relay {
     public struct FeesAndPools {
         public let fee: FeeRelayer.FeeAmount
         public let poolsPair: OrcaSwap.PoolsPair
+    }
+    
+    public struct FeesAndTopUpAmount {
+        public let feeInSOL: FeeRelayer.FeeAmount?
+        public let topUpAmountInSOL: UInt64?
+        public let feeInPayingToken: FeeRelayer.FeeAmount?
+        public let topUpAmountInPayingToen: UInt64?
     }
 }

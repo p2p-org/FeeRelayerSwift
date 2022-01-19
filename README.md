@@ -32,7 +32,20 @@ To run relay tests, create a valid file with name `relay-tests.json` inside `Tes
         "fromMint": <String>, // Mint of token that you want to swap from
         "toMint": <String>, // Mint of token that you want to swap to
         "sourceAddress": <String>, // Source token address
-        "destinationAddress": <String>, // Destination token address
+        "destinationAddress": <String?>, // Destination token address
+        "payingTokenMint": <String>, // Mint of token that you want to use to pay fee
+        "payingTokenAddress": <String>, // Address of token that have enough balance to cover fee
+        "inputAmount": 1000000, // Input amount in lamports
+        "slippage": 0.05
+    },
+    "splToNonCreatedSpl": {
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "fromMint": <String>, // Mint of token that you want to swap from
+        "toMint": <String>, // Mint of token that you want to swap to
+        "sourceAddress": <String>, // Source token address
+        "destinationAddress": null, // Destination token address
         "payingTokenMint": <String>, // Mint of token that you want to use to pay fee
         "payingTokenAddress": <String>, // Address of token that have enough balance to cover fee
         "inputAmount": 1000000, // Input amount in lamports
