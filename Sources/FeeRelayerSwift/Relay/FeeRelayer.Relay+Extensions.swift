@@ -335,7 +335,7 @@ extension FeeRelayer.Relay {
                     .createAssociatedTokenAccountInstruction(
                         mint: destinationTokenMintAddress,
                         associatedAccount: associatedAccount,
-                        owner: feePayerAddress,
+                        owner: try SolanaSDK.PublicKey(string: destinationToken.address),
                         payer: feePayerAddress
                     )
             )

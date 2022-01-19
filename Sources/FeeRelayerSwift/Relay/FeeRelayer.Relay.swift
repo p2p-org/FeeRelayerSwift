@@ -375,10 +375,7 @@ extension FeeRelayer {
                     needsCreateDestinationTokenAccount = false
                 } else {
                     // SPL token has NOT been created
-                    userDestinationAddress = try SolanaSDK.PublicKey.associatedTokenAddress(
-                        walletAddress: owner,
-                        tokenMintAddress: try SolanaSDK.PublicKey(string: destinationTokenMint)
-                    ).base58EncodedString
+                    userDestinationAddress = owner.base58EncodedString
                     needsCreateDestinationTokenAccount = true
                 }
             }
