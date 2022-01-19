@@ -68,6 +68,24 @@ extension FeeRelayer.Relay {
         }
     }
     
+    // MARK: - TransferParam
+    public struct TransferParam: Codable {
+        let senderTokenAccountPubkey, recipientPubkey, tokenMintPubkey, authorityPubkey: String
+        let amount, decimals, feeAmount: Int
+        let authoritySignature, blockhash: String
+        
+        enum CodingKeys: String, CodingKey {
+            case senderTokenAccountPubkey = "sender_token_account_pubkey"
+            case recipientPubkey = "recipient_pubkey"
+            case tokenMintPubkey = "token_mint_pubkey"
+            case authorityPubkey = "authority_pubkey"
+            case amount, decimals
+            case feeAmount = "fee_amount"
+            case authoritySignature = "authority_signature"
+            case blockhash
+        }
+    }
+    
     // MARK: - Swap data
     public struct SwapData: Encodable {
         public init(_ swap: FeeRelayerRelaySwapType) {

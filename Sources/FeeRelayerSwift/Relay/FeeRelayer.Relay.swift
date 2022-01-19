@@ -36,8 +36,8 @@ public protocol FeeRelayerRelayType {
     ) -> Single<FeeRelayer.Relay.TopUpAndActionPreparedParams>
     
     /// Calculate needed fee that needs to be taken from payingToken
-    public func calculateNeededFee(
-        preparedParams: TopUpAndActionPreparedParams
+    func calculateNeededFee(
+        preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams
     ) -> UInt64?
     
     /// Top up relay account (if needed) and swap
@@ -45,6 +45,16 @@ public protocol FeeRelayerRelayType {
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo,
+        preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams,
+        inputAmount: UInt64,
+        slippage: Double
+    ) -> Single<[String]>
+    
+    func topUpAndSend(
+        sourceToken: FeeRelayer.Relay.TokenInfo,
+        destinationAddress: String,
+        tokenMint: String,
         payingFeeToken: FeeRelayer.Relay.TokenInfo,
         preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams,
         inputAmount: UInt64,
@@ -381,7 +391,7 @@ extension FeeRelayer {
             try transaction.sign(signers: [owner, transferAuthorityAccount])
             guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature,
                   let transferAuthoritySignatureData = transaction.findSignature(pubkey: transferAuthorityAccount.publicKey)?.signature
-            else {
+                else {
                 throw FeeRelayer.Error.invalidSignature
             }
             
@@ -431,12 +441,92 @@ extension FeeRelayer {
             let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
             return (destinationToken: destinationToken, userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress, needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount)
         }
+        
+        public func topUpAndSend(
+            sourceToken: TokenInfo,
+            destinationAddress: String,
+            tokenMint: String,
+            payingFeeToken: TokenInfo,
+            preparedParams: TopUpAndActionPreparedParams,
+            inputAmount: UInt64,
+            slippage: Double) -> Single<[String]> {
+            guard let owner = accountStorage.account else {
+                return .error(FeeRelayer.Error.unauthorized)
+            }
+            
+            return load()
+                .andThen(Single<Void>.just(()))
+                .flatMap { [weak self] in
+                    guard let self = self else { throw FeeRelayer.Error.unknown }
+                    // get needed info
+                    guard let info = self.info else {
+                        return .error(FeeRelayer.Error.relayInfoMissing)
+                    }
+                    
+                    let transfer: () -> Single<[String]> = { [weak self] in
+                        guard let self = self else { return .error(FeeRelayer.Error.unknown) }
+                        return self.transfer()
+                    }
+                    
+                    // STEP 2: Check if relay account has already had enough balance to cover swapping fee
+                    // STEP 2.1: If relay account has enough balance to cover transfer fee
+                    if let topUpFeesAndPools = preparedParams.topUpFeesAndPools,
+                       let topUpAmount = preparedParams.topUpAmount {
+                        return self.topUp(
+                                owner: owner,
+                                needsCreateUserRelayAddress: info.relayAccountStatus == .notYetCreated,
+                                sourceToken: payingFeeToken,
+                                amount: topUpAmount,
+                                topUpPools: topUpFeesAndPools.poolsPair,
+                                topUpFee: topUpFeesAndPools.fee.total
+                            )
+                            // STEP 2.2.2: Swap
+                            .flatMap { _ in transfer() }
+                    } else {
+                        return transfer()
+                    }
+                }
+        }
+        
+        public func transfer(
+            network: SolanaSDK.Network,
+            owner: SolanaSDK.Account,
+            sourceToken: TokenInfo,
+            recipientPubkey: String,
+            inputAmount: UInt64,
+            slippage: Double
+        ) throws -> Single<[String]> {
+            // Calculate fee
+            var expectedFee = FeeRelayer.FeeAmount(transaction: 0, accountBalances: 0)
+            var instructions = [SolanaSDK.TransactionInstruction]()
+    
+            
+            instructions.append(
+                SolanaSDK.TokenProgram.transferInstruction(
+                    tokenProgramId: .tokenProgramId,
+                    source: try SolanaSDK.PublicKey(string: sourceToken.address),
+                    destination: try SolanaSDK.PublicKey(string: recipientPubkey),
+                    owner: owner.publicKey,
+                    amount: inputAmount)
+            )
+    
+            instructions.append(
+                try Program.transferSolInstruction(
+                    userAuthorityAddress: userAuthorityAddress,
+                    recipient: feePayerAddress,
+                    lamports: feeAmount,
+                    network: network
+                )
+            )
+            
+            Single.just([])
+        }
     }
 }
 
 extension Encodable {
     var jsonString: String? {
-        guard let data = try? JSONEncoder().encode(self) else {return nil}
+        guard let data = try? JSONEncoder().encode(self) else { return nil }
         return String(data: data, encoding: .utf8)
     }
 }
