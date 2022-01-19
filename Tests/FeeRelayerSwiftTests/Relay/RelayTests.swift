@@ -11,29 +11,6 @@ class RelayTests: XCTestCase {
     private var orcaSwap: OrcaSwapType!
     private var relayService: FeeRelayerRelayType!
     
-    private func loadWithTest(_ relayTest: RelayTestInfo) throws {
-        let network = SolanaSDK.Network.mainnetBeta
-        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
-        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
-        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
-            solanaClient: solanaClient,
-            accountProvider: accountStorage,
-            notificationHandler: FakeNotificationHandler()
-        )
-        
-        relayService = try FeeRelayer.Relay(
-            apiClient: FeeRelayer.APIClient(version: 1),
-            solanaClient: solanaClient,
-            accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
-        )
-        
-        _ = try orcaSwap.load().toBlocking().first()
-        _ = try relayService.load().toBlocking().first()
-    }
-
     override func tearDownWithError() throws {
         solanaClient = nil
         orcaSwap = nil
@@ -42,9 +19,16 @@ class RelayTests: XCTestCase {
     
     // MARK: - TopUpAndSwap
     func testTopUpAndSwapToCreatedToken() throws {
-        // load test
-        let testInfo = testsInfo.splToCreatedSpl
-        try loadWithTest(testInfo)
+        try swap(testInfo: testsInfo.splToCreatedSpl!)
+    }
+    
+    func testTopUpAndSwapToNonCreatedToken() throws {
+        try swap(testInfo: testsInfo.splToNonCreatedSpl!)
+    }
+    
+    // MARK: - Helpers
+    private func swap(testInfo: RelaySwapTestInfo) throws {
+        try loadWithSwapTest(testInfo)
         
         // get pools pair
         let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
@@ -96,6 +80,28 @@ class RelayTests: XCTestCase {
         
         print(signatures)
         XCTAssertTrue(signatures.count > 0)
+    }
+    
+    private func loadWithSwapTest(_ relayTest: RelaySwapTestInfo) throws {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
+        orcaSwap = OrcaSwap(
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            solanaClient: solanaClient,
+            accountProvider: accountStorage,
+            notificationHandler: FakeNotificationHandler()
+        )
         
+        relayService = try FeeRelayer.Relay(
+            apiClient: FeeRelayer.APIClient(version: 1),
+            solanaClient: solanaClient,
+            accountStorage: accountStorage,
+            orcaSwapClient: orcaSwap
+        )
+        
+        _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
     }
 }
