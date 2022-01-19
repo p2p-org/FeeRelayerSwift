@@ -9,7 +9,7 @@ class RelayTests: XCTestCase {
     
     private var solanaClient: SolanaSDK!
     private var orcaSwap: OrcaSwapType!
-    private var relayService: FeeRelayer.Relay!
+    private var relayService: FeeRelayerRelayType!
     
     private func loadWithTest(_ relayTest: RelayTestInfo) throws {
         let network = SolanaSDK.Network.mainnetBeta
@@ -23,7 +23,7 @@ class RelayTests: XCTestCase {
             notificationHandler: FakeNotificationHandler()
         )
         
-        relayService = try .init(
+        relayService = try FeeRelayer.Relay(
             apiClient: FeeRelayer.APIClient(version: 1),
             solanaClient: solanaClient,
             accountStorage: accountStorage,
@@ -75,7 +75,7 @@ class RelayTests: XCTestCase {
         let topUpAmount = feeAndTopUpAmount.topUpAmount ?? 0
         
         // get relay account balance
-        let relayAccountBalance = try relayService.getRelayAccountStatus().toBlocking().first()?.balance ?? 0
+        let relayAccountBalance = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()?.balance ?? 0
         
         if fee > relayAccountBalance {
             XCTAssertEqual(topUpAmount, fee - relayAccountBalance)

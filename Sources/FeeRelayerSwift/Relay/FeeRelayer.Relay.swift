@@ -93,7 +93,7 @@ extension FeeRelayer {
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
                 // get relayAccount status
-                getRelayAccountStatus()
+                getRelayAccountStatus(reuseCache: false)
             )
                 .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _ in
                     self?.locker.lock()
@@ -109,7 +109,7 @@ extension FeeRelayer {
         }
         
         /// Get relayAccount status
-        public func getRelayAccountStatus(reuseCache: Bool = false) -> Single<RelayAccountStatus> {
+        public func getRelayAccountStatus(reuseCache: Bool) -> Single<RelayAccountStatus> {
             // form request
             let request: Single<RelayAccountStatus>
             if reuseCache,
@@ -145,7 +145,8 @@ extension FeeRelayer {
                         destinationAddress: destinationAddress,
                         payingFeeToken: payingFeeToken,
                         swapPools: swapPools,
-                        relayAccountStatus: relayAccountStatus
+                        relayAccountStatus: relayAccountStatus,
+                        reuseCache: true
                     )
                 }
                 .map { preparedParams -> (fee: UInt64?, topUpAmount: UInt64?) in
@@ -174,7 +175,8 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.unsupportedSwap)
             }
             
-            return getRelayAccountStatus()
+            // get fresh data by ignoring cache
+            return getRelayAccountStatus(reuseCache: false)
                 .flatMap { [weak self] relayAccountStatus -> Single<(RelayAccountStatus, TopUpAndActionPreparedParams)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return self.prepareForTopUpAndSwap(
@@ -183,7 +185,8 @@ extension FeeRelayer {
                         destinationAddress: destinationAddress,
                         payingFeeToken: payingFeeToken,
                         swapPools: swapPools,
-                        relayAccountStatus: relayAccountStatus
+                        relayAccountStatus: relayAccountStatus,
+                        reuseCache: false
                     )
                         .map {(relayAccountStatus, $0)}
                 }
@@ -254,7 +257,7 @@ extension FeeRelayer {
             payingFeeToken: TokenInfo,
             swapPools: OrcaSwap.PoolsPair,
             relayAccountStatus: RelayAccountStatus,
-            reuseCache: Bool = false
+            reuseCache: Bool
         ) -> Single<TopUpAndActionPreparedParams> {
             // form request
             let request: Single<TopUpAndActionPreparedParams>
