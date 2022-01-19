@@ -36,8 +36,8 @@ public protocol FeeRelayerRelayType {
     ) -> Single<FeeRelayer.Relay.TopUpAndActionPreparedParams>
     
     /// Calculate needed fee that needs to be taken from payingToken
-    public func calculateNeededFee(
-        preparedParams: TopUpAndActionPreparedParams
+    func calculateNeededFee(
+        preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams
     ) -> UInt64?
     
     /// Top up relay account (if needed) and swap
