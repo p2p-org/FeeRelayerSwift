@@ -71,8 +71,8 @@ class RelayTests: XCTestCase {
             payingFeeToken: payingToken,
             swapPools: pools
         ).toBlocking().first()!
-        let fee = feeAndTopUpAmount.fee ?? 0
-        let topUpAmount = feeAndTopUpAmount.topUpAmount ?? 0
+        let fee = feeAndTopUpAmount.feeInSOL?.total ?? 0
+        let topUpAmount = feeAndTopUpAmount.topUpAmountInSOL ?? 0
         
         // get relay account balance
         let relayAccountBalance = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()?.balance ?? 0
