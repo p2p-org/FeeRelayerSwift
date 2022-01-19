@@ -63,20 +63,33 @@ class RelayTests: XCTestCase {
             mint: testInfo.payingTokenMint
         )
         
-        let preparedParams = try relayService.prepareForTopUpAndSwap(
+        // calculate fee and needed topup amount
+        let feeAndTopUpAmount = try relayService.calculateFeeAndNeededTopUpAmountForSwapping(
             sourceToken: sourceToken,
             destinationTokenMint: testInfo.toMint,
             destinationAddress: testInfo.destinationAddress,
             payingFeeToken: payingToken,
             swapPools: pools
         ).toBlocking().first()!
+        let fee = feeAndTopUpAmount.fee ?? 0
+        let topUpAmount = feeAndTopUpAmount.topUpAmount ?? 0
         
+        // get relay account balance
+        let relayAccountBalance = try relayService.getRelayAccountStatus().toBlocking().first()?.balance ?? 0
+        
+        if fee > relayAccountBalance {
+            XCTAssertEqual(topUpAmount, fee - relayAccountBalance)
+        } else {
+            XCTAssertEqual(topUpAmount, 0)
+        }
+        
+        // send params
         let signatures = try relayService.topUpAndSwap(
             sourceToken: sourceToken,
             destinationTokenMint: testInfo.toMint,
             destinationAddress: testInfo.destinationAddress,
             payingFeeToken: payingToken,
-            preparedParams: preparedParams,
+            swapPools: pools,
             inputAmount: testInfo.inputAmount,
             slippage: 0.05
         ).toBlocking().first()!

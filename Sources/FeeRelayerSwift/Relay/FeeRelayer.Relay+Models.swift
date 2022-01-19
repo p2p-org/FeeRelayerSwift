@@ -17,7 +17,6 @@ extension FeeRelayer.Relay {
         var minimumRelayAccountBalance: UInt64
         var feePayerAddress: String
         var lamportsPerSignature: UInt64
-        var relayAccountStatus: RelayAccountStatus
     }
     
     // MARK: - Top up

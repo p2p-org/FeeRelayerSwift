@@ -87,7 +87,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair) throws -> FeeRelayer.FeeAmount {
+    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> FeeRelayer.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
             network: .mainnetBeta, // fake
@@ -103,7 +103,7 @@ extension FeeRelayer.Relay {
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
             minimumRelayAccountBalance: info.minimumRelayAccountBalance,
             minimumTokenAccountBalance: info.minimumTokenAccountBalance,
-            needsCreateUserRelayAccount: info.relayAccountStatus == .notYetCreated,
+            needsCreateUserRelayAccount: relayAccountStatus == .notYetCreated,
             feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
             lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount

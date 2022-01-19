@@ -25,20 +25,18 @@ public protocol FeeRelayerRelayType {
     /// Load all needed info for relay operations, need to be completed before any operation
     func load() -> Completable
     
+    /// Get info of relay account
+    func getRelayAccountStatus(reuseCache: Bool) -> Single<FeeRelayer.Relay.RelayAccountStatus>
+    
     // MARK: - TopUpAndSwap
-    /// Calculate prepared params, get all pools, fees, topUp amount for swapping
-    func prepareForTopUpAndSwap(
+    /// Calculate needed fee IN SOL
+    func calculateFeeAndNeededTopUpAmountForSwapping(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo,
         swapPools: OrcaSwap.PoolsPair
-    ) -> Single<FeeRelayer.Relay.TopUpAndActionPreparedParams>
-    
-    /// Calculate needed fee that needs to be taken from payingToken
-    func calculateNeededFee(
-        preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams
-    ) -> UInt64?
+    ) -> Single<(fee: UInt64?, topUpAmount: UInt64?)>
     
     /// Top up relay account (if needed) and swap
     func topUpAndSwap(
@@ -46,7 +44,7 @@ public protocol FeeRelayerRelayType {
         destinationTokenMint: String,
         destinationAddress: String?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo,
-        preparedParams: FeeRelayer.Relay.TopUpAndActionPreparedParams,
+        swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
     ) -> Single<[String]>
@@ -54,13 +52,18 @@ public protocol FeeRelayerRelayType {
 
 extension FeeRelayer {
     public class Relay: FeeRelayerRelayType {
-        // MARK: - Properties
-        var info: RelayInfo? // All info needed to perform actions, works as a cache
-        private let userRelayAddress: SolanaSDK.PublicKey
+        // MARK: - Dependencies
         private let apiClient: FeeRelayerAPIClientType
         private let solanaClient: FeeRelayerRelaySolanaClient
         let accountStorage: SolanaSDKAccountStorage
         let orcaSwapClient: OrcaSwapType
+        
+        // MARK: - Properties
+        private let locker = NSLock()
+        private let userRelayAddress: SolanaSDK.PublicKey
+        var info: RelayInfo? // All info needed to perform actions, works as a cache
+        private var cachedRelayAccountStatus: RelayAccountStatus?
+        private var cachedPreparedParams: TopUpAndActionPreparedParams?
         
         // MARK: - Initializers
         public init(
@@ -89,86 +92,67 @@ extension FeeRelayer {
                 apiClient.getFeePayerPubkey(),
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
-                // get relayAccount's status
-                solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+                // get relayAccount status
+                getRelayAccountStatus()
             )
-                .observe(on: MainScheduler.instance)
-                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, relayAccountStatus in
+                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _ in
+                    self?.locker.lock()
                     self?.info = .init(
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         feePayerAddress: feePayerAddress,
-                        lamportsPerSignature: lamportsPerSignature,
-                        relayAccountStatus: relayAccountStatus
+                        lamportsPerSignature: lamportsPerSignature
                     )
+                    self?.locker.unlock()
                 })
                 .asCompletable()
         }
         
-        public func prepareForTopUpAndSwap(
-            sourceToken: TokenInfo,
-            destinationTokenMint: String,
-            destinationAddress: String?,
-            payingFeeToken: TokenInfo,
-            swapPools: OrcaSwap.PoolsPair
-        ) -> Single<TopUpAndActionPreparedParams> {
-            // get tradable poolspair for top up
-            orcaSwapClient
-                .getTradablePoolsPairs(
-                    fromMint: payingFeeToken.mint,
-                    toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
-                )
-                .map { [weak self] tradableTopUpPoolsPair in
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
-                    guard let info = self.info else {throw FeeRelayer.Error.relayInfoMissing}
-                    
-                    // SWAP
-                    let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
-                    let destinationToken = destination.destinationToken
-                    let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
-                    let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
-                    
-                    let swappingFee = try self.calculateSwappingFee(
-                        sourceToken: sourceToken,
-                        destinationToken: destinationToken,
-                        userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
-                        pools: swapPools,
-                        needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount
-                    )
-                    
-                    // TOP UP
-                    let topUpFeesAndPools: FeesAndPools?
-                    var topUpAmount: UInt64?
-                    if let relayAccountBalance = info.relayAccountStatus.balance,
-                       relayAccountBalance >= swappingFee.total
-                    {
-                        topUpFeesAndPools = nil
-                    }
-                    // STEP 2.2: Else
-                    else {
-                        // Get best poolpairs for topping up
-                        topUpAmount = swappingFee.total - (info.relayAccountStatus.balance ?? 0)
-                        
-                        guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
-                            throw FeeRelayer.Error.swapPoolsNotFound
-                        }
-                        let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools)
-                        topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
-                    }
-                    
-                    return .init(
-                        topUpFeesAndPools: topUpFeesAndPools,
-                        actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools),
-                        topUpAmount: topUpAmount
-                    )
-                }
+        /// Get relayAccount status
+        public func getRelayAccountStatus(reuseCache: Bool = false) -> Single<RelayAccountStatus> {
+            // form request
+            let request: Single<RelayAccountStatus>
+            if reuseCache,
+               let cachedRelayAccountStatus = cachedRelayAccountStatus {
+                request = .just(cachedRelayAccountStatus)
+            } else {
+                request = solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+                    .do(onSuccess: {[weak self] in
+                        self?.locker.lock()
+                        self?.cachedRelayAccountStatus = $0
+                        self?.locker.unlock()
+                    })
+            }
+            
+            // get relayAccount's status
+            return request
         }
         
-        public func calculateNeededFee(
-            preparedParams: TopUpAndActionPreparedParams
-        ) -> UInt64? {
-            guard let amountInSOL = preparedParams.topUpAmount else {return nil}
-            return preparedParams.topUpFeesAndPools?.poolsPair.getInputAmount(minimumAmountOut: amountInSOL, slippage: 0.01)
+        /// Calculate fee and need amount for topup and swap
+        public func calculateFeeAndNeededTopUpAmountForSwapping(
+            sourceToken: FeeRelayer.Relay.TokenInfo,
+            destinationTokenMint: String,
+            destinationAddress: String?,
+            payingFeeToken: FeeRelayer.Relay.TokenInfo,
+            swapPools: OrcaSwap.PoolsPair
+        ) -> Single<(fee: UInt64?, topUpAmount: UInt64?)> {
+            getRelayAccountStatus(reuseCache: true)
+                .flatMap {[weak self] relayAccountStatus -> Single<TopUpAndActionPreparedParams> in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    return self.prepareForTopUpAndSwap(
+                        sourceToken: sourceToken,
+                        destinationTokenMint: destinationTokenMint,
+                        destinationAddress: destinationAddress,
+                        payingFeeToken: payingFeeToken,
+                        swapPools: swapPools,
+                        relayAccountStatus: relayAccountStatus
+                    )
+                }
+                .map { preparedParams -> (fee: UInt64?, topUpAmount: UInt64?) in
+                    let feeAmountInSOL = preparedParams.actionFeesAndPools.fee.total
+                    let topUpAmount = preparedParams.topUpAmount
+                    return (fee: feeAmountInSOL, topUpAmount: topUpAmount)
+                }
         }
         
         public func topUpAndSwap(
@@ -176,7 +160,7 @@ extension FeeRelayer {
             destinationTokenMint: String,
             destinationAddress: String?,
             payingFeeToken: TokenInfo,
-            preparedParams: TopUpAndActionPreparedParams,
+            swapPools: OrcaSwap.PoolsPair,
             inputAmount: UInt64,
             slippage: Double
         ) -> Single<[String]> {
@@ -190,10 +174,20 @@ extension FeeRelayer {
                 return .error(FeeRelayer.Error.unsupportedSwap)
             }
             
-            // reload needed info
-            return load()
-                .andThen(Single<Void>.just(()))
-                .flatMap { [weak self] in
+            return getRelayAccountStatus()
+                .flatMap { [weak self] relayAccountStatus -> Single<(RelayAccountStatus, TopUpAndActionPreparedParams)> in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    return self.prepareForTopUpAndSwap(
+                        sourceToken: sourceToken,
+                        destinationTokenMint: destinationTokenMint,
+                        destinationAddress: destinationAddress,
+                        payingFeeToken: payingFeeToken,
+                        swapPools: swapPools,
+                        relayAccountStatus: relayAccountStatus
+                    )
+                        .map {(relayAccountStatus, $0)}
+                }
+                .flatMap { [weak self] relayAccountStatus, preparedParams in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     // get needed info
                     guard let info = self.info else {
@@ -237,7 +231,7 @@ extension FeeRelayer {
                         // STEP 2.2.1: Top up
                         return self.topUp(
                             owner: owner,
-                            needsCreateUserRelayAddress: info.relayAccountStatus == .notYetCreated,
+                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
                             topUpPools: topUpFeesAndPools.poolsPair,
@@ -250,6 +244,81 @@ extension FeeRelayer {
                     }
                 }
                 .observe(on: MainScheduler.instance)
+        }
+        
+        // MARK: - Helpers
+        private func prepareForTopUpAndSwap(
+            sourceToken: TokenInfo,
+            destinationTokenMint: String,
+            destinationAddress: String?,
+            payingFeeToken: TokenInfo,
+            swapPools: OrcaSwap.PoolsPair,
+            relayAccountStatus: RelayAccountStatus,
+            reuseCache: Bool = false
+        ) -> Single<TopUpAndActionPreparedParams> {
+            // form request
+            let request: Single<TopUpAndActionPreparedParams>
+            if reuseCache, let cachedPreparedParams = cachedPreparedParams {
+                request = .just(cachedPreparedParams)
+            } else {
+                request = orcaSwapClient
+                    .getTradablePoolsPairs(
+                        fromMint: payingFeeToken.mint,
+                        toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                    )
+                    .map { [weak self] tradableTopUpPoolsPair in
+                        guard let self = self else {throw FeeRelayer.Error.unknown}
+                        
+                        // SWAP
+                        let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+                        let destinationToken = destination.destinationToken
+                        let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
+                        let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
+                        
+                        let swappingFee = try self.calculateSwappingFee(
+                            sourceToken: sourceToken,
+                            destinationToken: destinationToken,
+                            userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
+                            pools: swapPools,
+                            needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount
+                        )
+                        
+                        // TOP UP
+                        let topUpFeesAndPools: FeesAndPools?
+                        var topUpAmount: UInt64?
+                        if let relayAccountBalance = relayAccountStatus.balance,
+                           relayAccountBalance >= swappingFee.total
+                        {
+                            topUpFeesAndPools = nil
+                        }
+                        // STEP 2.2: Else
+                        else {
+                            // Get best poolpairs for topping up
+                            topUpAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
+                            
+                            guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
+                                throw FeeRelayer.Error.swapPoolsNotFound
+                            }
+                            let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
+                            topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
+                        }
+                        
+                        return .init(
+                            topUpFeesAndPools: topUpFeesAndPools,
+                            actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools),
+                            topUpAmount: topUpAmount
+                        )
+                    }
+                    .do(onSuccess: {[weak self] in
+                        self?.locker.lock()
+                        self?.cachedPreparedParams = $0
+                        self?.locker.unlock()
+                    })
+            }
+            
+            
+            // get tradable poolspair for top up
+            return request
         }
         
         /// Submits a signed top up swap transaction to the backend for processing
