@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'FeeRelayerSwift'
-  s.version          = '1.0.0'
+  s.version          = '2.0.0'
   s.summary          = 'An internal library for handling fee-relayer of p2p-org in Swift.'
 
 # This description is used to generate tags and improve search results.
@@ -28,9 +28,10 @@ TODO: Add long description of the pod here.
   s.source           = { :git => 'https://github.com/p2p-org/FeeRelayerSwift.git', :tag => s.version.to_s }
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
-  s.ios.deployment_target = '9.3'
+  s.ios.deployment_target = '12.0'
 
-  s.source_files = 'FeeRelayerSwift/Classes/**/*'
+  s.source_files = 'Sources/FeeRelayerSwift/**/*'
+  # s.resources = 'Sources/FeeRelayerSwift/Resources/*'
   
   # s.resource_bundles = {
   #   'FeeRelayerSwift' => ['FeeRelayerSwift/Assets/*.png']
@@ -38,6 +39,6 @@ TODO: Add long description of the pod here.
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'RxSwift'
-  s.dependency 'RxAlamofire'
+  s.dependency 'RxAlamofire', '~> 6.1.1'
+  s.dependency 'SolanaSwift', '1.1.6'
 end
