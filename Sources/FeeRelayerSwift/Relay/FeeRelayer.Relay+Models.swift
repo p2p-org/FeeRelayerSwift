@@ -70,7 +70,8 @@ extension FeeRelayer.Relay {
     // MARK: - TransferParam
     public struct TransferParam: Codable {
         let senderTokenAccountPubkey, recipientPubkey, tokenMintPubkey, authorityPubkey: String
-        let amount, decimals, feeAmount: Int
+        let amount, feeAmount: UInt64
+        let decimals: UInt8
         let authoritySignature, blockhash: String
         
         enum CodingKeys: String, CodingKey {

@@ -104,4 +104,38 @@ class RelayTests: XCTestCase {
         _ = try orcaSwap.load().toBlocking().first()
         _ = try relayService.load().toBlocking().first()
     }
+    
+    func testTransfer() throws {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
+        
+        orcaSwap = OrcaSwap(
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            solanaClient: solanaClient,
+            accountProvider: accountStorage,
+            notificationHandler: FakeNotificationHandler()
+        )
+    
+        relayService = try FeeRelayer.Relay(
+            apiClient: FeeRelayer.APIClient(version: 1),
+            solanaClient: solanaClient,
+            accountStorage: accountStorage,
+            orcaSwapClient: orcaSwap
+        )
+    
+        _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
+        
+        relayService.topUpAndSend(
+            sourceToken: ,
+            destinationAddress: <#T##String##Swift.String#>,
+            tokenMint: <#T##String##Swift.String#>,
+            payingFeeToken: <#T##TokenInfo##FeeRelayerSwift.FeeRelayer.Relay.TokenInfo#>,
+            preparedParams: <#T##TopUpAndActionPreparedParams##FeeRelayerSwift.FeeRelayer.Relay.TopUpAndActionPreparedParams#>,
+            inputAmount: <#T##UInt64##Swift.UInt64#>,
+            slippage: <#T##Double##Swift.Double#>
+        )
+    }
 }
