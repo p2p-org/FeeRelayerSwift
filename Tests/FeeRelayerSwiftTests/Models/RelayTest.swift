@@ -4,6 +4,7 @@ import Foundation
 struct RelayTestsInfo: Codable {
     let splToCreatedSpl: RelaySwapTestInfo?
     let splToNonCreatedSpl: RelaySwapTestInfo?
+    let splToSOL: RelaySwapTestInfo?
 }
 
 // MARK: - SplToCreatedSpl
