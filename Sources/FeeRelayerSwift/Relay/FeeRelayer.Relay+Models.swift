@@ -79,10 +79,11 @@ extension FeeRelayer.Relay {
             case recipientPubkey = "recipient_pubkey"
             case tokenMintPubkey = "token_mint_pubkey"
             case authorityPubkey = "authority_pubkey"
-            case amount, decimals
+            case amount = "amount"
+            case decimals = "decimals"
             case feeAmount = "fee_amount"
             case authoritySignature = "authority_signature"
-            case blockhash
+            case blockhash = "blockhash"
         }
     }
     
