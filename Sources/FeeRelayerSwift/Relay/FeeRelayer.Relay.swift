@@ -56,7 +56,7 @@ public protocol FeeRelayerRelayType {
        - destinationAddress: pass destination wallet address if spl token doesn't exist in this wallet. Otherwise pass wallet's token address.
        - tokenMint: the address of mint
        - inputAmount: the amount that will be transferred
-       - slippage:
+       - payingFeeToken: the token that will be used to pay as fee
      - Returns:
      */
     func topUpAndSend(
