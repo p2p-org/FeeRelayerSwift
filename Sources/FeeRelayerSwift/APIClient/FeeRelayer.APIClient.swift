@@ -49,15 +49,7 @@ extension FeeRelayer {
         /// - Returns: transaction id
         public func sendTransaction(_ requestType: RequestType) -> Single<String> {
             do {
-                let url = FeeRelayer.feeRelayerUrl + "/v\(version)" + requestType.path
-                var urlRequest = try URLRequest(
-                    url: url,
-                    method: .post,
-                    headers: ["Content-Type": "application/json"]
-                )
-                urlRequest.httpBody = try requestType.getParams()
-                
-                return request(urlRequest)
+                return request(try urlRequest(requestType))
                     .responseStringCatchFeeRelayerError()
             } catch {
                 return .error(error)
@@ -69,23 +61,7 @@ extension FeeRelayer {
             decodedTo: T.Type
         ) -> Single<T> {
             do {
-                var url = FeeRelayer.feeRelayerUrl
-                if version > 1 {
-                    url += "/v\(version)"
-                }
-                url += requestType.path
-                var urlRequest = try URLRequest(
-                    url: url,
-                    method: .post,
-                    headers: ["Content-Type": "application/json"]
-                )
-                urlRequest.httpBody = try requestType.getParams()
-                
-                #if DEBUG
-                print(NSString(string: urlRequest.cURL()))
-                #endif
-                
-                return request(urlRequest)
+                return request(try urlRequest(requestType))
                     .responseData()
                     .take(1)
                     .asSingle()
@@ -105,6 +81,25 @@ extension FeeRelayer {
             } catch {
                 return .error(error)
             }
+        }
+        
+        private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
+            var url = FeeRelayer.feeRelayerUrl
+            if version > 1 {
+                url += "/v\(version)"
+            }
+            url += requestType.path
+            var urlRequest = try URLRequest(
+                url: url,
+                method: .post,
+                headers: ["Content-Type": "application/json"]
+            )
+            urlRequest.httpBody = try requestType.getParams()
+            
+            #if DEBUG
+            print(NSString(string: urlRequest.cURL()))
+            #endif
+            return urlRequest
         }
     }
 }

@@ -34,6 +34,10 @@ class RelayTests: XCTestCase {
         try runTransfer(testsInfo.usdtBackTransfer!)
     }
     
+    func testTopUpAndSwapToSOL() throws {
+        try swap(testInfo: testsInfo.splToSOL!)
+    }
+    
     // MARK: - Helpers
     private func swap(testInfo: RelaySwapTestInfo) throws {
         try loadWithSwapTest(testInfo)
