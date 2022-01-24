@@ -537,7 +537,6 @@ extension FeeRelayer {
                                 return .just(true)
                             }
                         }
-                        .catchAndReturn(true)
                 )
                 .flatMap { blockhash, needsCreateRecipientTokenAccount in
                     // Calculate fee
