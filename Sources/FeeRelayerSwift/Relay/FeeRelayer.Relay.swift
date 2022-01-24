@@ -49,12 +49,22 @@ public protocol FeeRelayerRelayType {
         slippage: Double
     ) -> Single<[String]>
     
+    /**
+     Transfer an amount of spl token to destination address.
+     - Parameters:
+       - sourceToken: source that contains address of account and mint address.
+       - destinationAddress: pass destination wallet address if spl token doesn't exist in this wallet. Otherwise pass wallet's token address.
+       - tokenMint: the address of mint
+       - inputAmount: the amount that will be transferred
+       - slippage:
+     - Returns:
+     */
     func topUpAndSend(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationAddress: String,
         tokenMint: String,
         inputAmount: UInt64,
-        slippage: Double
+        payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
 }
 
@@ -394,30 +404,84 @@ extension FeeRelayer {
             destinationAddress: String,
             tokenMint: String,
             inputAmount: UInt64,
-            slippage: Double) -> Single<[String]> {
-            return getRelayAccountStatus(reuseCache: false)
-                .flatMap { [weak self] relayAccountStatus in
-                    guard let self = self else { throw FeeRelayer.Error.unknown }
-                    guard let owner = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
-                    guard let info = self.info else { return .error(FeeRelayer.Error.relayInfoMissing) }
-                    
-                    return self.solanaClient.getTokenSupply(pubkey: tokenMint)
-                        .flatMap { tokenInfo in
-                            try self.transfer(
-                                network: self.solanaClient.endpoint.network,
-                                owner: owner,
-                                sourceToken: sourceToken,
-                                recipientPubkey: destinationAddress,
-                                tokenMintAddress: tokenMint,
-                                feePayerAddress: info.feePayerAddress,
-                                minimumTokenAccountBalance: info.minimumTokenAccountBalance,
-                                inputAmount: inputAmount,
-                                decimals: tokenInfo.decimals,
-                                slippage: 0.01,
-                                lamportsPerSignature: info.lamportsPerSignature
+            payingFeeToken: FeeRelayer.Relay.TokenInfo
+        ) -> Single<[String]> {
+            Single.zip(
+                getRelayAccountStatus(reuseCache: false),
+                solanaClient.getTokenSupply(pubkey: tokenMint)
+            ).flatMap { [weak self] relayAccountStatus, tokenInfo in
+                guard let self = self else { throw FeeRelayer.Error.unknown }
+                guard let owner = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
+                guard let info = self.info else { return .error(FeeRelayer.Error.relayInfoMissing) }
+                
+                return try self.makeTransferTransaction(
+                    network: self.solanaClient.endpoint.network,
+                    owner: owner,
+                    sourceToken: sourceToken,
+                    recipientPubkey: destinationAddress,
+                    tokenMintAddress: tokenMint,
+                    feePayerAddress: info.feePayerAddress,
+                    lamportsPerSignatures: info.lamportsPerSignature,
+                    minimumTokenAccountBalance: info.minimumTokenAccountBalance,
+                    inputAmount: inputAmount,
+                    decimals: tokenInfo.decimals
+                )
+                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount, TopUpPreparedParams)> in
+                        Single.zip(
+                            .just(transaction),
+                            .just(amount),
+                            self.prepareForTopUp(feeAmount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                        )
+                    }
+                    .flatMap { transaction, amount, params in
+                        
+                        let transfer: () throws -> Single<[String]> = {
+                            guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
+                            
+                            var transaction = transaction
+                            try transaction.sign(signers: [account])
+                            
+                            guard let authoritySignature = transaction.findSignature(pubkey: account.publicKey)?.signature else { return .error(FeeRelayer.Error.invalidSignature) }
+                            guard let blockhash = transaction.recentBlockhash else { return .error(FeeRelayer.Error.unknown) }
+    
+                            return self.apiClient.sendTransaction(
+                                .relayTransferSPLTokena(
+                                    .init(
+                                        senderTokenAccountPubkey: sourceToken.address,
+                                        recipientPubkey: destinationAddress,
+                                        tokenMintPubkey: tokenMint,
+                                        authorityPubkey: account.publicKey.base58EncodedString,
+                                        amount: inputAmount,
+                                        feeAmount: amount.total,
+                                        decimals: tokenInfo.decimals,
+                                        authoritySignature: Base58.encode(authoritySignature.bytes),
+                                        blockhash: blockhash
+                                    )
+                                ),
+                                decodedTo: [String].self
                             )
                         }
-                }
+                        
+                        // STEP 2: Check if relay account has already had enough balance to cover swapping fee
+                        // STEP 2.1: If relay account has enough balance to cover swapping fee
+                        if let topUpFeesAndPools = params.topUpFeesAndPools,
+                           let topUpAmount = params.topUpAmount {
+                            // STEP 2.2.1: Top up
+                            return self.topUp(
+                                owner: owner,
+                                needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                                sourceToken: payingFeeToken,
+                                amount: topUpAmount,
+                                topUpPools: topUpFeesAndPools.poolsPair,
+                                topUpFee: topUpFeesAndPools.fee.total
+                            )
+                                // STEP 2.2.2: Swap
+                                .flatMap { _ in try transfer() }
+                        } else {
+                            return try transfer()
+                        }
+                    }
+            }
         }
         
         public func transfer(
@@ -595,7 +659,50 @@ extension FeeRelayer {
                     
                     expectedFee.transaction += try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignatures)
                     
+                    print(expectedFee.total)
                     return .just((transaction, expectedFee))
+                }
+        }
+        
+        // MARK: - Helpers
+        private func prepareForTopUp(
+            feeAmount: FeeAmount,
+            payingFeeToken: TokenInfo,
+            relayAccountStatus: RelayAccountStatus
+        ) -> Single<TopUpPreparedParams> {
+            // form request
+            orcaSwapClient
+                .getTradablePoolsPairs(
+                    fromMint: payingFeeToken.mint,
+                    toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                )
+                .map { [weak self] tradableTopUpPoolsPair in
+                    guard let self = self else { throw FeeRelayer.Error.unknown }
+                    
+                    
+                    // TOP UP
+                    let topUpFeesAndPools: FeesAndPools?
+                    var topUpAmount: UInt64?
+                    if let relayAccountBalance = relayAccountStatus.balance,
+                       relayAccountBalance >= feeAmount.total {
+                        topUpFeesAndPools = nil
+                    }
+                    // STEP 2.2: Else
+                    else {
+                        // Get best poolpairs for topping up
+                        topUpAmount = feeAmount.total - (relayAccountStatus.balance ?? 0)
+                        
+                        guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
+                            throw FeeRelayer.Error.swapPoolsNotFound
+                        }
+                        let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
+                        topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
+                    }
+                    
+                    return .init(
+                        topUpFeesAndPools: topUpFeesAndPools,
+                        topUpAmount: topUpAmount
+                    )
                 }
         }
     }

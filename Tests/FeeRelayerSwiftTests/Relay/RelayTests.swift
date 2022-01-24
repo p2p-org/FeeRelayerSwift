@@ -30,6 +30,10 @@ class RelayTests: XCTestCase {
         try runTransfer(testsInfo.usdtTransfer!)
     }
     
+    func testUSDTBackTransfer() throws {
+        try runTransfer(testsInfo.usdtBackTransfer!)
+    }
+    
     // MARK: - Helpers
     private func swap(testInfo: RelaySwapTestInfo) throws {
         try loadWithSwapTest(testInfo)
@@ -132,6 +136,11 @@ class RelayTests: XCTestCase {
         _ = try orcaSwap.load().toBlocking().first()
         _ = try relayService.load().toBlocking().first()
         
+        let payingToken = FeeRelayer.Relay.TokenInfo(
+            address: relayTest.payingTokenAddress,
+            mint: relayTest.payingTokenMint
+        )
+        
         let signature = try relayService.topUpAndSend(
             sourceToken: FeeRelayer.Relay.TokenInfo(
                 address: relayTest.sourceTokenAddress,
@@ -140,7 +149,7 @@ class RelayTests: XCTestCase {
             destinationAddress: relayTest.destinationAddress,
             tokenMint: relayTest.mint,
             inputAmount: relayTest.inputAmount,
-            slippage: relayTest.slippage
+            payingFeeToken: payingToken
         ).toBlocking().first()
         print(signature ?? "Nothing")
     }

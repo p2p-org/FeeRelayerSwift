@@ -5,6 +5,7 @@ struct RelayTestsInfo: Codable {
     let splToCreatedSpl: RelaySwapTestInfo?
     let splToNonCreatedSpl: RelaySwapTestInfo?
     let usdtTransfer: RelayTransferTestInfo?
+    let usdtBackTransfer: RelayTransferTestInfo?
 }
 
 // MARK: - SplToCreatedSpl
@@ -22,5 +23,6 @@ struct RelayTransferTestInfo: Codable {
     let endpointAdditionalQuery, seedPhrase, mint: String
     let sourceTokenAddress, destinationAddress : String
     let inputAmount: UInt64
-    let slippage: Double
+    let payingTokenAddress: String
+    let payingTokenMint: String
 }

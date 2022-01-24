@@ -209,6 +209,11 @@ extension FeeRelayer.Relay {
         let mint: String
     }
     
+    public struct TopUpPreparedParams {
+        public let topUpFeesAndPools: FeesAndPools?
+        public let topUpAmount: UInt64?
+    }
+    
     public struct TopUpAndActionPreparedParams {
         public let topUpFeesAndPools: FeesAndPools?
         public let actionFeesAndPools: FeesAndPools
