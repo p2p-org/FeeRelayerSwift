@@ -7,6 +7,7 @@
 
 import Foundation
 import SolanaSwift
+import OrcaSwapSwift
 
 public protocol FeeRelayerRelaySwapType: Encodable {}
 

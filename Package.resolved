@@ -38,6 +38,15 @@
         }
       },
       {
+        "package": "OrcaSwapSwift",
+        "repositoryURL": "https://github.com/p2p-org/OrcaSwapSwift.git",
+        "state": {
+          "branch": null,
+          "revision": "1364d85d95c279bfce8575844a1f1c744ac04ae0",
+          "version": "1.0.0"
+        }
+      },
+      {
         "package": "Runtime",
         "repositoryURL": "https://github.com/wickwirew/Runtime.git",
         "state": {
@@ -78,8 +87,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
           "branch": null,
-          "revision": "4745d38d16673f4e1c15fa199adb8b0adae0bfc9",
-          "version": "1.1.7"
+          "revision": "e6d01311ce657f0bd0a7acc37ddf3c6089627a82",
+          "version": "1.1.9"
         }
       },
       {

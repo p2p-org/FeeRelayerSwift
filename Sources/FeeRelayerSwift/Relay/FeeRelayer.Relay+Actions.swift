@@ -8,6 +8,7 @@
 import Foundation
 import SolanaSwift
 import RxSwift
+import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
     /// Submits a signed top up swap transaction to the backend for processing

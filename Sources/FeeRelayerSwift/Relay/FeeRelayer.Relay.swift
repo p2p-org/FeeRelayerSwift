@@ -8,6 +8,7 @@
 import Foundation
 import RxSwift
 import SolanaSwift
+import OrcaSwapSwift
 
 /// Top up and make a transaction
 /// STEP 0: Prepare all information needed for the transaction
