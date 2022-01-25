@@ -25,14 +25,16 @@ let package = Package(
         .package(url: "https://github.com/RxSwiftCommunity/RxAlamofire.git",
                              from: "6.1.1"),
         .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"),
-        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.1.7")
+        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.1.9"),
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "1.0.0")
     ],
     targets: [
         .target(
             name: "FeeRelayerSwift",
             dependencies: [
                 "RxAlamofire",
-                .product(name: "SolanaSwift", package: "solana-swift")
+                .product(name: "SolanaSwift", package: "solana-swift"),
+                .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift")
             ]
         ),
         .testTarget(

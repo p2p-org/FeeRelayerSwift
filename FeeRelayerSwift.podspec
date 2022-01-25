@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'FeeRelayerSwift'
-  s.version          = '2.0.1'
+  s.version          = '2.0.2'
   s.summary          = 'An internal library for handling fee-relayer of p2p-org in Swift.'
 
 # This description is used to generate tags and improve search results.
@@ -29,7 +29,7 @@ TODO: Add long description of the pod here.
   # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
   s.ios.deployment_target = '12.0'
-
+  s.swift_version = '5.5'
   s.source_files = 'Sources/FeeRelayerSwift/**/*'
   # s.resources = 'Sources/FeeRelayerSwift/Resources/*'
   
@@ -40,5 +40,6 @@ TODO: Add long description of the pod here.
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'RxAlamofire', '~> 6.1.1'
-  s.dependency 'SolanaSwift', '1.1.7'
+  s.dependency 'SolanaSwift', '1.1.9'
+  s.dependency 'OrcaSwapSwift', '1.0.0'
 end

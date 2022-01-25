@@ -8,6 +8,7 @@
 import Foundation
 import SolanaSwift
 import RxSwift
+import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
     /// Submits a signed top up swap transaction to the backend for processing
@@ -27,6 +28,7 @@ extension FeeRelayer.Relay {
                 guard let info = self.info else { throw FeeRelayer.Error.relayInfoMissing }
                 
                 // STEP 3: prepare for topUp
+                let amount = amount + topUpFee
                 let topUpTransaction = try self.prepareForTopUp(
                     network: self.solanaClient.endpoint.network,
                     sourceToken: sourceToken,

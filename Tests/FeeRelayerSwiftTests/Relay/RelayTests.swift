@@ -3,6 +3,7 @@ import RxBlocking
 import SolanaSwift
 @testable import FeeRelayerSwift
 import RxSwift
+import OrcaSwapSwift
 
 class RelayTests: XCTestCase {
     private let testsInfo = try! getDataFromJSONTestResourceFile(fileName: "relay-tests", decodedTo: RelayTestsInfo.self)
