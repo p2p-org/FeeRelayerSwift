@@ -42,8 +42,8 @@
         "repositoryURL": "https://github.com/p2p-org/OrcaSwapSwift.git",
         "state": {
           "branch": null,
-          "revision": "555ef805d29e388e080dc92e81460c6c604e172e",
-          "version": "1.0.2"
+          "revision": "c92a70efcb24677b2d0c18778e783e2a2c06c59d",
+          "version": "1.0.3"
         }
       },
       {
@@ -87,8 +87,8 @@
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
           "branch": null,
-          "revision": "e6d01311ce657f0bd0a7acc37ddf3c6089627a82",
-          "version": "1.1.9"
+          "revision": "2efac466f31cc811b8b0ad65f3c559b8ffa22418",
+          "version": "1.1.10"
         }
       },
       {
