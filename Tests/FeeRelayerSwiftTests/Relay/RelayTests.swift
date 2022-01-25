@@ -27,16 +27,16 @@ class RelayTests: XCTestCase {
         try swap(testInfo: testsInfo.splToNonCreatedSpl!)
     }
     
+    func testTopUpAndSwapToSOL() throws {
+        try swap(testInfo: testsInfo.splToSOL!)
+    }
+    
     func testUSDTTransfer() throws {
         try runTransfer(testsInfo.usdtTransfer!)
     }
     
     func testUSDTBackTransfer() throws {
         try runTransfer(testsInfo.usdtBackTransfer!)
-    }
-    
-    func testTopUpAndSwapToSOL() throws {
-        try swap(testInfo: testsInfo.splToSOL!)
     }
     
     // MARK: - Helpers
