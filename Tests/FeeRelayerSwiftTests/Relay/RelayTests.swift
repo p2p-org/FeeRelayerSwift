@@ -27,6 +27,14 @@ class RelayTests: XCTestCase {
         try swap(testInfo: testsInfo.splToNonCreatedSpl!)
     }
     
+    func testUSDTTransfer() throws {
+        try runTransfer(testsInfo.usdtTransfer!)
+    }
+    
+    func testUSDTBackTransfer() throws {
+        try runTransfer(testsInfo.usdtBackTransfer!)
+    }
+    
     func testTopUpAndSwapToSOL() throws {
         try swap(testInfo: testsInfo.splToSOL!)
     }
@@ -108,5 +116,46 @@ class RelayTests: XCTestCase {
         
         _ = try orcaSwap.load().toBlocking().first()
         _ = try relayService.load().toBlocking().first()
+    }
+    
+    func runTransfer(_ relayTest: RelayTransferTestInfo) throws {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
+        
+        orcaSwap = OrcaSwap(
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            solanaClient: solanaClient,
+            accountProvider: accountStorage,
+            notificationHandler: FakeNotificationHandler()
+        )
+        
+        relayService = try FeeRelayer.Relay(
+            apiClient: FeeRelayer.APIClient(version: 1),
+            solanaClient: solanaClient,
+            accountStorage: accountStorage,
+            orcaSwapClient: orcaSwap
+        )
+        
+        _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
+        
+        let payingToken = FeeRelayer.Relay.TokenInfo(
+            address: relayTest.payingTokenAddress,
+            mint: relayTest.payingTokenMint
+        )
+        
+        let signature = try relayService.topUpAndSend(
+            sourceToken: FeeRelayer.Relay.TokenInfo(
+                address: relayTest.sourceTokenAddress,
+                mint: relayTest.mint
+            ),
+            destinationAddress: relayTest.destinationAddress,
+            tokenMint: relayTest.mint,
+            inputAmount: relayTest.inputAmount,
+            payingFeeToken: payingToken
+        ).toBlocking().first()
+        print(signature ?? "Nothing")
     }
 }

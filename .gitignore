@@ -36,3 +36,7 @@ Carthage/Build
 #
 Pods/
 relay-tests.json
+
+.build
+.idea
+/Tests/Resources/

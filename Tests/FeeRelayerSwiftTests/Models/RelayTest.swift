@@ -4,6 +4,8 @@ import Foundation
 struct RelayTestsInfo: Codable {
     let splToCreatedSpl: RelaySwapTestInfo?
     let splToNonCreatedSpl: RelaySwapTestInfo?
+    let usdtTransfer: RelayTransferTestInfo?
+    let usdtBackTransfer: RelayTransferTestInfo?
     let splToSOL: RelaySwapTestInfo?
 }
 
@@ -15,4 +17,13 @@ struct RelaySwapTestInfo: Codable {
     let destinationAddress: String?
     let inputAmount: UInt64
     let slippage: Double
+}
+
+struct RelayTransferTestInfo: Codable {
+    let endpoint: String
+    let endpointAdditionalQuery, seedPhrase, mint: String
+    let sourceTokenAddress, destinationAddress: String
+    let inputAmount: UInt64
+    let payingTokenAddress: String
+    let payingTokenMint: String
 }

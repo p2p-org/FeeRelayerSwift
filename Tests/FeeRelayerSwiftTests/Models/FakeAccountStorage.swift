@@ -4,6 +4,7 @@ import SolanaSwift
 import OrcaSwapSwift
 
 class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
+    
     private let seedPhrase: String
     private let network: SolanaSDK.Network
     
@@ -20,12 +21,10 @@ class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
         account?.publicKey
     }
     
+    func save(_ account: SolanaSDK.Account) throws {}
+    
     var account: SolanaSDK.Account? {
         try! .init(phrase: seedPhrase.components(separatedBy: " "), network: network, derivablePath: .default)
-    }
-    
-    func save(_ account: SolanaSDK.Account) throws {
-        fatalError()
     }
 }
 
