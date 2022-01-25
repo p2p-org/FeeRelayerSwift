@@ -28,6 +28,7 @@ extension FeeRelayer.Relay {
                 guard let info = self.info else { throw FeeRelayer.Error.relayInfoMissing }
                 
                 // STEP 3: prepare for topUp
+                let amount = amount + topUpFee
                 let topUpTransaction = try self.prepareForTopUp(
                     network: self.solanaClient.endpoint.network,
                     sourceToken: sourceToken,
