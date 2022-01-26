@@ -57,5 +57,8 @@ extension FeeRelayer {
             .init(path: "/relay_transfer_spl_token", params: params)
         }
         
+        public static func relayTransaction(_ params: Relay.RelayTransactionParam) -> RequestType {
+            .init(path: "/relay_transaction", params: params)
+        }
     }
 }

@@ -88,6 +88,38 @@ extension FeeRelayer.Relay {
         }
     }
     
+    // MARK: - RelayTransactionParam
+    public struct RelayTransactionParam: Codable {
+        let instructions: [RequestInstruction]
+        let signatures: [String: String]
+        let pubkeys: [String]
+        let blockhash: String
+    }
+    
+    public struct RequestInstruction: Codable {
+        let programIndex: UInt8
+        let accounts: [RequestAccountMeta]
+        let data: [UInt8]
+        
+        enum CodingKeys: String, CodingKey {
+            case programIndex = "program_id"
+            case accounts
+            case data
+        }
+    }
+    
+    public struct RequestAccountMeta: Codable {
+        let pubkeyIndex: UInt8
+        let isSigner: Bool
+        let isWritable: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case pubkeyIndex = "pubkey"
+            case isSigner = "is_signer"
+            case isWritable = "is_writable"
+        }
+    }
+    
     // MARK: - Swap data
     public struct SwapData: Encodable {
         public init(_ swap: FeeRelayerRelaySwapType) {
