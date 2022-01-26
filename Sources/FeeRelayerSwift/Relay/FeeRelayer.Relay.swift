@@ -67,6 +67,13 @@ public protocol FeeRelayerRelayType {
         inputAmount: UInt64,
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
+    
+    /// Top up relay account (if needed) and relay transaction
+    func topUpAndRelayTransaction(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
+        fee: FeeRelayer.FeeAmount,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo
+    ) -> Single<[String]>
 }
 
 extension FeeRelayer {
@@ -483,6 +490,40 @@ extension FeeRelayer {
                         }
                     }
             }
+        }
+        
+        public func topUpAndRelayTransaction(
+            preparedTransaction: SolanaSDK.PreparedTransaction,
+            fee: FeeAmount,
+            payingFeeToken: TokenInfo
+        ) -> Single<[String]> {
+            getRelayAccountStatus(reuseCache: false)
+                .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    return self.prepareForTopUp(feeAmount: fee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                        .map {($0, relayAccountStatus)}
+                }
+                .flatMap { [weak self] params, relayAccountStatus in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let owner = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
+                    
+                    if let topUpFeesAndPools = params.topUpFeesAndPools,
+                       let topUpAmount = params.topUpAmount {
+                        // STEP 2.2.1: Top up
+                        return self.topUp(
+                            owner: owner,
+                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                            sourceToken: payingFeeToken,
+                            amount: topUpAmount,
+                            topUpPools: topUpFeesAndPools.poolsPair,
+                            topUpFee: topUpFeesAndPools.fee.total
+                        )
+                            // STEP 2.2.2: Swap
+                            .flatMap { _ in try transfer() }
+                    } else {
+                        return try transfer()
+                    }
+                }
         }
         
         // MARK: - Helpers
