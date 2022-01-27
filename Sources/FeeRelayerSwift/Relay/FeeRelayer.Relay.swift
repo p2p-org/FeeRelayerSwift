@@ -67,6 +67,12 @@ public protocol FeeRelayerRelayType {
         inputAmount: UInt64,
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
+    
+    /// Top up relay account (if needed) and relay transaction
+    func topUpAndRelayTransaction(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo
+    ) -> Single<[String]>
 }
 
 extension FeeRelayer {
@@ -174,7 +180,7 @@ extension FeeRelayer {
                     let feeAmountInSOL = preparedParams.actionFeesAndPools.fee
                     let topUpAmount = preparedParams.topUpAmount
                     
-                    var feeAmountInPayingToken: FeeRelayer.FeeAmount?
+                    var feeAmountInPayingToken: SolanaSDK.FeeAmount?
                     var topUpAmountInPayingToken: UInt64?
                     
                     if let topUpPools = topUpPools {
@@ -427,7 +433,7 @@ extension FeeRelayer {
                     inputAmount: inputAmount,
                     decimals: tokenInfo.decimals
                 )
-                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount, TopUpPreparedParams)> in
+                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, TopUpPreparedParams)> in
                         Single.zip(
                             .just(transaction),
                             .just(amount),
@@ -436,7 +442,8 @@ extension FeeRelayer {
                     }
                     .flatMap { transaction, amount, params in
                         
-                        let transfer: () throws -> Single<[String]> = {
+                        let transfer: () throws -> Single<[String]> = { [weak self] in
+                            guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                             guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
                             
                             var transaction = transaction
@@ -485,9 +492,52 @@ extension FeeRelayer {
             }
         }
         
+        public func topUpAndRelayTransaction(
+            preparedTransaction: SolanaSDK.PreparedTransaction,
+            payingFeeToken: TokenInfo
+        ) -> Single<[String]> {
+            getRelayAccountStatus(reuseCache: false)
+                .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    return self.prepareForTopUp(feeAmount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                        .map {($0, relayAccountStatus)}
+                }
+                .flatMap { [weak self] params, relayAccountStatus in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let owner = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
+                    
+                    let transfer: () throws -> Single<[String]> = { [weak self] in
+                        guard let self = self else {return .error(FeeRelayer.Error.unknown)}
+                        return self.apiClient.sendTransaction(
+                            .relayTransaction(
+                                try .init(preparedTransaction: preparedTransaction)
+                            ),
+                            decodedTo: [String].self
+                        )
+                    }
+                    
+                    if let topUpFeesAndPools = params.topUpFeesAndPools,
+                       let topUpAmount = params.topUpAmount {
+                        // STEP 2.2.1: Top up
+                        return self.topUp(
+                            owner: owner,
+                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                            sourceToken: payingFeeToken,
+                            amount: topUpAmount,
+                            topUpPools: topUpFeesAndPools.poolsPair,
+                            topUpFee: topUpFeesAndPools.fee.total
+                        )
+                            // STEP 2.2.2: Swap
+                            .flatMap { _ in try transfer() }
+                    } else {
+                        return try transfer()
+                    }
+                }
+        }
+        
         // MARK: - Helpers
         private func prepareForTopUp(
-            feeAmount: FeeAmount,
+            feeAmount: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo,
             relayAccountStatus: RelayAccountStatus
         ) -> Single<TopUpPreparedParams> {

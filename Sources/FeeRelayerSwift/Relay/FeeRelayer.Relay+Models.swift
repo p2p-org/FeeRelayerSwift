@@ -88,6 +88,73 @@ extension FeeRelayer.Relay {
         }
     }
     
+    // MARK: - RelayTransactionParam
+    public struct RelayTransactionParam: Codable {
+        let instructions: [RequestInstruction]
+        let signatures: [String: String]
+        let pubkeys: [String]
+        let blockhash: String
+        
+        public init(preparedTransaction: SolanaSDK.PreparedTransaction) throws {
+            guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
+            else {throw FeeRelayer.Error.unknown}
+            
+            let message = try preparedTransaction.transaction.compileMessage()
+            pubkeys = message.accountKeys.map {$0.base58EncodedString}
+            blockhash = recentBlockhash
+            instructions = message.instructions.map {compiledInstruction -> RequestInstruction in
+                let accounts: [RequestAccountMeta] = compiledInstruction.accounts.map { account in
+                    .init(
+                        pubkeyIndex: UInt8(account),
+                        isSigner: message.isAccountSigner(index: account),
+                        isWritable: message.isAccountWritable(index: account)
+                    )
+                }
+                
+                return.init(
+                    programIndex: compiledInstruction.programIdIndex,
+                    accounts: accounts,
+                    data: compiledInstruction.data
+                )
+            }
+            var signatures = [String: String]()
+            for signer in preparedTransaction.signers {
+                if let idx = pubkeys.firstIndex(of: signer.publicKey.base58EncodedString) {
+                    let idxString = "\(idx)"
+                    let signature = try preparedTransaction.findSignature(publicKey: signer.publicKey)
+                    signatures[idxString] = signature
+                } else {
+                    throw FeeRelayer.Error.invalidSignature
+                }
+            }
+            self.signatures = signatures
+        }
+    }
+    
+    public struct RequestInstruction: Codable {
+        let programIndex: UInt8
+        let accounts: [RequestAccountMeta]
+        let data: [UInt8]
+        
+        enum CodingKeys: String, CodingKey {
+            case programIndex = "program_id"
+            case accounts
+            case data
+        }
+    }
+    
+    public struct RequestAccountMeta: Codable {
+        let pubkeyIndex: UInt8
+        let isSigner: Bool
+        let isWritable: Bool
+        
+        enum CodingKeys: String, CodingKey {
+            case pubkeyIndex = "pubkey"
+            case isSigner = "is_signer"
+            case isWritable = "is_writable"
+        }
+    }
+    
     // MARK: - Swap data
     public struct SwapData: Encodable {
         public init(_ swap: FeeRelayerRelaySwapType) {
@@ -182,7 +249,7 @@ extension FeeRelayer.Relay {
     struct PreparedParams {
         let swapData: FeeRelayerRelaySwapType
         let transaction: SolanaSDK.Transaction
-        let feeAmount: FeeRelayer.FeeAmount
+        let feeAmount: SolanaSDK.FeeAmount
         let transferAuthorityAccount: SolanaSDK.Account
     }
     
@@ -222,14 +289,14 @@ extension FeeRelayer.Relay {
     }
     
     public struct FeesAndPools {
-        public let fee: FeeRelayer.FeeAmount
+        public let fee: SolanaSDK.FeeAmount
         public let poolsPair: OrcaSwap.PoolsPair
     }
     
     public struct FeesAndTopUpAmount {
-        public let feeInSOL: FeeRelayer.FeeAmount?
+        public let feeInSOL: SolanaSDK.FeeAmount?
         public let topUpAmountInSOL: UInt64?
-        public let feeInPayingToken: FeeRelayer.FeeAmount?
+        public let feeInPayingToken: SolanaSDK.FeeAmount?
         public let topUpAmountInPayingToen: UInt64?
     }
 }

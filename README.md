@@ -50,6 +50,37 @@ To run relay tests, create a valid file with name `relay-tests.json` inside `Tes
         "payingTokenAddress": <String>, // Address of token that have enough balance to cover fee
         "inputAmount": 1000000, // Input amount in lamports
         "slippage": 0.05
+    },
+    "usdtTransfer": { // relay_transfer_spl_token
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "sourceTokenAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
+        "destinationAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
+        "inputAmount": 100,
+        "payingTokenAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    },
+    "usdtBackTransfer": { // relay_transfer_spl_token
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "sourceTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
+        "destinationAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
+        "inputAmount": 100,
+        "payingTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    },
+    "relaySendNativeSOL": { // relay_transaction
+                "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "destinationAddress": <String?>, // Destination token address
+        "inputAmount": 1000000, // Input amount in lamports
+        "payingTokenMint": <String>, // Mint of token that you want to use to pay fee
+        "payingTokenAddress": <String>, // Address of token that have enough balance to cover fee
     }
 }
 ```
