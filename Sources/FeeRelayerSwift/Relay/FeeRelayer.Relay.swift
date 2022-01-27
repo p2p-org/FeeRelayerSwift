@@ -71,7 +71,6 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
-        fee: SolanaSDK.FeeAmount,
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
 }
@@ -494,13 +493,12 @@ extension FeeRelayer {
         
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            fee: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo
         ) -> Single<[String]> {
             getRelayAccountStatus(reuseCache: false)
                 .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    return self.prepareForTopUp(feeAmount: fee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                    return self.prepareForTopUp(feeAmount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
