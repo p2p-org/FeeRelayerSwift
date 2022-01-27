@@ -24,7 +24,7 @@ struct RelayTransferTestInfo: Codable {
     let endpoint: String
     let endpointAdditionalQuery, seedPhrase, mint: String
     let sourceTokenAddress, destinationAddress: String
-    let inputAmount: UInt64
+    let inputAmount, expectedFee: UInt64
     let payingTokenAddress: String
     let payingTokenMint: String
 }

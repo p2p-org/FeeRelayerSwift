@@ -43,6 +43,10 @@ class RelayTests: XCTestCase {
         try runRelaySendNativeSOL(testsInfo.relaySendNativeSOL!)
     }
     
+    func testRelaySendSPLToken() throws {
+        try runRelaySendSPLToken(testsInfo.usdtTransfer!)
+    }
+    
     // MARK: - Helpers
     private func swap(testInfo: RelaySwapTestInfo) throws {
         try loadWithSwapTest(testInfo)
@@ -199,6 +203,56 @@ class RelayTests: XCTestCase {
             amount: test.inputAmount,
             feePayer: try SolanaSDK.PublicKey(string: feePayer)
         ).toBlocking().first()!
+        
+        XCTAssertEqual(preparedTransaction.expectedFee.total, test.expectedFee)
+        
+        let signature = try relayService.topUpAndRelayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: payingToken
+        ).toBlocking().first()
+        print(signature ?? "Nothing")
+    }
+    
+    func runRelaySendSPLToken(_ test: RelayTransferTestInfo) throws {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: test.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: test.endpoint, network: network, additionalQuery: test.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
+        
+        orcaSwap = OrcaSwap(
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            solanaClient: solanaClient,
+            accountProvider: accountStorage,
+            notificationHandler: FakeNotificationHandler()
+        )
+        
+        let feeRelayerAPIClient = FeeRelayer.APIClient(version: 1)
+        relayService = try FeeRelayer.Relay(
+            apiClient: feeRelayerAPIClient,
+            solanaClient: solanaClient,
+            accountStorage: accountStorage,
+            orcaSwapClient: orcaSwap
+        )
+        
+        _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
+        
+        let payingToken = FeeRelayer.Relay.TokenInfo(
+            address: test.payingTokenAddress,
+            mint: test.payingTokenMint
+        )
+        
+        let feePayer = try feeRelayerAPIClient.getFeePayerPubkey().toBlocking().first()!
+        
+        let preparedTransaction = try solanaClient.prepareSendingSPLTokens(
+            mintAddress: test.mint,
+            decimals: 6,
+            from: test.sourceTokenAddress,
+            to: test.destinationAddress,
+            amount: 100,
+            feePayer: try SolanaSDK.PublicKey(string: feePayer),
+            transferChecked: true
+        ).toBlocking().first()!.preparedTransaction
         
         XCTAssertEqual(preparedTransaction.expectedFee.total, test.expectedFee)
         
