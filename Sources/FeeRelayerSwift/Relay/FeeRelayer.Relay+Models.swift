@@ -273,8 +273,8 @@ extension FeeRelayer.Relay {
             self.mint = mint
         }
         
-        let address: String
-        let mint: String
+        public let address: String
+        public let mint: String
     }
     
     public struct TopUpPreparedParams {
