@@ -442,7 +442,8 @@ extension FeeRelayer {
                     }
                     .flatMap { transaction, amount, params in
                         
-                        let transfer: () throws -> Single<[String]> = {
+                        let transfer: () throws -> Single<[String]> = { [weak self] in
+                            guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                             guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
                             
                             var transaction = transaction
@@ -505,6 +506,16 @@ extension FeeRelayer {
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     guard let owner = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
                     
+                    let transfer: () throws -> Single<[String]> = { [weak self] in
+                        guard let self = self else {return .error(FeeRelayer.Error.unknown)}
+                        return self.apiClient.sendTransaction(
+                            .relayTransaction(
+                                try .init(preparedTransaction: preparedTransaction)
+                            ),
+                            decodedTo: [String].self
+                        )
+                    }
+                    
                     if let topUpFeesAndPools = params.topUpFeesAndPools,
                        let topUpAmount = params.topUpAmount {
                         // STEP 2.2.1: Top up
@@ -517,9 +528,9 @@ extension FeeRelayer {
                             topUpFee: topUpFeesAndPools.fee.total
                         )
                             // STEP 2.2.2: Swap
-                            .flatMap { _ in fatalError() }
+                            .flatMap { _ in try transfer() }
                     } else {
-                        fatalError()
+                        return try transfer()
                     }
                 }
         }
