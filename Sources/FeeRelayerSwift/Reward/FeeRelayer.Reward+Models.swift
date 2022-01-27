@@ -6,17 +6,18 @@
 //
 
 import Foundation
+import SolanaSwift
 
 extension FeeRelayer.Reward {
     // MARK: - Transfer SOL
     public struct TransferSolParams: Encodable {
         let sender: String
         let recipient: String
-        let amount: FeeRelayer.Lamports
+        let amount: SolanaSDK.Lamports
         var signature: String
         var blockhash: String
         
-        public init(sender: String, recipient: String, amount: FeeRelayer.Lamports, signature: String, blockhash: String) {
+        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String) {
             self.sender = sender
             self.recipient = recipient
             self.amount = amount
@@ -39,12 +40,12 @@ extension FeeRelayer.Reward {
         let recipient: String
         let mintAddress: String
         let authority: String
-        let amount: FeeRelayer.Lamports
-        let decimals: FeeRelayer.Decimals
+        let amount: SolanaSDK.Lamports
+        let decimals: SolanaSDK.Decimals
         var signature: String
         var blockhash: String
         
-        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: FeeRelayer.Lamports, decimals: FeeRelayer.Decimals, signature: String, blockhash: String) {
+        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: SolanaSDK.Lamports, decimals: SolanaSDK.Decimals, signature: String, blockhash: String) {
             self.sender = sender
             self.recipient = recipient
             self.mintAddress = mintAddress

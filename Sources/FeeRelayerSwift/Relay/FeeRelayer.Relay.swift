@@ -71,7 +71,7 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
-        fee: FeeRelayer.FeeAmount,
+        fee: SolanaSDK.FeeAmount,
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
 }
@@ -181,7 +181,7 @@ extension FeeRelayer {
                     let feeAmountInSOL = preparedParams.actionFeesAndPools.fee
                     let topUpAmount = preparedParams.topUpAmount
                     
-                    var feeAmountInPayingToken: FeeRelayer.FeeAmount?
+                    var feeAmountInPayingToken: SolanaSDK.FeeAmount?
                     var topUpAmountInPayingToken: UInt64?
                     
                     if let topUpPools = topUpPools {
@@ -434,7 +434,7 @@ extension FeeRelayer {
                     inputAmount: inputAmount,
                     decimals: tokenInfo.decimals
                 )
-                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount, TopUpPreparedParams)> in
+                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, TopUpPreparedParams)> in
                         Single.zip(
                             .just(transaction),
                             .just(amount),
@@ -494,7 +494,7 @@ extension FeeRelayer {
         
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            fee: FeeAmount,
+            fee: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo
         ) -> Single<[String]> {
             getRelayAccountStatus(reuseCache: false)
@@ -528,7 +528,7 @@ extension FeeRelayer {
         
         // MARK: - Helpers
         private func prepareForTopUp(
-            feeAmount: FeeAmount,
+            feeAmount: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo,
             relayAccountStatus: RelayAccountStatus
         ) -> Single<TopUpPreparedParams> {

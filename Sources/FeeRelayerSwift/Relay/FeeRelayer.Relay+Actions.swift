@@ -154,7 +154,7 @@ extension FeeRelayer.Relay {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             inputAmount: inputAmount,
             decimals: decimals
-        ).flatMap { [weak self] transaction, feeAmount -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount)> in
+        ).flatMap { [weak self] transaction, feeAmount -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> in
             guard let self = self else { return .error(FeeRelayer.Error.unknown) }
             guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
             var transaction = transaction
@@ -198,8 +198,8 @@ extension FeeRelayer.Relay {
         minimumTokenAccountBalance: UInt64,
         inputAmount: UInt64,
         decimals: SolanaSDK.Decimals
-    ) throws -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount)> {
-        let makeTransactionWrapper: (UInt64) throws -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount)> = { feeAmount in
+    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> {
+        let makeTransactionWrapper: (UInt64) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> = { feeAmount in
             try self._createTransferTransaction(
                 network: network,
                 owner: owner,
@@ -231,7 +231,7 @@ extension FeeRelayer.Relay {
         minimumTokenAccountBalance: UInt64,
         inputAmount: UInt64,
         decimals: SolanaSDK.Decimals
-    ) throws -> Single<(SolanaSDK.Transaction, FeeRelayer.FeeAmount)> {
+    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> {
         Single.zip(
                 // Get recent blockhash
                 solanaClient.getRecentBlockhash(),
@@ -251,7 +251,7 @@ extension FeeRelayer.Relay {
             )
             .flatMap { blockhash, needsCreateRecipientTokenAccount in
                 // Calculate fee
-                var expectedFee = FeeRelayer.FeeAmount(transaction: 0, accountBalances: 0)
+                var expectedFee = SolanaSDK.FeeAmount(transaction: 0, accountBalances: 0)
                 
                 var instructions = [SolanaSDK.TransactionInstruction]()
                 

@@ -25,7 +25,7 @@ let package = Package(
         .package(url: "https://github.com/RxSwiftCommunity/RxAlamofire.git",
                              from: "6.1.1"),
         .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"),
-        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.1.16"),
+        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.1.17"),
         .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "1.0.4")
     ],
     targets: [

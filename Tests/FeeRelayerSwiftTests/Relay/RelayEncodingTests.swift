@@ -106,7 +106,8 @@ class RelayEncodingTests: XCTestCase {
         
         let preparedTransaction = SolanaSDK.PreparedTransaction(
             transaction: transaction,
-            signers: [signer]
+            signers: [signer],
+            expectedFee: .init(transaction: 0, accountBalances: 0)
         )
         
         let params = try FeeRelayer.Relay.RelayTransactionParam(preparedTransaction: preparedTransaction)

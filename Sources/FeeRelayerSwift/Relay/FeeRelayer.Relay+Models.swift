@@ -249,7 +249,7 @@ extension FeeRelayer.Relay {
     struct PreparedParams {
         let swapData: FeeRelayerRelaySwapType
         let transaction: SolanaSDK.Transaction
-        let feeAmount: FeeRelayer.FeeAmount
+        let feeAmount: SolanaSDK.FeeAmount
         let transferAuthorityAccount: SolanaSDK.Account
     }
     
@@ -289,14 +289,14 @@ extension FeeRelayer.Relay {
     }
     
     public struct FeesAndPools {
-        public let fee: FeeRelayer.FeeAmount
+        public let fee: SolanaSDK.FeeAmount
         public let poolsPair: OrcaSwap.PoolsPair
     }
     
     public struct FeesAndTopUpAmount {
-        public let feeInSOL: FeeRelayer.FeeAmount?
+        public let feeInSOL: SolanaSDK.FeeAmount?
         public let topUpAmountInSOL: UInt64?
-        public let feeInPayingToken: FeeRelayer.FeeAmount?
+        public let feeInPayingToken: SolanaSDK.FeeAmount?
         public let topUpAmountInPayingToen: UInt64?
     }
 }

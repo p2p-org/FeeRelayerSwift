@@ -88,7 +88,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> FeeRelayer.FeeAmount {
+    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
             network: .mainnetBeta, // fake
@@ -136,7 +136,7 @@ extension FeeRelayer.Relay {
         else { throw FeeRelayer.Error.wrongAddress }
         
         // forming transaction and count fees
-        var expectedFee = FeeRelayer.FeeAmount(transaction: 0, accountBalances: 0)
+        var expectedFee = SolanaSDK.FeeAmount(transaction: 0, accountBalances: 0)
         var instructions = [SolanaSDK.TransactionInstruction]()
         
         // create user relay account
@@ -273,7 +273,7 @@ extension FeeRelayer.Relay {
         userDestinationAccountOwnerAddress: String?,
         pools: OrcaSwap.PoolsPair,
         needsCreateDestinationTokenAccount: Bool
-    ) throws -> FeeRelayer.FeeAmount {
+    ) throws -> SolanaSDK.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForSwapping(
             network: .mainnetBeta, // fake
@@ -321,7 +321,7 @@ extension FeeRelayer.Relay {
         let destinationTokenMintAddress = try SolanaSDK.PublicKey(string: destinationToken.mint)
         
         // forming transaction and count fees
-        var expectedFee = FeeRelayer.FeeAmount(transaction: 0, accountBalances: 0)
+        var expectedFee = SolanaSDK.FeeAmount(transaction: 0, accountBalances: 0)
         var instructions = [SolanaSDK.TransactionInstruction]()
         
         // create destination address
