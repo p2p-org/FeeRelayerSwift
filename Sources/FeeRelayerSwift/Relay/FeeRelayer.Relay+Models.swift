@@ -94,6 +94,41 @@ extension FeeRelayer.Relay {
         let signatures: [String: String]
         let pubkeys: [String]
         let blockhash: String
+        
+        public init(preparedTransaction: SolanaSDK.PreparedTransaction) throws {
+            guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
+            else {throw FeeRelayer.Error.unknown}
+            
+            let message = try preparedTransaction.transaction.compileMessage()
+            pubkeys = message.accountKeys.map {$0.base58EncodedString}
+            blockhash = recentBlockhash
+            instructions = message.instructions.map {compiledInstruction -> RequestInstruction in
+                let accounts: [RequestAccountMeta] = compiledInstruction.accounts.map { account in
+                    .init(
+                        pubkeyIndex: UInt8(account),
+                        isSigner: message.isAccountWritable(index: account),
+                        isWritable: message.isAccountSigner(index: account)
+                    )
+                }
+                
+                return.init(
+                    programIndex: compiledInstruction.programIdIndex,
+                    accounts: accounts,
+                    data: compiledInstruction.data
+                )
+            }
+            var signatures = [String: String]()
+            for signer in preparedTransaction.signers {
+                if let idx = pubkeys.firstIndex(of: signer.publicKey.base58EncodedString) {
+                    let idxString = "\(idx)"
+                    let signature = try preparedTransaction.findSignature(publicKey: signer.publicKey)
+                    signatures[idxString] = signature
+                } else {
+                    throw FeeRelayer.Error.invalidSignature
+                }
+            }
+            self.signatures = signatures
+        }
     }
     
     public struct RequestInstruction: Codable {

@@ -519,9 +519,9 @@ extension FeeRelayer {
                             topUpFee: topUpFeesAndPools.fee.total
                         )
                             // STEP 2.2.2: Swap
-                            .flatMap { _ in try transfer() }
+                            .flatMap { _ in fatalError() }
                     } else {
-                        return try transfer()
+                        fatalError()
                     }
                 }
         }
