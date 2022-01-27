@@ -106,8 +106,8 @@ extension FeeRelayer.Relay {
                 let accounts: [RequestAccountMeta] = compiledInstruction.accounts.map { account in
                     .init(
                         pubkeyIndex: UInt8(account),
-                        isSigner: message.isAccountWritable(index: account),
-                        isWritable: message.isAccountSigner(index: account)
+                        isSigner: message.isAccountSigner(index: account),
+                        isWritable: message.isAccountWritable(index: account)
                     )
                 }
                 
