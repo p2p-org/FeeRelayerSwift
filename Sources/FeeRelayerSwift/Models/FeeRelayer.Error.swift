@@ -35,7 +35,7 @@ extension FeeRelayer {
         case unknown                        = "UnknownError"
     }
     
-    public struct Error: Swift.Error, Decodable {
+    public struct Error: Swift.Error, Decodable, Equatable {
         
         public let code: Int
         public let message: String
