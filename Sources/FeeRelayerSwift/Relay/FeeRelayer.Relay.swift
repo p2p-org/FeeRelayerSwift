@@ -79,6 +79,8 @@ public protocol FeeRelayerRelayType {
         preparedTransaction: SolanaSDK.PreparedTransaction,
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<[String]>
+    
+    func canUseFeeRelayer(useCache: Bool) -> Single<FeeRelayer.Relay.UserAvailableInfo>
 }
 
 extension FeeRelayer {
@@ -113,6 +115,24 @@ extension FeeRelayer {
         }
         
         // MARK: - Methods
+        private var cachedUserAvailableInfo: UserAvailableInfo? = nil
+        public func canUseFeeRelayer(useCache: Bool) -> Single<UserAvailableInfo> {
+            if useCache, let cachedUserAvailableInfo = cachedUserAvailableInfo {
+                print("Hit cache")
+                return .just(cachedUserAvailableInfo)
+            }
+    
+            // TODO: Check fee relay account.
+            guard let account = accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
+            return apiClient
+                .requestFreeFeeLimits(for: account.publicKey.base58EncodedString)
+                .map { [weak self] info in
+                    let info = UserAvailableInfo(maxUsage: info.limits.maxCount, currentUsage: info.processedFee.count)
+                    self?.cachedUserAvailableInfo = info
+                    return info
+                }
+        }
+    
         public func load() -> Completable {
             Single.zip(
                     // get minimum token account balance
