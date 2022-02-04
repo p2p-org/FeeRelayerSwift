@@ -9,7 +9,7 @@ import Foundation
 import SolanaSwift
 
 extension FeeRelayer.Relay {
-    enum Program {
+    public enum Program {
         static func id(network: SolanaSDK.Network) -> SolanaSDK.PublicKey {
             switch network {
             case .mainnetBeta:
@@ -106,7 +106,7 @@ extension FeeRelayer.Relay {
             }
         }
         
-        static func transferSolInstruction(
+        public static func transferSolInstruction(
             userAuthorityAddress: SolanaSDK.PublicKey,
             recipient: SolanaSDK.PublicKey,
             lamports: UInt64,

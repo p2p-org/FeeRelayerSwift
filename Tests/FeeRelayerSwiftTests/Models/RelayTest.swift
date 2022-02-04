@@ -6,6 +6,7 @@ struct RelayTestsInfo: Codable {
     let splToNonCreatedSpl: RelaySwapTestInfo?
     let usdtTransfer: RelayTransferTestInfo?
     let usdtBackTransfer: RelayTransferTestInfo?
+    let usdtTransferToNonCreatedToken: RelayTransferTestInfo?
     let splToSOL: RelaySwapTestInfo?
     let relaySendNativeSOL: RelayTransferNativeSOLTestInfo?
 }

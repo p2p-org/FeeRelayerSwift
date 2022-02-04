@@ -439,14 +439,15 @@ extension FeeRelayer {
                     inputAmount: inputAmount,
                     decimals: tokenInfo.decimals
                 )
-                    .flatMap { transaction, amount -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, TopUpPreparedParams)> in
+                    .flatMap { transaction, amount, recipientTokenAccountAddress -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, SolanaSDK.SPLTokenDestinationAddress, TopUpPreparedParams)> in
                         Single.zip(
                             .just(transaction),
                             .just(amount),
+                            .just(recipientTokenAccountAddress),
                             self.prepareForTopUp(feeAmount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         )
                     }
-                    .flatMap { transaction, amount, params in
+                    .flatMap { transaction, amount, recipientTokenAccountAddress, params in
                         
                         let transfer: () throws -> Single<[String]> = { [weak self] in
                             guard let self = self else {return .error(FeeRelayer.Error.unknown)}
@@ -462,7 +463,7 @@ extension FeeRelayer {
                                 .relayTransferSPLTokena(
                                     .init(
                                         senderTokenAccountPubkey: sourceToken.address,
-                                        recipientPubkey: destinationAddress,
+                                        recipientPubkey: recipientTokenAccountAddress.isUnregisteredAsocciatedToken ? destinationAddress: recipientTokenAccountAddress.destination.base58EncodedString,
                                         tokenMintPubkey: tokenMint,
                                         authorityPubkey: account.publicKey.base58EncodedString,
                                         amount: inputAmount,

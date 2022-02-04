@@ -39,6 +39,10 @@ class RelayTests: XCTestCase {
         try runTransferSPLToken(testsInfo.usdtBackTransfer!)
     }
     
+    func testUSDTTransferToNonCreatedToken() throws {
+        try runTransferSPLToken(testsInfo.usdtTransferToNonCreatedToken!)
+    }
+    
     func testRelaySendNativeSOL() throws {
         try runRelaySendNativeSOL(testsInfo.relaySendNativeSOL!)
     }

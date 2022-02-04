@@ -154,14 +154,14 @@ extension FeeRelayer.Relay {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             inputAmount: inputAmount,
             decimals: decimals
-        ).flatMap { [weak self] transaction, feeAmount -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> in
+        ).flatMap { [weak self] transaction, feeAmount, recipientTokenAccountAddress -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, SolanaSDK.SPLTokenDestinationAddress)> in
             guard let self = self else { return .error(FeeRelayer.Error.unknown) }
             guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
             var transaction = transaction
             try transaction.sign(signers: [account])
-            return Single.just((transaction, feeAmount))
+            return Single.just((transaction, feeAmount, recipientTokenAccountAddress))
         }
-        .flatMap { [weak self] transaction, feeAmount -> Single<[String]> in
+        .flatMap { [weak self] transaction, feeAmount, recipientTokenAccountAddress -> Single<[String]> in
             guard let self = self else { return .error(FeeRelayer.Error.unknown) }
             guard let account = self.accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
             guard let authoritySignature = transaction.findSignature(pubkey: account.publicKey)?.signature else { return .error(FeeRelayer.Error.invalidSignature) }
@@ -171,7 +171,7 @@ extension FeeRelayer.Relay {
                 .relayTransferSPLTokena(
                     .init(
                         senderTokenAccountPubkey: sourceToken.address,
-                        recipientPubkey: recipientPubkey,
+                        recipientPubkey: recipientTokenAccountAddress.isUnregisteredAsocciatedToken ? recipientPubkey: recipientTokenAccountAddress.destination.base58EncodedString,
                         tokenMintPubkey: tokenMintAddress,
                         authorityPubkey: account.publicKey.base58EncodedString,
                         amount: inputAmount,
@@ -198,8 +198,8 @@ extension FeeRelayer.Relay {
         minimumTokenAccountBalance: UInt64,
         inputAmount: UInt64,
         decimals: SolanaSDK.Decimals
-    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> {
-        let makeTransactionWrapper: (UInt64) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> = { feeAmount in
+    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, SolanaSDK.SPLTokenDestinationAddress)> {
+        let makeTransactionWrapper: (UInt64, SolanaSDK.SPLTokenDestinationAddress?) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, SolanaSDK.SPLTokenDestinationAddress)> = { feeAmount, recipientTokenAccountAddress in
             try self._createTransferTransaction(
                 network: network,
                 owner: owner,
@@ -211,12 +211,13 @@ extension FeeRelayer.Relay {
                 lamportsPerSignatures: lamportsPerSignatures,
                 minimumTokenAccountBalance: minimumTokenAccountBalance,
                 inputAmount: inputAmount,
-                decimals: decimals
+                decimals: decimals,
+                recipientTokenAccountAddress: recipientTokenAccountAddress
             )
         }
         
-        return try makeTransactionWrapper(0)
-            .flatMap { transaction, feeAmount in try makeTransactionWrapper(feeAmount.total) }
+        return try makeTransactionWrapper(0, nil)
+            .flatMap { transaction, feeAmount, recipientTokenAccountAddress in try makeTransactionWrapper(feeAmount.total, recipientTokenAccountAddress) }
     }
     
     private func _createTransferTransaction(
@@ -230,58 +231,50 @@ extension FeeRelayer.Relay {
         lamportsPerSignatures: UInt64,
         minimumTokenAccountBalance: UInt64,
         inputAmount: UInt64,
-        decimals: SolanaSDK.Decimals
-    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount)> {
-        Single.zip(
+        decimals: SolanaSDK.Decimals,
+        recipientTokenAccountAddress: SolanaSDK.SPLTokenDestinationAddress? = nil
+    ) throws -> Single<(SolanaSDK.Transaction, SolanaSDK.FeeAmount, SolanaSDK.SPLTokenDestinationAddress)> {
+        let recipientRequest: Single<SolanaSDK.SPLTokenDestinationAddress>
+        
+        if let recipientTokenAccountAddress = recipientTokenAccountAddress {
+            recipientRequest = .just(recipientTokenAccountAddress)
+        } else {
+            recipientRequest = solanaClient.findSPLTokenDestinationAddress(
+                mintAddress: tokenMintAddress,
+                destinationAddress: recipientPubkey
+            )
+        }
+        
+        return Single.zip(
                 // Get recent blockhash
                 solanaClient.getRecentBlockhash(),
                 // Should recipient token account be created?
-                solanaClient.getAccountInfo(account: recipientPubkey, decodedTo: SolanaSDK.EmptyInfo.self)
-                    .flatMap { info -> Single<Bool> in
-                        switch info.owner {
-                        case SolanaSDK.PublicKey.programId.base58EncodedString:
-                            return .just(true)
-                        case SolanaSDK.PublicKey.tokenProgramId.base58EncodedString:
-                            // TODO: validate_token_account(recipient_address.clone(), token_mint_address.to_string(), None)
-                            return .just(false)
-                        default:
-                            return .just(true)
-                        }
-                    }
+                recipientRequest
             )
-            .flatMap { blockhash, needsCreateRecipientTokenAccount in
+            .flatMap { blockhash, recipientTokenAccountAddress in
                 // Calculate fee
                 var expectedFee = SolanaSDK.FeeAmount(transaction: 0, accountBalances: 0)
                 
                 var instructions = [SolanaSDK.TransactionInstruction]()
                 
-                let recipientTokenAccountAddress = try { () -> String in
-                    if needsCreateRecipientTokenAccount {
-                        let associatedAccount = try SolanaSDK.PublicKey.associatedTokenAddress(
-                            walletAddress: try SolanaSDK.PublicKey(string: recipientPubkey),
-                            tokenMintAddress: try SolanaSDK.PublicKey(string: tokenMintAddress)
+                if recipientTokenAccountAddress.isUnregisteredAsocciatedToken {
+                    instructions.append(
+                        SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                            mint: try SolanaSDK.PublicKey(string: tokenMintAddress),
+                            associatedAccount: recipientTokenAccountAddress.destination,
+                            owner: try SolanaSDK.PublicKey(string: recipientPubkey),
+                            payer: try SolanaSDK.PublicKey(string: feePayerAddress)
                         )
-                        instructions.append(
-                            SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-                                mint: try SolanaSDK.PublicKey(string: tokenMintAddress),
-                                associatedAccount: associatedAccount,
-                                owner: try SolanaSDK.PublicKey(string: recipientPubkey),
-                                payer: try SolanaSDK.PublicKey(string: feePayerAddress)
-                            )
-                        )
-                        expectedFee.accountBalances += minimumTokenAccountBalance
-                        return associatedAccount.base58EncodedString
-                    } else {
-                        return recipientPubkey
-                    }
-                }()
+                    )
+                    expectedFee.accountBalances += minimumTokenAccountBalance
+                }
                 
                 instructions.append(
                     SolanaSDK.TokenProgram.transferCheckedInstruction(
                         programId: .tokenProgramId,
                         source: try SolanaSDK.PublicKey(string: sourceToken.address),
                         mint: try SolanaSDK.PublicKey(string: tokenMintAddress),
-                        destination: try SolanaSDK.PublicKey(string: recipientTokenAccountAddress),
+                        destination: recipientTokenAccountAddress.destination,
                         owner: owner.publicKey,
                         multiSigners: [],
                         amount: inputAmount,
@@ -307,7 +300,7 @@ extension FeeRelayer.Relay {
                 expectedFee.transaction += try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignatures)
                 
                 print(expectedFee.total)
-                return .just((transaction, expectedFee))
+                return .just((transaction, expectedFee, recipientTokenAccountAddress))
             }
     }
     
