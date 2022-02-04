@@ -158,7 +158,7 @@ extension FeeRelayer.Relay {
         
         // top up swap
         let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: topUpPools)
-        let swap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey, newTransferAuthorityForTransitiveSwap: true)
+        let swap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
         
         switch swap.swapData {
@@ -199,15 +199,18 @@ extension FeeRelayer.Relay {
             )
         case let swap as TransitiveSwapData:
             // approve
-            instructions.append(
-                SolanaSDK.TokenProgram.approveInstruction(
-                    tokenProgramId: .tokenProgramId,
-                    account: userSourceTokenAccountAddress,
-                    delegate: try SolanaSDK.PublicKey(string: swap.from.transferAuthorityPubkey),
-                    owner: userAuthorityAddress,
-                    amount: swap.from.amountIn
+            if let userTransferAuthority = userTransferAuthority {
+                instructions.append(
+                    SolanaSDK.TokenProgram.approveInstruction(
+                        tokenProgramId: .tokenProgramId,
+                        account: userSourceTokenAccountAddress,
+                        delegate: userTransferAuthority,
+                        owner: userAuthorityAddress,
+                        amount: swap.from.amountIn
+                    )
                 )
-            )
+            }
+            
             // create transit token account
             let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
                 user: userAuthorityAddress,
