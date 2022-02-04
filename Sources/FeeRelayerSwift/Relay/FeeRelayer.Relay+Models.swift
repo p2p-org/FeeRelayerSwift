@@ -232,9 +232,9 @@ extension FeeRelayer.Relay {
     
     public struct SwapTransactionSignatures: Encodable {
         let userAuthoritySignature: String
-        let transferAuthoritySignature: String
+        let transferAuthoritySignature: String?
         
-        public init(userAuthoritySignature: String, transferAuthoritySignature: String) {
+        public init(userAuthoritySignature: String, transferAuthoritySignature: String?) {
             self.userAuthoritySignature = userAuthoritySignature
             self.transferAuthoritySignature = transferAuthoritySignature
         }
@@ -250,7 +250,7 @@ extension FeeRelayer.Relay {
         let swapData: FeeRelayerRelaySwapType
         let transaction: SolanaSDK.Transaction
         let feeAmount: SolanaSDK.FeeAmount
-        let transferAuthorityAccount: SolanaSDK.Account
+        let transferAuthorityAccount: SolanaSDK.Account?
     }
     
     public enum RelayAccountStatus: Equatable {

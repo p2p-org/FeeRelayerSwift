@@ -309,23 +309,34 @@ extension FeeRelayer.Relay {
     private func getSignatures(
         transaction: SolanaSDK.Transaction,
         owner: SolanaSDK.Account,
-        transferAuthorityAccount: SolanaSDK.Account
+        transferAuthorityAccount: SolanaSDK.Account?
     ) throws -> SwapTransactionSignatures {
         var transaction = transaction
         
-        try transaction.sign(signers: [owner, transferAuthorityAccount])
-        guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature,
-              let transferAuthoritySignatureData = transaction.findSignature(pubkey: transferAuthorityAccount.publicKey)?.signature
+        var signers = [owner]
+        
+        if let transferAuthorityAccount = transferAuthorityAccount {
+            signers.append(transferAuthorityAccount)
+        }
+        
+        try transaction.sign(signers: signers)
+        guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature
         else {
             throw FeeRelayer.Error.invalidSignature
+        }
+        let ownerSignature = Base58.encode(ownerSignatureData.bytes)
+        
+        let transferAuthoritySignature: String?
+        if let transferAuthorityAccount = transferAuthorityAccount,
+           let transferAuthoritySignatureData = transaction.findSignature(pubkey: transferAuthorityAccount.publicKey)?.signature {
+            transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
+        } else {
+            transferAuthoritySignature = nil
         }
         
         if let decodedTransaction = transaction.jsonString {
             Logger.log(message: decodedTransaction, event: .info)
         }
-        
-        let ownerSignature = Base58.encode(ownerSignatureData.bytes)
-        let transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
         
         return .init(userAuthoritySignature: ownerSignature, transferAuthoritySignature: transferAuthoritySignature)
     }
