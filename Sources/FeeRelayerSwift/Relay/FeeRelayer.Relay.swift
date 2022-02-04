@@ -288,7 +288,6 @@ extension FeeRelayer {
                        let topUpAmount = preparedParams.topUpAmount {
                         // STEP 2.2.1: Top up
                         return self.topUp(
-                            owner: owner,
                             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
@@ -444,7 +443,7 @@ extension FeeRelayer {
                             .just(transaction),
                             .just(amount),
                             .just(recipientTokenAccountAddress),
-                            self.prepareForTopUp(feeAmount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                            self.prepareForTopUp(amount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         )
                     }
                     .flatMap { transaction, amount, recipientTokenAccountAddress, params in
@@ -483,7 +482,6 @@ extension FeeRelayer {
                            let topUpAmount = params.topUpAmount {
                             // STEP 2.2.1: Top up
                             return self.topUp(
-                                owner: owner,
                                 needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                                 sourceToken: payingFeeToken,
                                 amount: topUpAmount,
@@ -526,7 +524,7 @@ extension FeeRelayer {
             getRelayAccountStatus(reuseCache: false)
                 .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    return self.prepareForTopUp(feeAmount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                    return self.prepareForTopUp(amount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
@@ -547,7 +545,6 @@ extension FeeRelayer {
                        let topUpAmount = params.topUpAmount {
                         // STEP 2.2.1: Top up
                         return self.topUp(
-                            owner: owner,
                             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
@@ -563,8 +560,8 @@ extension FeeRelayer {
         }
         
         // MARK: - Helpers
-        private func prepareForTopUp(
-            feeAmount: SolanaSDK.FeeAmount,
+        func prepareForTopUp(
+            amount: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo,
             relayAccountStatus: RelayAccountStatus
         ) -> Single<TopUpPreparedParams> {
@@ -582,13 +579,13 @@ extension FeeRelayer {
                     let topUpFeesAndPools: FeesAndPools?
                     var topUpAmount: UInt64?
                     if let relayAccountBalance = relayAccountStatus.balance,
-                       relayAccountBalance >= feeAmount.total {
+                       relayAccountBalance >= amount.total {
                         topUpFeesAndPools = nil
                     }
                     // STEP 2.2: Else
                     else {
                         // Get best poolpairs for topping up
-                        topUpAmount = feeAmount.total - (relayAccountStatus.balance ?? 0)
+                        topUpAmount = amount.total - (relayAccountStatus.balance ?? 0)
                         
                         guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
                             throw FeeRelayer.Error.swapPoolsNotFound

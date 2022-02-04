@@ -10,7 +10,7 @@ class RelayTests: XCTestCase {
     
     private var solanaClient: SolanaSDK!
     private var orcaSwap: OrcaSwapType!
-    private var relayService: FeeRelayerRelayType!
+    private var relayService: FeeRelayer.Relay!
     
     override func tearDownWithError() throws {
         solanaClient = nil
@@ -19,6 +19,10 @@ class RelayTests: XCTestCase {
     }
     
     // MARK: - TopUpAndSwap
+    func testTopUp() throws {
+        try topUp(testInfo: testsInfo.topUp!)
+    }
+    
     func testTopUpAndSwapToCreatedToken() throws {
         try swap(testInfo: testsInfo.splToCreatedSpl!)
     }
@@ -52,8 +56,35 @@ class RelayTests: XCTestCase {
     }
     
     // MARK: - Helpers
+    private func topUp(testInfo: RelayTopUpTest) throws {
+        try loadTest(testInfo)
+        
+        // paying token
+        let payingToken = FeeRelayer.Relay.TokenInfo(
+            address: testInfo.payingTokenAddress,
+            mint: testInfo.payingTokenMint
+        )
+        
+        // prepare params
+        let params = try relayService.prepareForTopUp(
+            amount: .init(transaction: testInfo.amount, accountBalances: 0),
+            payingFeeToken: payingToken,
+            relayAccountStatus: .created(balance: 0) // fake
+        ).toBlocking().first()!
+        
+        let signatures = try relayService.topUp(
+            needsCreateUserRelayAddress: false,
+            sourceToken: payingToken,
+            amount: testInfo.amount,
+            topUpPools: params.topUpFeesAndPools!.poolsPair,
+            topUpFee: params.topUpFeesAndPools!.fee.total
+        ).toBlocking().first()!
+        
+        XCTAssertTrue(signatures.count > 0)
+    }
+    
     private func swap(testInfo: RelaySwapTestInfo) throws {
-        try loadWithSwapTest(testInfo)
+        try loadTest(testInfo)
         
         // get pools pair
         let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
@@ -107,51 +138,8 @@ class RelayTests: XCTestCase {
         XCTAssertTrue(signatures.count > 0)
     }
     
-    private func loadWithSwapTest(_ relayTest: RelaySwapTestInfo) throws {
-        let network = SolanaSDK.Network.mainnetBeta
-        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
-        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
-        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
-            solanaClient: solanaClient,
-            accountProvider: accountStorage,
-            notificationHandler: FakeNotificationHandler()
-        )
-        
-        relayService = try FeeRelayer.Relay(
-            apiClient: FeeRelayer.APIClient(version: 1),
-            solanaClient: solanaClient,
-            accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
-        )
-        
-        _ = try orcaSwap.load().toBlocking().first()
-        _ = try relayService.load().toBlocking().first()
-    }
-    
     func runTransferSPLToken(_ relayTest: RelayTransferTestInfo) throws {
-        let network = SolanaSDK.Network.mainnetBeta
-        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
-        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
-        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        
-        orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
-            solanaClient: solanaClient,
-            accountProvider: accountStorage,
-            notificationHandler: FakeNotificationHandler()
-        )
-        
-        relayService = try FeeRelayer.Relay(
-            apiClient: FeeRelayer.APIClient(version: 1),
-            solanaClient: solanaClient,
-            accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
-        )
-        
-        _ = try orcaSwap.load().toBlocking().first()
-        _ = try relayService.load().toBlocking().first()
+        try loadTest(relayTest)
         
         let payingToken = FeeRelayer.Relay.TokenInfo(
             address: relayTest.payingTokenAddress,
@@ -172,28 +160,7 @@ class RelayTests: XCTestCase {
     }
     
     func runRelaySendNativeSOL(_ test: RelayTransferNativeSOLTestInfo) throws {
-        let network = SolanaSDK.Network.mainnetBeta
-        let accountStorage = FakeAccountStorage(seedPhrase: test.seedPhrase, network: network)
-        let endpoint = SolanaSDK.APIEndPoint(address: test.endpoint, network: network, additionalQuery: test.endpointAdditionalQuery)
-        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        
-        orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
-            solanaClient: solanaClient,
-            accountProvider: accountStorage,
-            notificationHandler: FakeNotificationHandler()
-        )
-        
-        let feeRelayerAPIClient = FeeRelayer.APIClient(version: 1)
-        relayService = try FeeRelayer.Relay(
-            apiClient: feeRelayerAPIClient,
-            solanaClient: solanaClient,
-            accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
-        )
-        
-        _ = try orcaSwap.load().toBlocking().first()
-        _ = try relayService.load().toBlocking().first()
+        let feeRelayerAPIClient = try loadTest(test)
         
         let payingToken = FeeRelayer.Relay.TokenInfo(
             address: test.payingTokenAddress,
@@ -218,28 +185,7 @@ class RelayTests: XCTestCase {
     }
     
     func runRelaySendSPLToken(_ test: RelayTransferTestInfo) throws {
-        let network = SolanaSDK.Network.mainnetBeta
-        let accountStorage = FakeAccountStorage(seedPhrase: test.seedPhrase, network: network)
-        let endpoint = SolanaSDK.APIEndPoint(address: test.endpoint, network: network, additionalQuery: test.endpointAdditionalQuery)
-        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
-        
-        orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
-            solanaClient: solanaClient,
-            accountProvider: accountStorage,
-            notificationHandler: FakeNotificationHandler()
-        )
-        
-        let feeRelayerAPIClient = FeeRelayer.APIClient(version: 1)
-        relayService = try FeeRelayer.Relay(
-            apiClient: feeRelayerAPIClient,
-            solanaClient: solanaClient,
-            accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
-        )
-        
-        _ = try orcaSwap.load().toBlocking().first()
-        _ = try relayService.load().toBlocking().first()
+        let feeRelayerAPIClient = try loadTest(test)
         
         let payingToken = FeeRelayer.Relay.TokenInfo(
             address: test.payingTokenAddress,
@@ -265,5 +211,32 @@ class RelayTests: XCTestCase {
             payingFeeToken: payingToken
         ).toBlocking().first()
         print(signature ?? "Nothing")
+    }
+    
+    @discardableResult
+    private func loadTest(_ relayTest: RelayTestType) throws -> FeeRelayerAPIClientType {
+        let network = SolanaSDK.Network.mainnetBeta
+        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
+        solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
+        orcaSwap = OrcaSwap(
+            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            solanaClient: solanaClient,
+            accountProvider: accountStorage,
+            notificationHandler: FakeNotificationHandler()
+        )
+        
+        let apiClient = FeeRelayer.APIClient(version: 1)
+        relayService = try FeeRelayer.Relay(
+            apiClient: apiClient,
+            solanaClient: solanaClient,
+            accountStorage: accountStorage,
+            orcaSwapClient: orcaSwap
+        )
+        
+        _ = try orcaSwap.load().toBlocking().first()
+        _ = try relayService.load().toBlocking().first()
+        
+        return apiClient
     }
 }

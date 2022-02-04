@@ -25,6 +25,14 @@ pod 'FeeRelayerSwift', :git => 'https://github.com/p2p-org/FeeRelayerSwift.git'
 To run relay tests, create a valid file with name `relay-tests.json` inside `Tests/Resources`, contains following content (without comments):
 ```json
 {
+    "topUp": {
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "payingTokenAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
+        "amount": 10000
+    },
     "splToCreatedSpl": {
         "endpoint": <String>, // Solana api endpoint
         "endpointAdditionalQuery": <String?>,
@@ -70,6 +78,18 @@ To run relay tests, create a valid file with name `relay-tests.json` inside `Tes
         "sourceTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
         "destinationAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
         "inputAmount": 100,
+        "payingTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+    },
+    "usdtTransferToNonCreatedToken": {
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "sourceTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
+        "destinationAddress": "7hTyqUwMQF24B63M4vRzjYGsJ5VBiL7WiSZJ29LQQwE8",
+        "inputAmount": 100,
+        "expectedFee": 10000,
         "payingTokenAddress": "9BDAsqBpawnEmaJnMJo8NPqyL8HrT6AdujnuFsy4m8sj",
         "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
     },

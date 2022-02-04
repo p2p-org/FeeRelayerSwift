@@ -13,15 +13,16 @@ import OrcaSwapSwift
 extension FeeRelayer.Relay {
     /// Submits a signed top up swap transaction to the backend for processing
     func topUp(
-        owner: SolanaSDK.Account,
         needsCreateUserRelayAddress: Bool,
         sourceToken: TokenInfo,
         amount: UInt64,
         topUpPools: OrcaSwap.PoolsPair,
         topUpFee: UInt64
     ) -> Single<[String]> {
+        guard let owner = accountStorage.account else {return .error(FeeRelayer.Error.unauthorized)}
+        
         // get recent blockhash
-        solanaClient.getRecentBlockhash(commitment: nil)
+        return solanaClient.getRecentBlockhash(commitment: nil)
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .flatMap { [weak self] recentBlockhash in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
