@@ -19,7 +19,8 @@ extension FeeRelayer.Relay {
         inputAmount: UInt64?,
         minAmountOut: UInt64?,
         slippage: Double,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil
+        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
+        newTransferAuthorityForTransitiveSwap: Bool = false
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
@@ -76,18 +77,18 @@ extension FeeRelayer.Relay {
             
             let transitiveSwapData = TransitiveSwapData(
                 from: firstPool.getSwapData(
-                    transferAuthorityPubkey: owner.publicKey,
+                    transferAuthorityPubkey: newTransferAuthorityForTransitiveSwap ? transferAuthority.publicKey: owner.publicKey,
                     amountIn: firstPoolAmountIn,
                     minAmountOut: secondPoolAmountIn
                 ),
                 to: secondPool.getSwapData(
-                    transferAuthorityPubkey: owner.publicKey,
+                    transferAuthorityPubkey: newTransferAuthorityForTransitiveSwap ? transferAuthority.publicKey: owner.publicKey,
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),
                 transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
             )
-            return (swapData: transitiveSwapData, transferAuthorityAccount: nil)
+            return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthorityForTransitiveSwap ? transferAuthority: nil)
         }
     }
     
@@ -157,7 +158,7 @@ extension FeeRelayer.Relay {
         
         // top up swap
         let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: topUpPools)
-        let swap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: amount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey, newTransferAuthorityForTransitiveSwap: true)
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
         
         switch swap.swapData {
