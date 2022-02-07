@@ -267,7 +267,7 @@ extension FeeRelayer.Relay {
         return fee
     }
     
-    func prepareForSwapping(
+    private func prepareForSwapping(
         network: SolanaSDK.Network,
         sourceToken: TokenInfo,
         destinationToken: TokenInfo,
