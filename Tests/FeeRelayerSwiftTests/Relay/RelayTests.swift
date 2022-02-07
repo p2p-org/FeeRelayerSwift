@@ -18,11 +18,23 @@ class RelayTests: XCTestCase {
         relayService = nil
     }
     
-    // MARK: - TopUpAndSwap
+    // MARK: - TopUp
     func testTopUp() throws {
         try topUp(testInfo: testsInfo.topUp!)
     }
     
+    // MARK: - Swap
+    /// Swap from SOL to SPL
+    func testTopUpAndSwapFromSOL() throws {
+        try swap(testInfo: testsInfo.solToSPL!)
+    }
+    
+    /// Swap from SPL to SOL
+    func testTopUpAndSwapToSOL() throws {
+        try swap(testInfo: testsInfo.splToSOL!)
+    }
+    
+    /// Swap from SPL to SPL
     func testTopUpAndSwapToCreatedToken() throws {
         try swap(testInfo: testsInfo.splToCreatedSpl!)
     }
@@ -31,10 +43,7 @@ class RelayTests: XCTestCase {
         try swap(testInfo: testsInfo.splToNonCreatedSpl!)
     }
     
-    func testTopUpAndSwapToSOL() throws {
-        try swap(testInfo: testsInfo.splToSOL!)
-    }
-    
+    // MARK: - Transfer spl tokens
     func testUSDTTransfer() throws {
         try runTransferSPLToken(testsInfo.usdtTransfer!)
     }

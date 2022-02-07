@@ -100,13 +100,9 @@ extension FeeRelayer.Relay {
             return .error(FeeRelayer.Error.unauthorized)
         }
         
-        // TODO: Remove later, currently does not support swap from native SOL
-        guard sourceToken.address != owner.publicKey.base58EncodedString else {
-            return .error(FeeRelayer.Error.unsupportedSwap)
-        }
-        
         // get fresh data by ignoring cache
         return getRelayAccountStatus(reuseCache: false)
+            .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .flatMap { [weak self] relayAccountStatus -> Single<(RelayAccountStatus, TopUpAndActionPreparedParams)> in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 return self.prepareForTopUpAndSwap(
@@ -201,7 +197,8 @@ extension FeeRelayer.Relay {
         solanaClient.getRecentBlockhash(commitment: nil)
             .flatMap { [weak self] blockhash in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
-                let swapTransaction = try self.prepareForSwapping(
+                
+                let tx = try self.prepareSwapTransaction(
                     network: self.solanaClient.endpoint.network,
                     sourceToken: sourceToken,
                     destinationToken: destinationToken,
@@ -217,25 +214,10 @@ extension FeeRelayer.Relay {
                     lamportsPerSignature: lamportsPerSignature
                 )
                 
-                let signatures = try self.getSignatures(
-                    transaction: swapTransaction.transaction,
-                    owner: owner,
-                    transferAuthorityAccount: swapTransaction.transferAuthorityAccount
-                )
-                
                 return self.apiClient.sendTransaction(
-                    .relaySwap(.init(
-                        userSourceTokenAccountPubkey: sourceToken.address,
-                        userDestinationPubkey: destinationToken.address,
-                        userDestinationAccountOwner: userDestinationAccountOwnerAddress,
-                        sourceTokenMintPubkey: sourceToken.mint,
-                        destinationTokenMintPubkey: destinationToken.mint,
-                        userAuthorityPubkey: owner.publicKey.base58EncodedString,
-                        userSwap: .init(swapTransaction.swapData),
-                        feeAmount: feeAmount,
-                        signatures: signatures,
-                        blockhash: blockhash
-                    )),
+                    .relayTransaction(
+                        try .init(preparedTransaction: tx)
+                    ),
                     decodedTo: [String].self
                 )
             }
@@ -265,6 +247,236 @@ extension FeeRelayer.Relay {
             lamportsPerSignature: info.lamportsPerSignature
         ).feeAmount
         return fee
+    }
+    
+    private func prepareSwapTransaction(
+        network: SolanaSDK.Network,
+        sourceToken: TokenInfo,
+        destinationToken: TokenInfo,
+        userDestinationAccountOwnerAddress: String?,
+        
+        pools: OrcaSwap.PoolsPair,
+        inputAmount: UInt64,
+        slippage: Double,
+        
+        feeAmount: UInt64,
+        blockhash: String,
+        minimumTokenAccountBalance: UInt64,
+        needsCreateDestinationTokenAccount: Bool,
+        feePayerAddress: String,
+        lamportsPerSignature: UInt64
+    ) throws -> SolanaSDK.PreparedTransaction {
+        // assertion
+        guard let owner = accountStorage.account else {throw FeeRelayer.Error.unauthorized}
+        let userAuthorityAddress = owner.publicKey
+        guard var userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
+              let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
+              let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
+              let associatedTokenAddress = try? SolanaSDK.PublicKey.associatedTokenAddress(walletAddress: feePayerAddress, tokenMintAddress: sourceTokenMintAddress),
+              userSourceTokenAccountAddress != associatedTokenAddress
+        else { throw FeeRelayer.Error.wrongAddress }
+        let destinationTokenMintAddress = try SolanaSDK.PublicKey(string: destinationToken.mint)
+        
+        // forming transaction and count fees
+        var accountCreationFee: SolanaSDK.Lamports = 0
+        var instructions = [SolanaSDK.TransactionInstruction]()
+        
+        // check source
+        var sourceWSOLNewAccount: SolanaSDK.Account?
+        if sourceToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+            sourceWSOLNewAccount = try SolanaSDK.Account(network: network)
+            instructions.append(contentsOf: [
+                SolanaSDK.SystemProgram.createAccountInstruction(
+                    from: userAuthorityAddress,
+                    toNewPubkey: sourceWSOLNewAccount!.publicKey,
+                    lamports: inputAmount + minimumTokenAccountBalance
+                ),
+                SolanaSDK.TokenProgram.initializeAccountInstruction(
+                    account: sourceWSOLNewAccount!.publicKey,
+                    mint: .wrappedSOLMint,
+                    owner: userAuthorityAddress
+                )
+            ])
+            accountCreationFee += minimumTokenAccountBalance
+            userSourceTokenAccountAddress = sourceWSOLNewAccount!.publicKey
+        }
+        
+        // check destination
+        var userDestinationTokenAccountAddress = destinationToken.address
+        if needsCreateDestinationTokenAccount {
+            let associatedAccount = try SolanaSDK.PublicKey.associatedTokenAddress(
+                walletAddress: try SolanaSDK.PublicKey(string: destinationToken.address),
+                tokenMintAddress: destinationTokenMintAddress
+            )
+            instructions.append(
+                SolanaSDK.AssociatedTokenProgram
+                    .createAssociatedTokenAccountInstruction(
+                        mint: destinationTokenMintAddress,
+                        associatedAccount: associatedAccount,
+                        owner: try SolanaSDK.PublicKey(string: destinationToken.address),
+                        payer: feePayerAddress
+                    )
+            )
+            accountCreationFee += minimumTokenAccountBalance
+            userDestinationTokenAccountAddress = associatedAccount.base58EncodedString
+        }
+        
+        // swap
+        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
+        let swap = try prepareSwapData(network: network, pools: pools, inputAmount: inputAmount, minAmountOut: nil, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
+        let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
+        
+        switch swap.swapData {
+        case let swap as DirectSwapData:
+            guard let pool = pools.first else {throw FeeRelayer.Error.swapPoolsNotFound}
+            
+            // approve
+            if let userTransferAuthority = userTransferAuthority {
+                instructions.append(
+                    SolanaSDK.TokenProgram.approveInstruction(
+                        tokenProgramId: .tokenProgramId,
+                        account: userSourceTokenAccountAddress,
+                        delegate: userTransferAuthority,
+                        owner: userAuthorityAddress,
+                        amount: swap.amountIn
+                    )
+                )
+            }
+            
+            // swap
+            instructions.append(
+                try pool.createSwapInstruction(
+                    userTransferAuthorityPubkey: userTransferAuthority ?? userAuthorityAddress,
+                    sourceTokenAddress: userSourceTokenAccountAddress,
+                    destinationTokenAddress: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
+                    amountIn: swap.amountIn,
+                    minAmountOut: swap.minimumAmountOut
+                )
+            )
+        case let swap as TransitiveSwapData:
+            // approve
+            if let userTransferAuthority = userTransferAuthority {
+                instructions.append(
+                    SolanaSDK.TokenProgram.approveInstruction(
+                        tokenProgramId: .tokenProgramId,
+                        account: userSourceTokenAccountAddress,
+                        delegate: userTransferAuthority,
+                        owner: userAuthorityAddress,
+                        amount: swap.from.amountIn
+                    )
+                )
+            }
+            
+            // create transit token account
+            let transitTokenMint = try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey)
+            let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+                user: userAuthorityAddress,
+                transitTokenMint: transitTokenMint,
+                network: network
+            )
+            
+            instructions.append(
+                try Program.createTransitTokenAccountInstruction(
+                    feePayer: feePayerAddress,
+                    userAuthority: userAuthorityAddress,
+                    transitTokenAccount: transitTokenAccountAddress,
+                    transitTokenMint: transitTokenMint,
+                    network: network
+                )
+            )
+            
+            // relay swap
+            instructions.append(
+                try Program.createRelaySwapInstruction(
+                    transitiveSwap: swap,
+                    userAuthorityAddressPubkey: userAuthorityAddress,
+                    sourceAddressPubkey: userSourceTokenAccountAddress,
+                    transitTokenAccount: transitTokenAccountAddress,
+                    destinationAddressPubkey: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
+                    feePayerPubkey: feePayerAddress,
+                    network: network
+                )
+            )
+            
+            // close transit token account
+            instructions.append(
+                SolanaSDK.TokenProgram.closeAccountInstruction(
+                    account: transitTokenAccountAddress,
+                    destination: feePayerAddress,
+                    owner: feePayerAddress,
+                    signers: []
+                )
+            )
+            
+        default:
+            fatalError("unsupported swap type")
+        }
+        
+        // WSOL close
+        // close source
+        if let newAccount = sourceWSOLNewAccount {
+            instructions.append(
+                SolanaSDK.TokenProgram.closeAccountInstruction(
+                    account: newAccount.publicKey,
+                    destination: userAuthorityAddress,
+                    owner: userAuthorityAddress
+                )
+            )
+            
+            accountCreationFee -= minimumTokenAccountBalance
+        }
+        // close destination
+        if destinationTokenMintAddress == .wrappedSOLMint {
+            if let ownerAddress = try? SolanaSDK.PublicKey(string: userDestinationAccountOwnerAddress) {
+                instructions.append(
+                    SolanaSDK.TokenProgram.closeAccountInstruction(
+                        account: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
+                        destination: ownerAddress,
+                        owner: ownerAddress,
+                        signers: []
+                    )
+                )
+                
+                instructions.append(
+                    SolanaSDK.SystemProgram.transferInstruction(
+                        from: ownerAddress,
+                        to: feePayerAddress,
+                        lamports: minimumTokenAccountBalance
+                    )
+                )
+                
+                accountCreationFee -= minimumTokenAccountBalance
+            }
+        }
+        // Relay fee
+        instructions.append(
+            try Program.transferSolInstruction(
+                userAuthorityAddress: userAuthorityAddress,
+                recipient: feePayerAddress,
+                lamports: feeAmount,
+                network: network
+            )
+        )
+        
+        var transaction = SolanaSDK.Transaction()
+        transaction.instructions = instructions
+        transaction.recentBlockhash = blockhash
+        transaction.feePayer = feePayerAddress
+        
+        // calculate fee first
+        let expectedFee = SolanaSDK.FeeAmount(
+            transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature),
+            accountBalances: accountCreationFee
+        )
+        
+        // resign transaction
+        var signers = [owner]
+        if let sourceWSOLNewAccount = sourceWSOLNewAccount {
+            signers.append(sourceWSOLNewAccount)
+        }
+        try transaction.sign(signers: signers)
+        
+        return .init(transaction: transaction, signers: signers, expectedFee: expectedFee)
     }
     
     private func prepareForSwapping(

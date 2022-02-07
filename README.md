@@ -33,6 +33,34 @@ To run relay tests, create a valid file with name `relay-tests.json` inside `Tes
         "payingTokenAddress": "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x",
         "amount": 10000
     },
+    "solToSPL": {
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "fromMint": "So11111111111111111111111111111111111111112",
+        "toMint": "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn",
+        "sourceAddress": <String>,
+        "destinationAddress": <String>,
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "payingTokenAddress": <String>,
+        "inputAmount": 100000,
+        "slippage": 0.2,
+        "comment": "Swap 0.0001 SOL to KURO paid with USDC"
+    },
+    "splToSOL": {
+        "endpoint": <String>, // Solana api endpoint
+        "endpointAdditionalQuery": <String?>,
+        "seedPhrase": <String>, // Solana account seed phrase
+        "fromMint": <String>,
+        "toMint": "So11111111111111111111111111111111111111112",
+        "sourceAddress": <String>,
+        "destinationAddress": <String>,
+        "payingTokenMint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "payingTokenAddress": <String>,
+        "inputAmount": 10000000,
+        "slippage": 0.2,
+        "comment": "Swap 10 KURO to SOL paid with USDC"
+    },
     "splToCreatedSpl": {
         "endpoint": <String>, // Solana api endpoint
         "endpointAdditionalQuery": <String?>,
