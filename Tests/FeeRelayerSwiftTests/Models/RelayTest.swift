@@ -11,6 +11,7 @@ struct RelayTestsInfo: Codable {
     let usdtBackTransfer: RelayTransferTestInfo?
     let usdtTransferToNonCreatedToken: RelayTransferTestInfo?
     let relaySendNativeSOL: RelayTransferNativeSOLTestInfo?
+    let usdcToKuroWithSlim: RelaySwapTestInfo?
 }
 
 protocol RelayTestType {

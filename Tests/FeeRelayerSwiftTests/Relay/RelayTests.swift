@@ -64,6 +64,10 @@ class RelayTests: XCTestCase {
         try runRelaySendSPLToken(testsInfo.usdtTransfer!)
     }
     
+    func testUsdcToKuroWithSlim() throws {
+        try swap(testInfo: testsInfo.usdcToKuroWithSlim!)
+    }
+    
     // MARK: - Helpers
     private func topUp(testInfo: RelayTopUpTest) throws {
         try loadTest(testInfo)
