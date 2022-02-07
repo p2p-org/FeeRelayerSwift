@@ -77,7 +77,7 @@ class RelayTests: XCTestCase {
             sourceToken: payingToken,
             amount: testInfo.amount,
             topUpPools: params.topUpFeesAndPools!.poolsPair,
-            topUpFee: params.topUpFeesAndPools!.fee.total
+            topUpFee: params.topUpFeesAndPools!.fee
         ).toBlocking().first()!
         
         XCTAssertTrue(signatures.count > 0)
