@@ -12,6 +12,49 @@ import OrcaSwapSwift
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
 extension FeeRelayer.Relay {
+    public struct FeeLimitForAuthorityResponse: Codable {
+        let authority: [Int]
+        let limits: Limits
+        let processedFee: ProcessedFee
+    
+        enum CodingKeys: String, CodingKey {
+            case authority, limits
+            case processedFee = "processed_fee"
+        }
+    
+        struct Limits: Codable {
+            let useFreeFee: Bool
+            let maxAmount, maxCount: Int
+            let period: Period
+        
+            enum CodingKeys: String, CodingKey {
+                case useFreeFee = "use_free_fee"
+                case maxAmount = "max_amount"
+                case maxCount = "max_count"
+                case period
+            }
+        }
+
+        struct Period: Codable {
+            let secs, nanos: Int
+        }
+
+        struct ProcessedFee: Codable {
+            let totalAmount, count: Int
+            
+            enum CodingKeys: String, CodingKey {
+                case totalAmount = "total_amount"
+                case count
+            }
+        }
+    }
+    
+    public struct UserAvailableInfo {
+        public let maxUsage: Int;
+        public let currentUsage: Int;
+        public var canUseFeeRelayer: Bool { currentUsage < maxUsage }
+    }
+    
     // MARK: - Relay info
     public struct RelayInfo {
         var minimumTokenAccountBalance: UInt64
