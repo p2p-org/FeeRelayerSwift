@@ -292,7 +292,7 @@ extension FeeRelayer {
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
                             topUpPools: topUpFeesAndPools.poolsPair,
-                            topUpFee: topUpFeesAndPools.fee.total
+                            topUpFee: topUpFeesAndPools.fee
                         )
                             // STEP 2.2.2: Swap
                             .flatMap { _ in swap() }
@@ -486,7 +486,7 @@ extension FeeRelayer {
                                 sourceToken: payingFeeToken,
                                 amount: topUpAmount,
                                 topUpPools: topUpFeesAndPools.poolsPair,
-                                topUpFee: topUpFeesAndPools.fee.total
+                                topUpFee: topUpFeesAndPools.fee
                             )
                                 // STEP 2.2.2: Swap
                                 .flatMap { _ in try transfer() }
@@ -549,7 +549,7 @@ extension FeeRelayer {
                             sourceToken: payingFeeToken,
                             amount: topUpAmount,
                             topUpPools: topUpFeesAndPools.poolsPair,
-                            topUpFee: topUpFeesAndPools.fee.total
+                            topUpFee: topUpFeesAndPools.fee
                         )
                             // STEP 2.2.2: Swap
                             .flatMap { _ in try transfer() }

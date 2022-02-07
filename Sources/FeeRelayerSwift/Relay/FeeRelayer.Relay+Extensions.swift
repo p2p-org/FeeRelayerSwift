@@ -105,7 +105,7 @@ extension FeeRelayer.Relay {
             userRelayAddress: "EfS3E3jBF6iio6zQDVWswj3mtoHMGEq57iqpPRgTBVUt", // fake
             topUpPools: topUpPools,
             amount: 10000, // fake
-            feeAmount: 0, // fake
+            feeAmount: .zero, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
             minimumRelayAccountBalance: info.minimumRelayAccountBalance,
             minimumTokenAccountBalance: info.minimumTokenAccountBalance,
@@ -124,7 +124,7 @@ extension FeeRelayer.Relay {
         userRelayAddress: SolanaSDK.PublicKey,
         topUpPools: OrcaSwap.PoolsPair,
         amount: UInt64,
-        feeAmount: UInt64,
+        feeAmount: SolanaSDK.FeeAmount,
         blockhash: String,
         minimumRelayAccountBalance: UInt64,
         minimumTokenAccountBalance: UInt64,
@@ -193,7 +193,7 @@ extension FeeRelayer.Relay {
                 try Program.transferSolInstruction(
                     userAuthorityAddress: userAuthorityAddress,
                     recipient: feePayerAddress,
-                    lamports: feeAmount,
+                    lamports: feeAmount.accountBalances,
                     network: network
                 )
             )
@@ -255,7 +255,7 @@ extension FeeRelayer.Relay {
                 try Program.transferSolInstruction(
                     userAuthorityAddress: userAuthorityAddress,
                     recipient: feePayerAddress,
-                    lamports: feeAmount,
+                    lamports: feeAmount.accountBalances,
                     network: network
                 )
             )

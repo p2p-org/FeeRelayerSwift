@@ -17,7 +17,7 @@ extension FeeRelayer.Relay {
         sourceToken: TokenInfo,
         amount: UInt64,
         topUpPools: OrcaSwap.PoolsPair,
-        topUpFee: UInt64
+        topUpFee: SolanaSDK.FeeAmount
     ) -> Single<[String]> {
         guard let owner = accountStorage.account else {return .error(FeeRelayer.Error.unauthorized)}
         
@@ -58,7 +58,7 @@ extension FeeRelayer.Relay {
                             sourceTokenMintPubkey: sourceToken.mint,
                             userAuthorityPubkey: owner.publicKey.base58EncodedString,
                             topUpSwap: .init(topUpTransaction.swapData),
-                            feeAmount: topUpFee,
+                            feeAmount: topUpFee.accountBalances,
                             signatures: signatures,
                             blockhash: recentBlockhash
                         )
