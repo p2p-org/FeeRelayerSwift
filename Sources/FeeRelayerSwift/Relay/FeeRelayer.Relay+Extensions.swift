@@ -96,13 +96,13 @@ extension FeeRelayer.Relay {
     func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
         guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
-            network: .mainnetBeta, // fake
+            network: solanaClient.endpoint.network,
             sourceToken: .init(
                 address: "C5B13tQA4pq1zEVSVkWbWni51xdWB16C2QsC72URq9AJ", // fake
                 mint: "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn" // fake
             ),
             userAuthorityAddress: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", // fake
-            userRelayAddress: "EfS3E3jBF6iio6zQDVWswj3mtoHMGEq57iqpPRgTBVUt", // fake
+            userRelayAddress: userRelayAddress,
             topUpPools: topUpPools,
             amount: 10000, // fake
             feeAmount: .zero, // fake
