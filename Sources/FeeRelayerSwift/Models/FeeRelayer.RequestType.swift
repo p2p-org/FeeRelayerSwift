@@ -33,15 +33,15 @@ extension FeeRelayer {
         }
         
         // MARK: - Builders
-        public static func transferSOL(_ params: Reward.TransferSolParams) -> RequestType {
+        public static func rewardTransferSOL(_ params: Reward.TransferSolParams) -> RequestType {
             .init(path: "/transfer_sol", params: params)
         }
         
-        public static func transferSPLToken(_ params: Reward.TransferSPLTokenParams) -> RequestType {
+        public static func rewardTransferSPLToken(_ params: Reward.TransferSPLTokenParams) -> RequestType {
             .init(path: "/transfer_spl_token", params: params)
         }
         
-        public static func swapToken(_ params: Compensation.SwapTokensParams) -> RequestType {
+        public static func compensationSwapToken(_ params: Compensation.SwapTokensParams) -> RequestType {
             .init(path: "/swap_spl_token_with_fee_compensation", params: params)
         }
         
