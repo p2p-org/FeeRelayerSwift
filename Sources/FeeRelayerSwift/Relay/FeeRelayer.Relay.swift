@@ -303,114 +303,6 @@ extension FeeRelayer {
                 .observe(on: MainScheduler.instance)
         }
         
-        // MARK: - Helpers
-        private func prepareForTopUpAndSwap(
-            sourceToken: TokenInfo,
-            destinationTokenMint: String,
-            destinationAddress: String?,
-            payingFeeToken: TokenInfo,
-            swapPools: OrcaSwap.PoolsPair,
-            relayAccountStatus: RelayAccountStatus,
-            reuseCache: Bool
-        ) -> Single<TopUpAndActionPreparedParams> {
-            // form request
-            let request: Single<TopUpAndActionPreparedParams>
-            if reuseCache, let cachedPreparedParams = cachedPreparedParams {
-                request = .just(cachedPreparedParams)
-            } else {
-                request = orcaSwapClient
-                    .getTradablePoolsPairs(
-                        fromMint: payingFeeToken.mint,
-                        toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
-                    )
-                    .map { [weak self] tradableTopUpPoolsPair in
-                        guard let self = self else { throw FeeRelayer.Error.unknown }
-                        
-                        // SWAP
-                        let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
-                        let destinationToken = destination.destinationToken
-                        let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
-                        let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
-                        
-                        let swappingFee = try self.calculateSwappingFee(
-                            sourceToken: sourceToken,
-                            destinationToken: destinationToken,
-                            userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
-                            pools: swapPools,
-                            needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount
-                        )
-                        
-                        // TOP UP
-                        let topUpFeesAndPools: FeesAndPools?
-                        var topUpAmount: UInt64?
-                        if let relayAccountBalance = relayAccountStatus.balance,
-                           relayAccountBalance >= swappingFee.total {
-                            topUpFeesAndPools = nil
-                        }
-                        // STEP 2.2: Else
-                        else {
-                            // Get best poolpairs for topping up
-                            topUpAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
-                            
-                            guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
-                                throw FeeRelayer.Error.swapPoolsNotFound
-                            }
-                            let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
-                            topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
-                        }
-                        
-                        return .init(
-                            topUpFeesAndPools: topUpFeesAndPools,
-                            actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools),
-                            topUpAmount: topUpAmount
-                        )
-                    }
-                    .do(onSuccess: { [weak self] in
-                        self?.locker.lock()
-                        self?.cachedPreparedParams = $0
-                        self?.locker.unlock()
-                    })
-            }
-            
-            
-            // get tradable poolspair for top up
-            return request
-        }
-        
-        /// Get fixed destination
-        private func getFixedDestination(
-            destinationTokenMint: String,
-            destinationAddress: String?
-        ) throws -> (destinationToken: TokenInfo, userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?, needsCreateDestinationTokenAccount: Bool) {
-            guard let owner = accountStorage.account?.publicKey else { throw FeeRelayer.Error.unauthorized }
-            // Redefine destination
-            let needsCreateDestinationTokenAccount: Bool
-            let userDestinationAddress: String
-            let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
-            
-            if owner.base58EncodedString == destinationAddress {
-                // Swap to native SOL account
-                userDestinationAccountOwnerAddress = owner
-                needsCreateDestinationTokenAccount = true
-                userDestinationAddress = owner.base58EncodedString // placeholder, ignore it
-            } else {
-                // Swap to other SPL
-                userDestinationAccountOwnerAddress = nil
-                if let address = destinationAddress {
-                    // SPL token has ALREADY been created
-                    userDestinationAddress = address
-                    needsCreateDestinationTokenAccount = false
-                } else {
-                    // SPL token has NOT been created
-                    userDestinationAddress = owner.base58EncodedString
-                    needsCreateDestinationTokenAccount = true
-                }
-            }
-            
-            let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
-            return (destinationToken: destinationToken, userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress, needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount)
-        }
-        
         public func topUpAndSend(
             sourceToken: TokenInfo,
             destinationAddress: String,
@@ -599,6 +491,113 @@ extension FeeRelayer {
                         topUpAmount: topUpAmount
                     )
                 }
+        }
+        
+        private func prepareForTopUpAndSwap(
+            sourceToken: TokenInfo,
+            destinationTokenMint: String,
+            destinationAddress: String?,
+            payingFeeToken: TokenInfo,
+            swapPools: OrcaSwap.PoolsPair,
+            relayAccountStatus: RelayAccountStatus,
+            reuseCache: Bool
+        ) -> Single<TopUpAndActionPreparedParams> {
+            // form request
+            let request: Single<TopUpAndActionPreparedParams>
+            if reuseCache, let cachedPreparedParams = cachedPreparedParams {
+                request = .just(cachedPreparedParams)
+            } else {
+                request = orcaSwapClient
+                    .getTradablePoolsPairs(
+                        fromMint: payingFeeToken.mint,
+                        toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                    )
+                    .map { [weak self] tradableTopUpPoolsPair in
+                        guard let self = self else { throw FeeRelayer.Error.unknown }
+                        
+                        // SWAP
+                        let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+                        let destinationToken = destination.destinationToken
+                        let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
+                        let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
+                        
+                        let swappingFee = try self.calculateSwappingFee(
+                            sourceToken: sourceToken,
+                            destinationToken: destinationToken,
+                            userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress?.base58EncodedString,
+                            pools: swapPools,
+                            needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount
+                        )
+                        
+                        // TOP UP
+                        let topUpFeesAndPools: FeesAndPools?
+                        var topUpAmount: UInt64?
+                        if let relayAccountBalance = relayAccountStatus.balance,
+                           relayAccountBalance >= swappingFee.total {
+                            topUpFeesAndPools = nil
+                        }
+                        // STEP 2.2: Else
+                        else {
+                            // Get best poolpairs for topping up
+                            topUpAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
+                            
+                            guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
+                                throw FeeRelayer.Error.swapPoolsNotFound
+                            }
+                            let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
+                            topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
+                        }
+                        
+                        return .init(
+                            topUpFeesAndPools: topUpFeesAndPools,
+                            actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools),
+                            topUpAmount: topUpAmount
+                        )
+                    }
+                    .do(onSuccess: { [weak self] in
+                        self?.locker.lock()
+                        self?.cachedPreparedParams = $0
+                        self?.locker.unlock()
+                    })
+            }
+            
+            
+            // get tradable poolspair for top up
+            return request
+        }
+        
+        /// Get fixed destination
+        private func getFixedDestination(
+            destinationTokenMint: String,
+            destinationAddress: String?
+        ) throws -> (destinationToken: TokenInfo, userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?, needsCreateDestinationTokenAccount: Bool) {
+            guard let owner = accountStorage.account?.publicKey else { throw FeeRelayer.Error.unauthorized }
+            // Redefine destination
+            let needsCreateDestinationTokenAccount: Bool
+            let userDestinationAddress: String
+            let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
+            
+            if owner.base58EncodedString == destinationAddress {
+                // Swap to native SOL account
+                userDestinationAccountOwnerAddress = owner
+                needsCreateDestinationTokenAccount = true
+                userDestinationAddress = owner.base58EncodedString // placeholder, ignore it
+            } else {
+                // Swap to other SPL
+                userDestinationAccountOwnerAddress = nil
+                if let address = destinationAddress {
+                    // SPL token has ALREADY been created
+                    userDestinationAddress = address
+                    needsCreateDestinationTokenAccount = false
+                } else {
+                    // SPL token has NOT been created
+                    userDestinationAddress = owner.base58EncodedString
+                    needsCreateDestinationTokenAccount = true
+                }
+            }
+            
+            let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
+            return (destinationToken: destinationToken, userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress, needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount)
         }
     }
 }
