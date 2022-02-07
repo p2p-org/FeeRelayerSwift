@@ -98,7 +98,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Submits a signed transfer token transaction to the backend for processing
-    func transfer(
+    private func transfer(
         network: SolanaSDK.Network,
         owner: SolanaSDK.Account,
         sourceToken: TokenInfo,
@@ -155,7 +155,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Generate transfer transaction
-    func makeTransferTransaction(
+    private func makeTransferTransaction(
         network: SolanaSDK.Network,
         owner: SolanaSDK.Account,
         sourceToken: TokenInfo,
