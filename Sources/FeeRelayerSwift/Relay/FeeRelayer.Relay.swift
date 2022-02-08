@@ -187,7 +187,7 @@ extension FeeRelayer {
             guard let info = info else {
                 return 0
             }
-            return info.minimumRelayAccountBalance + info.minimumTokenAccountBalance
+            return 2 * info.lamportsPerSignature // TODO: - Temporary solution
         }
         
         /// Generic function for sending transaction to fee relayer's relay

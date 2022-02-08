@@ -30,7 +30,7 @@ extension FeeRelayer.Relay {
                 
                 var amount = amount
                 if needsCreateUserRelayAddress {
-                    amount += info.minimumRelayAccountBalance
+                    amount += self.getRelayAccountCreationCost()
                 }
                 
                 // STEP 3: prepare for topUp
