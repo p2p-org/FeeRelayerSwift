@@ -20,11 +20,14 @@ extension FeeRelayer.Relay {
         minAmountOut: UInt64?,
         slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
-        newTransferAuthorityForTransitiveSwap: Bool = false
+        newTransferAuthority: Bool = false
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayer.Error.invalidAmount }
+        guard let owner = accountStorage.account else {
+            throw FeeRelayer.Error.unauthorized
+        }
         
         // create transferAuthority
         let transferAuthority = try SolanaSDK.Account(network: network)
@@ -38,18 +41,14 @@ extension FeeRelayer.Relay {
             else { throw FeeRelayer.Error.invalidAmount }
             
             let directSwapData = pool.getSwapData(
-                transferAuthorityPubkey: transferAuthority.publicKey,
+                transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: owner.publicKey,
                 amountIn: amountIn,
                 minAmountOut: minAmountOut
             )
-            return (swapData: directSwapData, transferAuthorityAccount: transferAuthority)
+            return (swapData: directSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
         } else {
             let firstPool = pools[0]
             let secondPool = pools[1]
-            
-            guard let owner = accountStorage.account else {
-                throw FeeRelayer.Error.unauthorized
-            }
             
             guard let transitTokenMintPubkey = transitTokenMintPubkey else {
                 throw FeeRelayer.Error.transitTokenMintNotFound
@@ -77,18 +76,18 @@ extension FeeRelayer.Relay {
             
             let transitiveSwapData = TransitiveSwapData(
                 from: firstPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthorityForTransitiveSwap ? transferAuthority.publicKey: owner.publicKey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: owner.publicKey,
                     amountIn: firstPoolAmountIn,
                     minAmountOut: secondPoolAmountIn
                 ),
                 to: secondPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthorityForTransitiveSwap ? transferAuthority.publicKey: owner.publicKey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: owner.publicKey,
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),
                 transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
             )
-            return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthorityForTransitiveSwap ? transferAuthority: nil)
+            return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
         }
     }
     

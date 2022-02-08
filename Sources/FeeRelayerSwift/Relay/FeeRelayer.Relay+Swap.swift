@@ -36,7 +36,10 @@ extension FeeRelayer.Relay {
                 let topUpPools = preparedParams.topUpFeesAndPools?.poolsPair
                 
                 let feeAmountInSOL = preparedParams.actionFeesAndPools.fee
-                let topUpAmount = preparedParams.topUpAmount
+                var topUpAmount: SolanaSDK.Lamports?
+                if let amount = preparedParams.topUpAmount {
+                    topUpAmount = amount + (preparedParams.topUpFeesAndPools?.fee.accountBalances ?? 0)
+                }
                 
                 var feeAmountInPayingToken: SolanaSDK.FeeAmount?
                 var topUpAmountInPayingToken: UInt64?
