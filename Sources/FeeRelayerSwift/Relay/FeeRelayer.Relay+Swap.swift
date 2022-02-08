@@ -476,6 +476,10 @@ extension FeeRelayer.Relay {
         }
         try transaction.sign(signers: signers)
         
+        if let decodedTransaction = transaction.jsonString {
+            Logger.log(message: decodedTransaction, event: .info)
+        }
+        
         return .init(transaction: transaction, signers: signers, expectedFee: expectedFee)
     }
     
