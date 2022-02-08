@@ -28,7 +28,10 @@ extension FeeRelayer.Relay {
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard let info = self.info else { throw FeeRelayer.Error.relayInfoMissing }
                 
-                let amount = topUpFee.accountBalances + amount
+                var amount = amount
+                if needsCreateUserRelayAddress {
+                    amount += info.minimumRelayAccountBalance
+                }
                 
                 // STEP 3: prepare for topUp
                 let topUpTransaction = try self.prepareForTopUp(
