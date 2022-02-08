@@ -101,29 +101,34 @@ extension FeeRelayer.Relay {
         }
         
         // get fresh data by ignoring cache
-        return getRelayAccountStatus(reuseCache: false)
-            .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] relayAccountStatus -> Single<(RelayAccountStatus, TopUpAndActionPreparedParams)> in
-                guard let self = self else { throw FeeRelayer.Error.unknown }
-                return self.prepareForTopUpAndSwap(
-                    sourceToken: sourceToken,
-                    destinationTokenMint: destinationTokenMint,
-                    destinationAddress: destinationAddress,
-                    payingFeeToken: payingFeeToken,
-                    swapPools: swapPools,
-                    relayAccountStatus: relayAccountStatus,
-                    reuseCache: false
-                )
-                    .map { (relayAccountStatus, $0) }
-            }
-            .flatMap { [weak self] relayAccountStatus, preparedParams in
+        return Single.zip(
+            getRelayAccountStatus(reuseCache: false)
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
+                .flatMap { [weak self] relayAccountStatus -> Single<(RelayAccountStatus, TopUpAndActionPreparedParams)> in
+                    guard let self = self else { throw FeeRelayer.Error.unknown }
+                    return self.prepareForTopUpAndSwap(
+                        sourceToken: sourceToken,
+                        destinationTokenMint: destinationTokenMint,
+                        destinationAddress: destinationAddress,
+                        payingFeeToken: payingFeeToken,
+                        swapPools: swapPools,
+                        relayAccountStatus: relayAccountStatus,
+                        reuseCache: false
+                    )
+                        .map { (relayAccountStatus, $0) }
+                },
+            getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+        )
+            .flatMap { [weak self] params, destination in
+//                relayAccountStatus, preparedParams
+                let relayAccountStatus = params.0
+                let preparedParams = params.1
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 // get needed info
                 guard let info = self.info else {
                     return .error(FeeRelayer.Error.relayInfoMissing)
                 }
                 
-                let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
                 let destinationToken = destination.destinationToken
                 let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
                 let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
@@ -497,16 +502,18 @@ extension FeeRelayer.Relay {
         if reuseCache, let cachedPreparedParams = cachedPreparedParams {
             request = .just(cachedPreparedParams)
         } else {
-            request = orcaSwapClient
-                .getTradablePoolsPairs(
-                    fromMint: payingFeeToken.mint,
-                    toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
-                )
-                .map { [weak self] tradableTopUpPoolsPair in
+            request = Single.zip(
+                orcaSwapClient
+                    .getTradablePoolsPairs(
+                        fromMint: payingFeeToken.mint,
+                        toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                    ),
+                getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+            )
+                .map { [weak self] tradableTopUpPoolsPair, destination in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
                     
                     // SWAP
-                    let destination = try self.getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
                     let destinationToken = destination.destinationToken
                     let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
                     let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
@@ -560,33 +567,32 @@ extension FeeRelayer.Relay {
     private func getFixedDestination(
         destinationTokenMint: String,
         destinationAddress: String?
-    ) throws -> (destinationToken: TokenInfo, userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?, needsCreateDestinationTokenAccount: Bool) {
-        guard let owner = accountStorage.account?.publicKey else { throw FeeRelayer.Error.unauthorized }
+    ) -> Single<(destinationToken: TokenInfo, userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?, needsCreateDestinationTokenAccount: Bool)> {
+        guard let owner = accountStorage.account?.publicKey else { return .error(FeeRelayer.Error.unauthorized) }
         // Redefine destination
-        let needsCreateDestinationTokenAccount: Bool
-        let userDestinationAddress: String
         let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
+        let destinationRequest: Single<SolanaSDK.SPLTokenDestinationAddress>
         
-        if owner.base58EncodedString == destinationAddress {
+        if SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString == destinationTokenMint {
             // Swap to native SOL account
             userDestinationAccountOwnerAddress = owner
-            needsCreateDestinationTokenAccount = true
-            userDestinationAddress = owner.base58EncodedString // placeholder, ignore it
+            destinationRequest = .just((destination: owner, isUnregisteredAsocciatedToken: true))
         } else {
             // Swap to other SPL
             userDestinationAccountOwnerAddress = nil
-            if let address = destinationAddress {
-                // SPL token has ALREADY been created
-                userDestinationAddress = address
-                needsCreateDestinationTokenAccount = false
-            } else {
-                // SPL token has NOT been created
-                userDestinationAddress = owner.base58EncodedString
-                needsCreateDestinationTokenAccount = true
-            }
+            destinationRequest = solanaClient.findSPLTokenDestinationAddress(
+                mintAddress: destinationTokenMint,
+                destinationAddress: owner.base58EncodedString
+            )
         }
         
-        let destinationToken = TokenInfo(address: userDestinationAddress, mint: destinationTokenMint)
-        return (destinationToken: destinationToken, userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress, needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount)
+        return destinationRequest
+            .map { destination, isUnregisteredAsocciatedToken in
+                return (
+                    destinationToken: .init(address: destination.base58EncodedString, mint: destinationTokenMint),
+                    userDestinationAccountOwnerAddress: userDestinationAccountOwnerAddress,
+                    needsCreateDestinationTokenAccount: isUnregisteredAsocciatedToken
+                )
+            }
     }
 }
