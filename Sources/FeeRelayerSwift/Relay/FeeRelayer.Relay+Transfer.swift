@@ -89,7 +89,9 @@ extension FeeRelayer.Relay {
                             topUpFee: topUpFeesAndPools.fee
                         )
                             // STEP 2.2.2: Swap
-                            .flatMap { _ in try transfer() }
+                            .flatMap { _ in
+                                try transfer()
+                            }
                     } else {
                         return try transfer()
                     }

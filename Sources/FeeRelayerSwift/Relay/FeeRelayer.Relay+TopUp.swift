@@ -70,6 +70,11 @@ extension FeeRelayer.Relay {
                     ),
                     decodedTo: [String].self
                 )
+                    .do(onSuccess: {_ in
+                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) completed", event: .info)
+                    }, onSubscribe: {
+                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) processing", event: .info)
+                    })
             }
             .observe(on: MainScheduler.instance)
     }
