@@ -23,15 +23,17 @@ import OrcaSwapSwift
 /// - Returns: Array of strings contain transactions' signatures
 
 public protocol FeeRelayerRelayType {
-    var info: FeeRelayer.Relay.RelayInfo? {get}
-    
     /// Load all needed info for relay operations, need to be completed before any operation
     func load() -> Completable
     
     /// Get info of relay account
     func getRelayAccountStatus(reuseCache: Bool) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
+    /// Get first-time account creation cost
+    func getRelayAccountCreationCost() -> UInt64
+    
     // MARK: - TopUpAndSwap
+    
     /// Calculate needed fee IN SOL
     func calculateFeeAndNeededTopUpAmountForSwapping(
         sourceToken: FeeRelayer.Relay.TokenInfo,
@@ -96,7 +98,7 @@ extension FeeRelayer {
         // MARK: - Properties
         let locker = NSLock()
         let userRelayAddress: SolanaSDK.PublicKey
-        public var info: RelayInfo? // All info needed to perform actions, works as a cache
+        var info: RelayInfo? // All info needed to perform actions, works as a cache
         private var cachedRelayAccountStatus: RelayAccountStatus?
         var cachedPreparedParams: TopUpAndActionPreparedParams?
         
@@ -179,6 +181,13 @@ extension FeeRelayer {
             
             // get relayAccount's status
             return request
+        }
+        
+        public func getRelayAccountCreationCost() -> UInt64 {
+            guard let info = info else {
+                return 0
+            }
+            return info.minimumRelayAccountBalance + info.minimumTokenAccountBalance
         }
         
         /// Generic function for sending transaction to fee relayer's relay
