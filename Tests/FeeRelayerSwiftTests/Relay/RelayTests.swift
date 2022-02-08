@@ -75,10 +75,12 @@ class RelayTests: XCTestCase {
         )
         
         // prepare params
+        let relayAccountStatus = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()!
+        
         let params = try relayService.prepareForTopUp(
             amount: .init(transaction: testInfo.amount, accountBalances: 0),
             payingFeeToken: payingToken,
-            relayAccountStatus: .created(balance: 0) // fake
+            relayAccountStatus: relayAccountStatus
         ).toBlocking().first()!
         
         let signatures = try relayService.topUp(
