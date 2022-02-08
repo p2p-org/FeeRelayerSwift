@@ -541,7 +541,14 @@ extension FeeRelayer.Relay {
                         // Get best poolpairs for topping up
                         topUpAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
                         
-                        guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
+                        // TODO: - Temporary solution, prefer direct swap to transitive swap to omit error Non-zero account can only be close if balance zero
+                        let topUpPools: OrcaSwap.PoolsPair
+                        if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
+                            topUpPools = directSwapPools
+                        } else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair)
+                        {
+                            topUpPools = transitiveSwapPools
+                        } else {
                             throw FeeRelayer.Error.swapPoolsNotFound
                         }
                         let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
