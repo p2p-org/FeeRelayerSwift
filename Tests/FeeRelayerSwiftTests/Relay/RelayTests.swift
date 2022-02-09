@@ -130,8 +130,8 @@ class RelayTests: XCTestCase {
             XCTAssertEqual(topUpAmount, 0)
         }
         
-        // send params
-        let signatures = try relayService.topUpAndSwap(
+        // prepare transaction
+        let preparedTransaction = try relayService.prepareSwapTransaction(
             sourceToken: sourceToken,
             destinationTokenMint: testInfo.toMint,
             destinationAddress: testInfo.destinationAddress,
@@ -139,6 +139,12 @@ class RelayTests: XCTestCase {
             swapPools: pools,
             inputAmount: testInfo.inputAmount,
             slippage: 0.05
+        ).toBlocking().first()!
+        
+        // send to relay service
+        let signatures = try relayService.topUpAndRelayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: payingToken
         ).toBlocking().first()!
         
         print(signatures)
