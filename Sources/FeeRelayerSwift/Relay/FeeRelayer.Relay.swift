@@ -172,6 +172,7 @@ extension FeeRelayer {
         /// Calculate fee for given transaction
         public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
             var fee = preparedTransaction.expectedFee
+            // TODO: - Check if free transaction available
             if cachedRelayAccountStatus == .notYetCreated {
                 fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
             }
