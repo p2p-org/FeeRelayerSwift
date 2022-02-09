@@ -188,7 +188,15 @@ extension FeeRelayer {
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    return self.prepareForTopUp(amount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                    
+                    // if it is the first time user using fee relayer
+                    var amount = preparedTransaction.expectedFee
+                    if relayAccountStatus == .notYetCreated {
+                        amount.transaction += self.getRelayAccountCreationCost()
+                    }
+                    
+                    // prepare for topup
+                    return self.prepareForTopUp(amount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
