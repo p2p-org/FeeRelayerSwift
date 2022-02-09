@@ -11,6 +11,10 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
+    func getRelayAccountCreationCost() -> UInt64 {
+        info?.lamportsPerSignature ?? 0 // TODO: Check again
+    }
+    
     // MARK: - Top up
     /// Prepare swap data from swap pools
     func prepareSwapData(

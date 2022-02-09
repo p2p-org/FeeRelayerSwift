@@ -31,9 +31,6 @@ public protocol FeeRelayerRelayType {
         reuseCache: Bool
     ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
-    /// Get first-time account creation cost
-    func getRelayAccountCreationCost() -> UInt64
-    
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
@@ -165,13 +162,6 @@ extension FeeRelayer {
             
             // get relayAccount's status
             return request
-        }
-        
-        public func getRelayAccountCreationCost() -> UInt64 {
-            guard let info = info else {
-                return 0
-            }
-            return 2 * info.lamportsPerSignature // TODO: - Temporary solution
         }
         
         /// Generic function for sending transaction to fee relayer's relay

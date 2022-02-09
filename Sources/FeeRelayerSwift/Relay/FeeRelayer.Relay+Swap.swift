@@ -20,7 +20,7 @@ extension FeeRelayer.Relay {
         swapPools: OrcaSwap.PoolsPair
     ) -> Single<FeesAndTopUpAmount> {
         getRelayAccountStatus(reuseCache: true)
-            .flatMap { [weak self] relayAccountStatus -> Single<TopUpAndActionPreparedParams> in
+            .flatMap { [weak self] relayAccountStatus -> Single<(TopUpAndActionPreparedParams, RelayAccountStatus)> in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 return self.prepareForTopUpAndSwap(
                     sourceToken: sourceToken,
@@ -30,12 +30,18 @@ extension FeeRelayer.Relay {
                     swapPools: swapPools,
                     relayAccountStatus: relayAccountStatus,
                     reuseCache: true
-                )
+                ).map {($0, relayAccountStatus)}
             }
-            .map { preparedParams in
+            .map { [weak self] preparedParams, relayAccountStatus in
+                guard let self = self else { throw FeeRelayer.Error.unknown }
                 let topUpPools = preparedParams.topUpFeesAndPools?.poolsPair
                 
-                let feeAmountInSOL = preparedParams.actionFeesAndPools.fee
+                var feeAmountInSOL = preparedParams.actionFeesAndPools.fee
+                
+                if relayAccountStatus == .notYetCreated {
+                    feeAmountInSOL.transaction += self.getRelayAccountCreationCost()
+                }
+                
                 var topUpAmount: SolanaSDK.Lamports?
                 if let amount = preparedParams.topUpAmount {
                     topUpAmount = amount + (preparedParams.topUpFeesAndPools?.fee.accountBalances ?? 0)
