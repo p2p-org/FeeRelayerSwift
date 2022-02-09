@@ -200,7 +200,7 @@ extension FeeRelayer {
                     // Account creation fee (accountBalances) is a must-pay-back fee
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
-                    // The transaction fee, on another hand, is only be paid if user uses more than number of free transaction
+                    // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
                     // TODO: - if free transaction fee is available
 //                    if isFreeTransactionFee {
 //                        paybackFee = preparedTransaction.expectedFee.transaction
