@@ -456,15 +456,6 @@ extension FeeRelayer.Relay {
                 accountCreationFee -= minimumTokenAccountBalance
             }
         }
-        // Relay fee
-        instructions.append(
-            try Program.transferSolInstruction(
-                userAuthorityAddress: userAuthorityAddress,
-                recipient: feePayerAddress,
-                lamports: feeAmount,
-                network: network
-            )
-        )
         
         var transaction = SolanaSDK.Transaction()
         transaction.instructions = instructions

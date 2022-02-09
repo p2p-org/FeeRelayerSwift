@@ -54,24 +54,6 @@ public protocol FeeRelayerRelayType {
         slippage: Double
     ) -> Single<[String]>
     
-    /**
-     Transfer an amount of spl token to destination address.
-     - Parameters:
-       - sourceToken: source that contains address of account and mint address.
-       - destinationAddress: pass destination wallet address if spl token doesn't exist in this wallet. Otherwise pass wallet's token address.
-       - tokenMint: the address of mint
-       - inputAmount: the amount that will be transferred
-       - payingFeeToken: the token that will be used to pay as fee
-     - Returns:
-     */
-    func topUpAndSend(
-        sourceToken: FeeRelayer.Relay.TokenInfo,
-        destinationAddress: String,
-        tokenMint: String,
-        inputAmount: UInt64,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
-    ) -> Single<[String]>
-    
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
         feeInSOL: SolanaSDK.Lamports,
@@ -202,8 +184,42 @@ extension FeeRelayer {
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
+                    // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let owner = self.accountStorage.account,
+                          let feePayer = self.info?.feePayerAddress
+                    else {throw FeeRelayer.Error.unauthorized}
                     
+                    // verify fee payer
+                    guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
+                    else {
+                        throw FeeRelayer.Error.invalidFeePayer
+                    }
+                    
+                    // Calculate the fee to send back to feePayer
+                    // Account creation fee (accountBalances) is a must-pay-back fee
+                    var paybackFee = preparedTransaction.expectedFee.accountBalances
+                    
+                    // The transaction fee, on another hand, is only be paid if user uses more than number of free transaction
+                    // TODO: - if free transaction fee is available
+//                    if isFreeTransactionFee {
+//                        paybackFee = preparedTransaction.expectedFee.transaction
+//                    }
+                    
+                    // transfer sol back to feerelayer's feePayer
+                    var preparedTransaction = preparedTransaction
+                    if paybackFee > 0 {
+                        preparedTransaction.transaction.instructions.append(
+                            try Program.transferSolInstruction(
+                                userAuthorityAddress: owner.publicKey,
+                                recipient: try SolanaSDK.PublicKey(string: feePayer),
+                                lamports: paybackFee,
+                                network: self.solanaClient.endpoint.network
+                            )
+                        )
+                    }
+                    
+                    // form transaction
                     let transfer: () throws -> Single<[String]> = { [weak self] in
                         guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                         return self.apiClient.sendTransaction(
@@ -214,6 +230,7 @@ extension FeeRelayer {
                         )
                     }
                     
+                    // check if top up is needed
                     if let topUpFeesAndPools = params.topUpFeesAndPools,
                        let topUpAmount = params.topUpAmount {
                         // STEP 2.2.1: Top up

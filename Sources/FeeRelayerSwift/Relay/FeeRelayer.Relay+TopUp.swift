@@ -216,16 +216,6 @@ extension FeeRelayer.Relay {
                     feePayerAddress: feePayerAddress
                 )
             )
-            
-            // transfer
-            instructions.append(
-                try Program.transferSolInstruction(
-                    userAuthorityAddress: userAuthorityAddress,
-                    recipient: feePayerAddress,
-                    lamports: feeAmount.accountBalances,
-                    network: network
-                )
-            )
         case let swap as TransitiveSwapData:
             // approve
             if let userTransferAuthority = userTransferAuthority {
@@ -278,19 +268,19 @@ extension FeeRelayer.Relay {
                     owner: feePayerAddress
                 )
             )
-            
-            // transfer
-            instructions.append(
-                try Program.transferSolInstruction(
-                    userAuthorityAddress: userAuthorityAddress,
-                    recipient: feePayerAddress,
-                    lamports: feeAmount.accountBalances,
-                    network: network
-                )
-            )
         default:
             fatalError("unsupported swap type")
         }
+        
+        // transfer
+        instructions.append(
+            try Program.transferSolInstruction(
+                userAuthorityAddress: userAuthorityAddress,
+                recipient: feePayerAddress,
+                lamports: feeAmount.accountBalances,
+                network: network
+            )
+        )
         
         var transaction = SolanaSDK.Transaction()
         transaction.instructions = instructions
