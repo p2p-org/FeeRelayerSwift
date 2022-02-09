@@ -219,6 +219,9 @@ extension FeeRelayer {
                         )
                     }
                     
+                    // resign transaction
+                    try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+                    
                     // form transaction
                     let transfer: () throws -> Single<[String]> = { [weak self] in
                         guard let self = self else {return .error(FeeRelayer.Error.unknown)}
