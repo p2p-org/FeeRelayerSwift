@@ -223,7 +223,7 @@ extension FeeRelayer.Relay {
             sourceWSOLNewAccount = try SolanaSDK.Account(network: network)
             instructions.append(contentsOf: [
                 SolanaSDK.SystemProgram.createAccountInstruction(
-                    from: userAuthorityAddress,
+                    from: feePayerAddress,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
                     lamports: inputAmount + minimumTokenAccountBalance
                 ),
@@ -233,28 +233,28 @@ extension FeeRelayer.Relay {
                     owner: userAuthorityAddress
                 )
             ])
-            accountCreationFee += minimumTokenAccountBalance
             userSourceTokenAccountAddress = sourceWSOLNewAccount!.publicKey
         }
         
         // check destination
+        var destinationNewAccount: SolanaSDK.Account?
         var userDestinationTokenAccountAddress = destinationToken.address
         if needsCreateDestinationTokenAccount {
-            let associatedAccount = try SolanaSDK.PublicKey.associatedTokenAddress(
-                walletAddress: try SolanaSDK.PublicKey(string: destinationToken.address),
-                tokenMintAddress: destinationTokenMintAddress
-            )
-            instructions.append(
-                SolanaSDK.AssociatedTokenProgram
-                    .createAssociatedTokenAccountInstruction(
-                        mint: destinationTokenMintAddress,
-                        associatedAccount: associatedAccount,
-                        owner: try SolanaSDK.PublicKey(string: destinationToken.address),
-                        payer: feePayerAddress
-                    )
-            )
+            destinationNewAccount = try SolanaSDK.Account(network: network)
+            instructions.append(contentsOf: [
+                SolanaSDK.SystemProgram.createAccountInstruction(
+                    from: feePayerAddress,
+                    toNewPubkey: destinationNewAccount!.publicKey,
+                    lamports: minimumTokenAccountBalance
+                ),
+                SolanaSDK.TokenProgram.initializeAccountInstruction(
+                    account: destinationNewAccount!.publicKey,
+                    mint: destinationTokenMintAddress,
+                    owner: userAuthorityAddress
+                )
+            ])
             accountCreationFee += minimumTokenAccountBalance
-            userDestinationTokenAccountAddress = associatedAccount.base58EncodedString
+            userDestinationTokenAccountAddress = destinationNewAccount!.publicKey.base58EncodedString
         }
         
         // swap
@@ -351,38 +351,34 @@ extension FeeRelayer.Relay {
         // WSOL close
         // close source
         if let newAccount = sourceWSOLNewAccount {
-            instructions.append(
+            instructions.append(contentsOf: [
                 SolanaSDK.TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
                     destination: userAuthorityAddress,
                     owner: userAuthorityAddress
+                ),
+                SolanaSDK.SystemProgram.transferInstruction(
+                    from: userAuthorityAddress,
+                    to: feePayerAddress,
+                    lamports: minimumTokenAccountBalance
                 )
-            )
-            
-            accountCreationFee -= minimumTokenAccountBalance
+            ])
         }
         // close destination
-        if destinationTokenMintAddress == .wrappedSOLMint {
-            if let ownerAddress = try? SolanaSDK.PublicKey(string: userDestinationAccountOwnerAddress) {
-                instructions.append(
-                    SolanaSDK.TokenProgram.closeAccountInstruction(
-                        account: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
-                        destination: ownerAddress,
-                        owner: ownerAddress,
-                        signers: []
-                    )
+        if let newAccount = destinationNewAccount, destinationTokenMintAddress == .wrappedSOLMint {
+            instructions.append(contentsOf: [
+                SolanaSDK.TokenProgram.closeAccountInstruction(
+                    account: newAccount.publicKey,
+                    destination: userAuthorityAddress,
+                    owner: userAuthorityAddress
+                ),
+                SolanaSDK.SystemProgram.transferInstruction(
+                    from: userAuthorityAddress,
+                    to: feePayerAddress,
+                    lamports: minimumTokenAccountBalance
                 )
-                
-                instructions.append(
-                    SolanaSDK.SystemProgram.transferInstruction(
-                        from: ownerAddress,
-                        to: feePayerAddress,
-                        lamports: minimumTokenAccountBalance
-                    )
-                )
-                
-                accountCreationFee -= minimumTokenAccountBalance
-            }
+            ])
+            accountCreationFee -= minimumTokenAccountBalance
         }
         
         var transaction = SolanaSDK.Transaction()
@@ -400,6 +396,9 @@ extension FeeRelayer.Relay {
         var signers = [owner]
         if let sourceWSOLNewAccount = sourceWSOLNewAccount {
             signers.append(sourceWSOLNewAccount)
+        }
+        if let destinationNewAccount = destinationNewAccount {
+            signers.append(destinationNewAccount)
         }
         try transaction.sign(signers: signers)
         
