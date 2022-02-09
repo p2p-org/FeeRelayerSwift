@@ -51,11 +51,20 @@ extension FeeRelayer.Relay {
                 )
                 
                 // STEP 4: send transaction
-                let signatures = try self.getSignatures(
-                    transaction: topUpTransaction.transaction,
-                    owner: owner,
-                    transferAuthorityAccount: topUpTransaction.transferAuthorityAccount
+                let signatures = topUpTransaction.preparedTransaction.transaction.signatures
+                guard signatures.count >= 2 else {throw FeeRelayer.Error.invalidSignature}
+                
+                // the second signature is the owner's signature
+                let ownerSignature = try signatures.getSignature(index: 1)
+                
+                // the third signature (optional) is the transferAuthority's signature
+                let transferAuthoritySignature = try? signatures.getSignature(index: 2)
+                
+                let topUpSignatures = SwapTransactionSignatures(
+                    userAuthoritySignature: ownerSignature,
+                    transferAuthoritySignature: transferAuthoritySignature
                 )
+                
                 return self.apiClient.sendTransaction(
                     .relayTopUpWithSwap(
                         .init(
@@ -64,7 +73,7 @@ extension FeeRelayer.Relay {
                             userAuthorityPubkey: owner.publicKey.base58EncodedString,
                             topUpSwap: .init(topUpTransaction.swapData),
                             feeAmount: topUpFee.accountBalances,
-                            signatures: signatures,
+                            signatures: topUpSignatures,
                             blockhash: recentBlockhash
                         )
                     ),
@@ -141,7 +150,7 @@ extension FeeRelayer.Relay {
             needsCreateUserRelayAccount: relayAccountStatus == .notYetCreated,
             feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
             lamportsPerSignature: info.lamportsPerSignature
-        ).feeAmount
+        ).preparedTransaction.expectedFee
         return fee
     }
     
@@ -160,8 +169,9 @@ extension FeeRelayer.Relay {
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: String,
         lamportsPerSignature: UInt64
-    ) throws -> PreparedParams {
+    ) throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: SolanaSDK.PreparedTransaction) {
         // assertion
+        guard let owner = accountStorage.account else {throw FeeRelayer.Error.unauthorized}
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
               let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
@@ -170,7 +180,7 @@ extension FeeRelayer.Relay {
         else { throw FeeRelayer.Error.wrongAddress }
         
         // forming transaction and count fees
-        var expectedFee = SolanaSDK.FeeAmount(transaction: 0, accountBalances: 0)
+        var accountCreationFee: UInt64 = 0
         var instructions = [SolanaSDK.TransactionInstruction]()
         
         // create user relay account
@@ -182,7 +192,7 @@ extension FeeRelayer.Relay {
                     lamports: minimumRelayAccountBalance
                 )
             )
-            expectedFee.accountBalances += minimumRelayAccountBalance
+            accountCreationFee += minimumRelayAccountBalance
         }
         
         // top up swap
@@ -192,7 +202,7 @@ extension FeeRelayer.Relay {
         
         switch swap.swapData {
         case let swap as DirectSwapData:
-            expectedFee.accountBalances += minimumTokenAccountBalance
+            accountCreationFee += minimumTokenAccountBalance
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
@@ -247,7 +257,7 @@ extension FeeRelayer.Relay {
             )
             
             // Destination WSOL account funding
-            expectedFee.accountBalances += minimumTokenAccountBalance
+            accountCreationFee += minimumTokenAccountBalance
             
             // top up
             instructions.append(
@@ -286,50 +296,39 @@ extension FeeRelayer.Relay {
         transaction.instructions = instructions
         transaction.feePayer = feePayerAddress
         transaction.recentBlockhash = blockhash
-        let transactionFee = try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature)
-        expectedFee.transaction = transactionFee
         
-        return .init(
-            swapData: swap.swapData,
-            transaction: transaction,
-            feeAmount: expectedFee,
-            transferAuthorityAccount: swap.transferAuthorityAccount
+        // calculate fee first
+        let expectedFee = SolanaSDK.FeeAmount(
+            transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature),
+            accountBalances: accountCreationFee
         )
-    }
-    
-    /// Get signature from transaction
-    private func getSignatures(
-        transaction: SolanaSDK.Transaction,
-        owner: SolanaSDK.Account,
-        transferAuthorityAccount: SolanaSDK.Account?
-    ) throws -> SwapTransactionSignatures {
-        var transaction = transaction
         
+        // resign transaction
         var signers = [owner]
-        
-        if let transferAuthorityAccount = transferAuthorityAccount {
-            signers.append(transferAuthorityAccount)
+        if let tranferAuthority = swap.transferAuthorityAccount {
+            signers.append(tranferAuthority)
         }
-        
         try transaction.sign(signers: signers)
-        guard let ownerSignatureData = transaction.findSignature(pubkey: owner.publicKey)?.signature
-        else {
-            throw FeeRelayer.Error.invalidSignature
-        }
-        let ownerSignature = Base58.encode(ownerSignatureData.bytes)
-        
-        let transferAuthoritySignature: String?
-        if let transferAuthorityAccount = transferAuthorityAccount,
-           let transferAuthoritySignatureData = transaction.findSignature(pubkey: transferAuthorityAccount.publicKey)?.signature {
-            transferAuthoritySignature = Base58.encode(transferAuthoritySignatureData.bytes)
-        } else {
-            transferAuthoritySignature = nil
-        }
         
         if let decodedTransaction = transaction.jsonString {
             Logger.log(message: decodedTransaction, event: .info)
         }
         
-        return .init(userAuthoritySignature: ownerSignature, transferAuthoritySignature: transferAuthoritySignature)
+        return (
+            swapData: swap.swapData,
+            preparedTransaction: .init(
+                transaction: transaction,
+                signers: signers,
+                expectedFee: expectedFee
+            )
+        )
+    }
+}
+
+private extension Array where Element == SolanaSDK.Transaction.Signature {
+    func getSignature(index: Int) throws -> String {
+        guard count > index else {throw FeeRelayer.Error.invalidSignature}
+        guard let data = self[index].signature else {throw FeeRelayer.Error.invalidSignature}
+        return Base58.encode(data)
     }
 }
