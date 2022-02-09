@@ -289,13 +289,6 @@ extension FeeRelayer.Relay {
     }
     
     // MARK: - Others
-    struct PreparedParams {
-        let swapData: FeeRelayerRelaySwapType
-        let transaction: SolanaSDK.Transaction
-        let feeAmount: SolanaSDK.FeeAmount
-        let transferAuthorityAccount: SolanaSDK.Account?
-    }
-    
     public enum RelayAccountStatus: Equatable {
         case notYetCreated
         case created(balance: UInt64)

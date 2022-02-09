@@ -27,12 +27,18 @@ public protocol FeeRelayerRelayType {
     func load() -> Completable
     
     /// Get info of relay account
-    func getRelayAccountStatus(reuseCache: Bool) -> Single<FeeRelayer.Relay.RelayAccountStatus>
+    func getRelayAccountStatus(
+        reuseCache: Bool
+    ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
     /// Get first-time account creation cost
     func getRelayAccountCreationCost() -> UInt64
     
-    // MARK: - TopUpAndSwap
+    /// Top up relay account (if needed) and relay transaction
+    func topUpAndRelayTransaction(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo
+    ) -> Single<[String]>
     
     /// Calculate needed fee IN SOL
     func calculateFeeAndNeededTopUpAmountForSwapping(
@@ -43,8 +49,8 @@ public protocol FeeRelayerRelayType {
         swapPools: OrcaSwap.PoolsPair
     ) -> Single<FeeRelayer.Relay.FeesAndTopUpAmount>
     
-    /// Top up relay account (if needed) and swap
-    func topUpAndSwap(
+    /// Prepare swap transaction for relay
+    func prepareSwapTransaction(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
@@ -52,25 +58,7 @@ public protocol FeeRelayerRelayType {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<[String]>
-    
-    /**
-     Transfer an amount of spl token to destination address.
-     - Parameters:
-       - sourceToken: source that contains address of account and mint address.
-       - destinationAddress: pass destination wallet address if spl token doesn't exist in this wallet. Otherwise pass wallet's token address.
-       - tokenMint: the address of mint
-       - inputAmount: the amount that will be transferred
-       - payingFeeToken: the token that will be used to pay as fee
-     - Returns:
-     */
-    func topUpAndSend(
-        sourceToken: FeeRelayer.Relay.TokenInfo,
-        destinationAddress: String,
-        tokenMint: String,
-        inputAmount: UInt64,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
-    ) -> Single<[String]>
+    ) -> Single<SolanaSDK.PreparedTransaction>
     
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
@@ -78,13 +66,9 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<SolanaSDK.Lamports?>
     
-    /// Top up relay account (if needed) and relay transaction
-    func topUpAndRelayTransaction(
-        preparedTransaction: SolanaSDK.PreparedTransaction,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
-    ) -> Single<[String]>
-    
-    func canUseFeeRelayer(useCache: Bool) -> Single<FeeRelayer.Relay.UserAvailableInfo>
+    func canUseFeeRelayer(
+        useCache: Bool
+    ) -> Single<FeeRelayer.Relay.UserAvailableInfo>
 }
 
 extension FeeRelayer {
@@ -196,14 +180,52 @@ extension FeeRelayer {
             payingFeeToken: TokenInfo
         ) -> Single<[String]> {
             getRelayAccountStatus(reuseCache: false)
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return self.prepareForTopUp(amount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
+                    // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let owner = self.accountStorage.account,
+                          let feePayer = self.info?.feePayerAddress
+                    else {throw FeeRelayer.Error.unauthorized}
                     
+                    // verify fee payer
+                    guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
+                    else {
+                        throw FeeRelayer.Error.invalidFeePayer
+                    }
+                    
+                    // Calculate the fee to send back to feePayer
+                    // Account creation fee (accountBalances) is a must-pay-back fee
+                    var paybackFee = preparedTransaction.expectedFee.accountBalances
+                    
+                    // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
+                    // TODO: - if free transaction fee is available
+//                    if isFreeTransactionFee {
+//                        paybackFee = preparedTransaction.expectedFee.transaction
+//                    }
+                    
+                    // transfer sol back to feerelayer's feePayer
+                    var preparedTransaction = preparedTransaction
+                    if paybackFee > 0 {
+                        preparedTransaction.transaction.instructions.append(
+                            try Program.transferSolInstruction(
+                                userAuthorityAddress: owner.publicKey,
+                                recipient: try SolanaSDK.PublicKey(string: feePayer),
+                                lamports: paybackFee,
+                                network: self.solanaClient.endpoint.network
+                            )
+                        )
+                    }
+                    
+                    // resign transaction
+                    try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+                    
+                    // form transaction
                     let transfer: () throws -> Single<[String]> = { [weak self] in
                         guard let self = self else {return .error(FeeRelayer.Error.unknown)}
                         return self.apiClient.sendTransaction(
@@ -214,6 +236,7 @@ extension FeeRelayer {
                         )
                     }
                     
+                    // check if top up is needed
                     if let topUpFeesAndPools = params.topUpFeesAndPools,
                        let topUpAmount = params.topUpAmount {
                         // STEP 2.2.1: Top up
@@ -230,6 +253,7 @@ extension FeeRelayer {
                         return try transfer()
                     }
                 }
+                .observe(on: MainScheduler.instance)
         }
     }
 }

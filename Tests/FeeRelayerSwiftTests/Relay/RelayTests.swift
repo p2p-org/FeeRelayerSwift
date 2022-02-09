@@ -44,24 +44,20 @@ class RelayTests: XCTestCase {
     }
     
     // MARK: - Transfer spl tokens
-    func testUSDTTransfer() throws {
-        try runTransferSPLToken(testsInfo.usdtTransfer!)
-    }
-    
-    func testUSDTBackTransfer() throws {
-        try runTransferSPLToken(testsInfo.usdtBackTransfer!)
-    }
-    
-    func testUSDTTransferToNonCreatedToken() throws {
-        try runTransferSPLToken(testsInfo.usdtTransferToNonCreatedToken!)
-    }
-    
     func testRelaySendNativeSOL() throws {
         try runRelaySendNativeSOL(testsInfo.relaySendNativeSOL!)
     }
     
-    func testRelaySendSPLToken() throws {
+    func testUSDTTransfer() throws {
         try runRelaySendSPLToken(testsInfo.usdtTransfer!)
+    }
+    
+    func testUSDTBackTransfer() throws {
+        try runRelaySendSPLToken(testsInfo.usdtBackTransfer!)
+    }
+    
+    func testUSDTTransferToNonCreatedToken() throws {
+        try runRelaySendSPLToken(testsInfo.usdtTransferToNonCreatedToken!)
     }
     
     // MARK: - Helpers
@@ -134,8 +130,8 @@ class RelayTests: XCTestCase {
             XCTAssertEqual(topUpAmount, 0)
         }
         
-        // send params
-        let signatures = try relayService.topUpAndSwap(
+        // prepare transaction
+        let preparedTransaction = try relayService.prepareSwapTransaction(
             sourceToken: sourceToken,
             destinationTokenMint: testInfo.toMint,
             destinationAddress: testInfo.destinationAddress,
@@ -145,29 +141,14 @@ class RelayTests: XCTestCase {
             slippage: 0.05
         ).toBlocking().first()!
         
+        // send to relay service
+        let signatures = try relayService.topUpAndRelayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: payingToken
+        ).toBlocking().first()!
+        
         print(signatures)
         XCTAssertTrue(signatures.count > 0)
-    }
-    
-    func runTransferSPLToken(_ relayTest: RelayTransferTestInfo) throws {
-        try loadTest(relayTest)
-        
-        let payingToken = FeeRelayer.Relay.TokenInfo(
-            address: relayTest.payingTokenAddress,
-            mint: relayTest.payingTokenMint
-        )
-        
-        let signature = try relayService.topUpAndSend(
-            sourceToken: FeeRelayer.Relay.TokenInfo(
-                address: relayTest.sourceTokenAddress,
-                mint: relayTest.mint
-            ),
-            destinationAddress: relayTest.destinationAddress,
-            tokenMint: relayTest.mint,
-            inputAmount: relayTest.inputAmount,
-            payingFeeToken: payingToken
-        ).toBlocking().first()
-        print(signature ?? "Nothing")
     }
     
     func runRelaySendNativeSOL(_ test: RelayTransferNativeSOLTestInfo) throws {
