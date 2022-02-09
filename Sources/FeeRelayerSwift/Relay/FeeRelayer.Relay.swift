@@ -31,6 +31,11 @@ public protocol FeeRelayerRelayType {
         reuseCache: Bool
     ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
+    /// Calculate fee
+    func calculateFee(
+        preparedTransaction: SolanaSDK.PreparedTransaction
+    ) -> SolanaSDK.FeeAmount
+    
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
@@ -162,6 +167,15 @@ extension FeeRelayer {
             
             // get relayAccount's status
             return request
+        }
+        
+        /// Calculate fee for given transaction
+        public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
+            var fee = preparedTransaction.expectedFee
+            if cachedRelayAccountStatus == .notYetCreated {
+                fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
+            }
+            return fee
         }
         
         /// Generic function for sending transaction to fee relayer's relay
