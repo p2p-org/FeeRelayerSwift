@@ -27,12 +27,18 @@ public protocol FeeRelayerRelayType {
     func load() -> Completable
     
     /// Get info of relay account
-    func getRelayAccountStatus(reuseCache: Bool) -> Single<FeeRelayer.Relay.RelayAccountStatus>
+    func getRelayAccountStatus(
+        reuseCache: Bool
+    ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
     /// Get first-time account creation cost
     func getRelayAccountCreationCost() -> UInt64
     
-    // MARK: - TopUpAndSwap
+    /// Top up relay account (if needed) and relay transaction
+    func topUpAndRelayTransaction(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo
+    ) -> Single<[String]>
     
     /// Calculate needed fee IN SOL
     func calculateFeeAndNeededTopUpAmountForSwapping(
@@ -60,13 +66,9 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo
     ) -> Single<SolanaSDK.Lamports?>
     
-    /// Top up relay account (if needed) and relay transaction
-    func topUpAndRelayTransaction(
-        preparedTransaction: SolanaSDK.PreparedTransaction,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
-    ) -> Single<[String]>
-    
-    func canUseFeeRelayer(useCache: Bool) -> Single<FeeRelayer.Relay.UserAvailableInfo>
+    func canUseFeeRelayer(
+        useCache: Bool
+    ) -> Single<FeeRelayer.Relay.UserAvailableInfo>
 }
 
 extension FeeRelayer {
@@ -178,6 +180,7 @@ extension FeeRelayer {
             payingFeeToken: TokenInfo
         ) -> Single<[String]> {
             getRelayAccountStatus(reuseCache: false)
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return self.prepareForTopUp(amount: preparedTransaction.expectedFee, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
@@ -250,6 +253,7 @@ extension FeeRelayer {
                         return try transfer()
                     }
                 }
+                .observe(on: MainScheduler.instance)
         }
     }
 }

@@ -117,6 +117,7 @@ extension FeeRelayer.Relay {
             getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress),
             solanaClient.getRecentBlockhash(commitment: nil)
         )
+            .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .map { [weak self] preparedParams, destination, recentBlockhash in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 // get needed info
