@@ -29,9 +29,6 @@ extension FeeRelayer.Relay {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayer.Error.invalidAmount }
-        guard let owner = accountStorage.account else {
-            throw FeeRelayer.Error.unauthorized
-        }
         
         // create transferAuthority
         let transferAuthority = try SolanaSDK.Account(network: network)

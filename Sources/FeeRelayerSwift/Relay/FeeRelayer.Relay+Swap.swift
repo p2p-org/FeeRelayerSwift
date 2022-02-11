@@ -213,7 +213,6 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> SolanaSDK.PreparedTransaction {
         // assertion
-        guard let owner = accountStorage.account else {throw FeeRelayer.Error.unauthorized}
         let userAuthorityAddress = owner.publicKey
         guard var userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
@@ -503,21 +502,20 @@ extension FeeRelayer.Relay {
         destinationTokenMint: String,
         destinationAddress: String?
     ) -> Single<(destinationToken: TokenInfo, userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?, needsCreateDestinationTokenAccount: Bool)> {
-        guard let owner = accountStorage.account?.publicKey else { return .error(FeeRelayer.Error.unauthorized) }
         // Redefine destination
         let userDestinationAccountOwnerAddress: SolanaSDK.PublicKey?
         let destinationRequest: Single<SolanaSDK.SPLTokenDestinationAddress>
         
         if SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString == destinationTokenMint {
             // Swap to native SOL account
-            userDestinationAccountOwnerAddress = owner
-            destinationRequest = .just((destination: owner, isUnregisteredAsocciatedToken: true))
+            userDestinationAccountOwnerAddress = owner.publicKey
+            destinationRequest = .just((destination: owner.publicKey, isUnregisteredAsocciatedToken: true))
         } else {
             // Swap to other SPL
             userDestinationAccountOwnerAddress = nil
             destinationRequest = solanaClient.findSPLTokenDestinationAddress(
                 mintAddress: destinationTokenMint,
-                destinationAddress: owner.base58EncodedString
+                destinationAddress: owner.publicKey.base58EncodedString
             )
         }
         

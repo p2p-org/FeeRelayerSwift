@@ -50,9 +50,9 @@ extension FeeRelayer.Relay {
     }
     
     public struct FreeTransactionFeeLimit {
-        public let maxUsage: Int;
-        public let currentUsage: Int;
-        public var canUseFeeRelayer: Bool { currentUsage < maxUsage }
+        public let maxUsage: Int
+        public var currentUsage: Int
+        public var hasFreeTransactionFee: Bool { currentUsage < maxUsage }
     }
     
     // MARK: - Relay info
@@ -61,7 +61,6 @@ extension FeeRelayer.Relay {
         var minimumRelayAccountBalance: UInt64
         var feePayerAddress: String
         var lamportsPerSignature: UInt64
-        let userRelayAddress: SolanaSDK.PublicKey
         var relayAccountStatus: RelayAccountStatus?
         var preparedParams: TopUpAndActionPreparedParams?
         var freeTransactionFeeLimit: FreeTransactionFeeLimit?

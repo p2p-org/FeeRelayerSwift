@@ -85,6 +85,8 @@ extension FeeRelayer {
         // MARK: - Properties
         let locker = NSLock()
         var cache: Cache? // All info needed to perform actions, works as a cache
+        let owner: SolanaSDK.Account
+        let userRelayAddress: SolanaSDK.PublicKey
         
         // MARK: - Initializers
         public init(
@@ -93,10 +95,13 @@ extension FeeRelayer {
             accountStorage: SolanaSDKAccountStorage,
             orcaSwapClient: OrcaSwapType
         ) throws {
+            guard let owner = accountStorage.account else {throw Error.unauthorized}
             self.apiClient = apiClient
             self.solanaClient = solanaClient
             self.accountStorage = accountStorage
             self.orcaSwapClient = orcaSwapClient
+            self.owner = owner
+            self.userRelayAddress = try Program.getUserRelayAddress(user: owner.publicKey, network: self.solanaClient.endpoint.network)
         }
         
         // MARK: - Methods
@@ -111,19 +116,20 @@ extension FeeRelayer {
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
                 // get relayAccount status
-                getRelayAccountStatus(reuseCache: false)
+                getRelayAccountStatus(reuseCache: false),
+                // get free transaction fee limit
+                getFreeTransactionFeeLimit(useCache: false)
             )
-                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _ in
+                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, relayAccountStatus, freeTransactionFeeLimit in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    guard let owner = self.accountStorage.account else { throw FeeRelayer.Error.unauthorized }
                     self.locker.lock()
-                    let userRelayAddress = try Program.getUserRelayAddress(user: owner.publicKey, network: self.solanaClient.endpoint.network)
                     self.cache = .init(
                         minimumTokenAccountBalance: minimumTokenAccountBalance,
                         minimumRelayAccountBalance: minimumRelayAccountBalance,
                         feePayerAddress: feePayerAddress,
                         lamportsPerSignature: lamportsPerSignature,
-                        userRelayAddress: userRelayAddress
+                        relayAccountStatus: relayAccountStatus,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
                     )
                     self.locker.unlock()
                 })
@@ -136,47 +142,39 @@ extension FeeRelayer {
                 return .just(cachedUserAvailableInfo)
             }
     
-            // TODO: Check fee relay account.
-            guard let account = accountStorage.account else { return .error(FeeRelayer.Error.unauthorized) }
             return apiClient
-                .requestFreeFeeLimits(for: account.publicKey.base58EncodedString)
+                .requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
                 .map { [weak self] info in
                     let info = FreeTransactionFeeLimit(maxUsage: info.limits.maxCount, currentUsage: info.processedFee.count)
+                    self?.locker.lock()
                     self?.cache?.freeTransactionFeeLimit = info
+                    self?.locker.unlock()
                     return info
                 }
         }
         
         /// Get relayAccount status
         public func getRelayAccountStatus(reuseCache: Bool) -> Single<RelayAccountStatus> {
-            guard let cache = cache else {
-                return .error(Error.relayInfoMissing)
-            }
-
-            
-            // form request
-            let request: Single<RelayAccountStatus>
             if reuseCache,
-               let cachedRelayAccountStatus = cache.relayAccountStatus
+               let cachedRelayAccountStatus = cache?.relayAccountStatus
             {
-                request = .just(cachedRelayAccountStatus)
-            } else {
-                request = solanaClient.getRelayAccountStatus(cache.userRelayAddress.base58EncodedString)
-                    .do(onSuccess: { [weak self] in
-                        self?.locker.lock()
-                        self?.cache?.relayAccountStatus = $0
-                        self?.locker.unlock()
-                    })
+                return .just(cachedRelayAccountStatus)
             }
             
-            // get relayAccount's status
-            return request
+            return solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+                .do(onSuccess: { [weak self] in
+                    self?.locker.lock()
+                    self?.cache?.relayAccountStatus = $0
+                    self?.locker.unlock()
+                })
         }
         
         /// Calculate fee for given transaction
         public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
             var fee = preparedTransaction.expectedFee
-            // TODO: - Check if free transaction available
+            if cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+                fee.transaction = 0
+            }
             if cache?.relayAccountStatus == .notYetCreated {
                 fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
             }
@@ -206,8 +204,7 @@ extension FeeRelayer {
                 .flatMap { [weak self] params, relayAccountStatus in
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    guard let owner = self.accountStorage.account,
-                          let feePayer = self.cache?.feePayerAddress
+                    guard let feePayer = self.cache?.feePayerAddress
                     else {throw FeeRelayer.Error.unauthorized}
                     
                     // verify fee payer
@@ -231,7 +228,7 @@ extension FeeRelayer {
                     if paybackFee > 0 {
                         preparedTransaction.transaction.instructions.append(
                             try Program.transferSolInstruction(
-                                userAuthorityAddress: owner.publicKey,
+                                userAuthorityAddress: self.owner.publicKey,
                                 recipient: try SolanaSDK.PublicKey(string: feePayer),
                                 lamports: paybackFee,
                                 network: self.solanaClient.endpoint.network
@@ -270,6 +267,11 @@ extension FeeRelayer {
                         return try transfer()
                     }
                 }
+                .do(onSuccess: {[weak self] _ in
+                    self?.locker.lock()
+                    self?.cache?.freeTransactionFeeLimit?.currentUsage += 1
+                    self?.locker.unlock()
+                })
                 .observe(on: MainScheduler.instance)
         }
     }

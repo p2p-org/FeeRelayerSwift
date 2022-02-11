@@ -19,10 +19,7 @@ extension FeeRelayer.Relay {
         topUpPools: OrcaSwap.PoolsPair,
         topUpFee: SolanaSDK.FeeAmount
     ) -> Single<[String]> {
-        guard let owner = accountStorage.account else {return .error(FeeRelayer.Error.unauthorized)}
-        
-        // get recent blockhash
-        return solanaClient.getRecentBlockhash(commitment: nil)
+        solanaClient.getRecentBlockhash(commitment: nil)
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .flatMap { [weak self] recentBlockhash in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
@@ -32,8 +29,8 @@ extension FeeRelayer.Relay {
                 let topUpTransaction = try self.prepareForTopUp(
                     network: self.solanaClient.endpoint.network,
                     sourceToken: sourceToken,
-                    userAuthorityAddress: owner.publicKey,
-                    userRelayAddress: cache.userRelayAddress,
+                    userAuthorityAddress: self.owner.publicKey,
+                    userRelayAddress: self.userRelayAddress,
                     topUpPools: topUpPools,
                     amount: amount,
                     feeAmount: topUpFee,
@@ -65,7 +62,7 @@ extension FeeRelayer.Relay {
                         .init(
                             userSourceTokenAccountPubkey: sourceToken.address,
                             sourceTokenMintPubkey: sourceToken.mint,
-                            userAuthorityPubkey: owner.publicKey.base58EncodedString,
+                            userAuthorityPubkey: self.owner.publicKey.base58EncodedString,
                             topUpSwap: .init(topUpTransaction.swapData),
                             feeAmount: topUpFee.accountBalances,
                             signatures: topUpSignatures,
@@ -74,10 +71,12 @@ extension FeeRelayer.Relay {
                     ),
                     decodedTo: [String].self
                 )
-                    .do(onSuccess: {_ in
-                        Logger.log(message: "Top up \(amount) into \(self.cache?.userRelayAddress ?? "") completed", event: .info)
-                    }, onSubscribe: {
-                        Logger.log(message: "Top up \(amount) into \(self.cache?.userRelayAddress ?? "") processing", event: .info)
+                    .do(onSuccess: { [weak self] _ in
+                        guard let self = self else {return}
+                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) completed", event: .info)
+                    }, onSubscribe: { [weak self] in
+                        guard let self = self else {return}
+                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) processing", event: .info)
                     })
             }
             .observe(on: MainScheduler.instance)
@@ -135,7 +134,7 @@ extension FeeRelayer.Relay {
                 mint: "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn" // fake
             ),
             userAuthorityAddress: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", // fake
-            userRelayAddress: cache.userRelayAddress,
+            userRelayAddress: userRelayAddress,
             topUpPools: topUpPools,
             amount: 10000, // fake
             feeAmount: .zero, // fake
@@ -166,7 +165,6 @@ extension FeeRelayer.Relay {
         lamportsPerSignature: UInt64
     ) throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: SolanaSDK.PreparedTransaction) {
         // assertion
-        guard let owner = accountStorage.account else {throw FeeRelayer.Error.unauthorized}
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
               let sourceTokenMintAddress = try? SolanaSDK.PublicKey(string: sourceToken.mint),
               let feePayerAddress = try? SolanaSDK.PublicKey(string: feePayerAddress),
