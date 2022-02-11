@@ -44,7 +44,7 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
     /// Calculate needed fee IN SOL
@@ -184,7 +184,7 @@ extension FeeRelayer {
         /// Generic function for sending transaction to fee relayer's relay
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            payingFeeToken: TokenInfo
+            payingFeeToken: TokenInfo?
         ) -> Single<[String]> {
             Single.zip(
                 getRelayAccountStatus(reuseCache: false),
@@ -200,9 +200,20 @@ extension FeeRelayer {
                         expectedFee.transaction += self.getRelayAccountCreationCost()
                     }
                     
-                    // prepare for topup
-                    return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
-                        .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
+                    // if payingFeeToken is provided
+                    if let payingFeeToken = payingFeeToken {
+                        return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                            .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
+                    }
+                    
+                    // if not, make sure that relayAccountBalance is greater or equal to expected fee
+                    if (relayAccountStatus.balance ?? 0) >= expectedFee.total {
+                        // skip topup
+                        return .just(
+                            (.init(topUpFeesAndPools: nil, topUpAmount: nil), relayAccountStatus, freeTransactionFeeLimit))
+                    }
+                    
+                    throw FeeRelayer.Error.feePayingTokenMissing
                 }
                 .flatMap { [weak self] params, relayAccountStatus, freeTransactionFeeLimit in
                     // assertion
@@ -254,7 +265,9 @@ extension FeeRelayer {
                     
                     // check if top up is needed
                     if let topUpFeesAndPools = params.topUpFeesAndPools,
-                       let topUpAmount = params.topUpAmount {
+                       let topUpAmount = params.topUpAmount,
+                       let payingFeeToken = payingFeeToken
+                    {
                         // STEP 2.2.1: Top up
                         return self.topUp(
                             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
