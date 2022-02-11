@@ -199,14 +199,23 @@ extension FeeRelayer {
                 .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams, RelayAccountStatus, FreeTransactionFeeLimit)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
-                    // if it is the first time user using fee relayer
+                    // Check fee
                     var expectedFee = preparedTransaction.expectedFee
-                    if relayAccountStatus == .notYetCreated {
-                        expectedFee.transaction += self.getRelayAccountCreationCost()
+                    
+                    // User has free transaction
+                    if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction)
+                    {
+                        // skip topup
+                        return .just(
+                            (.init(topUpFeesAndPools: nil, topUpAmount: nil), relayAccountStatus, freeTransactionFeeLimit))
                     }
                     
                     // if payingFeeToken is provided
                     if let payingFeeToken = payingFeeToken {
+                        // if it is the first time user using fee relayer
+                        if relayAccountStatus == .notYetCreated {
+                            expectedFee.transaction += self.getRelayAccountCreationCost()
+                        }
                         return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                             .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
                     }
