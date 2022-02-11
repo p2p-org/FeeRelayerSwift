@@ -145,7 +145,12 @@ extension FeeRelayer {
             return apiClient
                 .requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
                 .map { [weak self] info in
-                    let info = FreeTransactionFeeLimit(maxUsage: info.limits.maxCount, currentUsage: info.processedFee.count)
+                    let info = FreeTransactionFeeLimit(
+                        maxUsage: info.limits.maxCount,
+                        currentUsage: info.processedFee.count,
+                        maxAmount: info.limits.maxAmount,
+                        amountUsed: info.processedFee.totalAmount
+                    )
                     self?.locker.lock()
                     self?.cache?.freeTransactionFeeLimit = info
                     self?.locker.unlock()
@@ -172,7 +177,8 @@ extension FeeRelayer {
         /// Calculate fee for given transaction, including top up fee
         public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
             var fee = preparedTransaction.expectedFee
-            if cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: fee.transaction) == true
+            {
                 fee.transaction = 0
             }
             if cache?.relayAccountStatus == .notYetCreated {
@@ -232,7 +238,8 @@ extension FeeRelayer {
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
                     // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    if freeTransactionFeeLimit.hasFreeTransactionFee {
+                    if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
+                    {
                         paybackFee += preparedTransaction.expectedFee.transaction
                     }
                     

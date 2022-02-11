@@ -24,7 +24,8 @@ extension FeeRelayer.Relay {
     
         struct Limits: Codable {
             let useFreeFee: Bool
-            let maxAmount, maxCount: Int
+            let maxAmount: UInt64
+            let maxCount: Int
             let period: Period
         
             enum CodingKeys: String, CodingKey {
@@ -40,7 +41,8 @@ extension FeeRelayer.Relay {
         }
 
         struct ProcessedFee: Codable {
-            let totalAmount, count: Int
+            let totalAmount: UInt64
+            let count: Int
             
             enum CodingKeys: String, CodingKey {
                 case totalAmount = "total_amount"
@@ -52,7 +54,12 @@ extension FeeRelayer.Relay {
     public struct FreeTransactionFeeLimit {
         public let maxUsage: Int
         public var currentUsage: Int
-        public var hasFreeTransactionFee: Bool { currentUsage < maxUsage }
+        public let maxAmount: UInt64
+        public var amountUsed: UInt64
+        
+        public func isFreeTransactionFeeAvailable(transactionFee: UInt64) -> Bool {
+            currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
+        }
     }
     
     // MARK: - Relay info
