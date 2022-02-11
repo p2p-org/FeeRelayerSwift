@@ -238,7 +238,7 @@ extension FeeRelayer {
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
                     // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
+                    if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
                     {
                         paybackFee += preparedTransaction.expectedFee.transaction
                     }
