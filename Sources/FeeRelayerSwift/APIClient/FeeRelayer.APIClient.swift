@@ -47,7 +47,22 @@ extension FeeRelayer {
                 url += "/v\(version)"
             }
             url += "/free_fee_limits/\(authority)"
-            return request(.get, url)
+            
+            let urlRequest: URLRequest
+            do {
+                urlRequest = try URLRequest(
+                    url: url,
+                    method: .get,
+                    headers: ["Content-Type": "application/json"]
+                )
+                #if DEBUG
+                print(NSString(string: urlRequest.cURL()))
+                #endif
+            } catch {
+                return .error(Error.unknown)
+            }
+            
+            return request(urlRequest)
                 .responseData()
                 .take(1)
                 .asSingle()
@@ -118,7 +133,7 @@ extension FeeRelayer {
             urlRequest.httpBody = try requestType.getParams()
 
             #if DEBUG
-                print(NSString(string: urlRequest.cURL()))
+            print(NSString(string: urlRequest.cURL()))
             #endif
             return urlRequest
         }

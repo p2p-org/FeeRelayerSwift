@@ -186,9 +186,12 @@ extension FeeRelayer {
             preparedTransaction: SolanaSDK.PreparedTransaction,
             payingFeeToken: TokenInfo
         ) -> Single<[String]> {
-            getRelayAccountStatus(reuseCache: false)
+            Single.zip(
+                getRelayAccountStatus(reuseCache: false),
+                getFreeTransactionFeeLimit(useCache: false)
+            )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams, RelayAccountStatus, FreeTransactionFeeLimit)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // if it is the first time user using fee relayer
@@ -199,9 +202,9 @@ extension FeeRelayer {
                     
                     // prepare for topup
                     return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
-                        .map {($0, relayAccountStatus)}
+                        .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
                 }
-                .flatMap { [weak self] params, relayAccountStatus in
+                .flatMap { [weak self] params, relayAccountStatus, freeTransactionFeeLimit in
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     guard let feePayer = self.cache?.feePayerAddress
@@ -218,7 +221,7 @@ extension FeeRelayer {
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
                     // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    if self.cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+                    if freeTransactionFeeLimit.hasFreeTransactionFee {
                         paybackFee += preparedTransaction.expectedFee.transaction
                     }
                     
