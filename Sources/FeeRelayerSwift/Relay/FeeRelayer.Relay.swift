@@ -169,7 +169,7 @@ extension FeeRelayer {
                 })
         }
         
-        /// Calculate fee for given transaction
+        /// Calculate fee for given transaction, including top up fee
         public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
             var fee = preparedTransaction.expectedFee
             if cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
@@ -192,13 +192,13 @@ extension FeeRelayer {
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // if it is the first time user using fee relayer
-                    var amount = preparedTransaction.expectedFee
+                    var expectedFee = preparedTransaction.expectedFee
                     if relayAccountStatus == .notYetCreated {
-                        amount.transaction += self.getRelayAccountCreationCost()
+                        expectedFee.transaction += self.getRelayAccountCreationCost()
                     }
                     
                     // prepare for topup
-                    return self.prepareForTopUp(amount: amount, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                    return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
                         .map {($0, relayAccountStatus)}
                 }
                 .flatMap { [weak self] params, relayAccountStatus in
@@ -218,10 +218,9 @@ extension FeeRelayer {
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
                     // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    // TODO: - if free transaction fee is available
-//                    if isFreeTransactionFee {
-//                        paybackFee = preparedTransaction.expectedFee.transaction
-//                    }
+                    if self.cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+                        paybackFee += preparedTransaction.expectedFee.transaction
+                    }
                     
                     // transfer sol back to feerelayer's feePayer
                     var preparedTransaction = preparedTransaction

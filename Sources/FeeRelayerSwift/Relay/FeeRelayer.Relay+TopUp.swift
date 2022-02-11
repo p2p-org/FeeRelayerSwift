@@ -84,7 +84,7 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     func prepareForTopUp(
-        amount: SolanaSDK.FeeAmount,
+        amount: SolanaSDK.Lamports,
         payingFeeToken: TokenInfo,
         relayAccountStatus: RelayAccountStatus
     ) -> Single<TopUpPreparedParams> {
@@ -102,13 +102,13 @@ extension FeeRelayer.Relay {
                 let topUpFeesAndPools: FeesAndPools?
                 var topUpAmount: UInt64?
                 if let relayAccountBalance = relayAccountStatus.balance,
-                   relayAccountBalance >= amount.total {
+                   relayAccountBalance >= amount {
                     topUpFeesAndPools = nil
                 }
                 // STEP 2.2: Else
                 else {
                     // Get best poolpairs for topping up
-                    topUpAmount = amount.total - (relayAccountStatus.balance ?? 0)
+                    topUpAmount = amount - (relayAccountStatus.balance ?? 0)
                     
                     guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
                         throw FeeRelayer.Error.swapPoolsNotFound
