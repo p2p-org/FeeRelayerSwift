@@ -44,7 +44,7 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
     /// Calculate needed fee IN SOL
@@ -145,7 +145,12 @@ extension FeeRelayer {
             return apiClient
                 .requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
                 .map { [weak self] info in
-                    let info = FreeTransactionFeeLimit(maxUsage: info.limits.maxCount, currentUsage: info.processedFee.count)
+                    let info = FreeTransactionFeeLimit(
+                        maxUsage: info.limits.maxCount,
+                        currentUsage: info.processedFee.count,
+                        maxAmount: info.limits.maxAmount,
+                        amountUsed: info.processedFee.totalAmount
+                    )
                     self?.locker.lock()
                     self?.cache?.freeTransactionFeeLimit = info
                     self?.locker.unlock()
@@ -172,7 +177,8 @@ extension FeeRelayer {
         /// Calculate fee for given transaction, including top up fee
         public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
             var fee = preparedTransaction.expectedFee
-            if cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: fee.transaction) == true
+            {
                 fee.transaction = 0
             }
             if cache?.relayAccountStatus == .notYetCreated {
@@ -184,11 +190,14 @@ extension FeeRelayer {
         /// Generic function for sending transaction to fee relayer's relay
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            payingFeeToken: TokenInfo
+            payingFeeToken: TokenInfo?
         ) -> Single<[String]> {
-            getRelayAccountStatus(reuseCache: false)
+            Single.zip(
+                getRelayAccountStatus(reuseCache: false),
+                getFreeTransactionFeeLimit(useCache: false)
+            )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus -> Single<(TopUpPreparedParams, RelayAccountStatus)> in
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams, RelayAccountStatus, FreeTransactionFeeLimit)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // if it is the first time user using fee relayer
@@ -197,11 +206,22 @@ extension FeeRelayer {
                         expectedFee.transaction += self.getRelayAccountCreationCost()
                     }
                     
-                    // prepare for topup
-                    return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
-                        .map {($0, relayAccountStatus)}
+                    // if payingFeeToken is provided
+                    if let payingFeeToken = payingFeeToken {
+                        return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                            .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
+                    }
+                    
+                    // if not, make sure that relayAccountBalance is greater or equal to expected fee
+                    if (relayAccountStatus.balance ?? 0) >= expectedFee.total {
+                        // skip topup
+                        return .just(
+                            (.init(topUpFeesAndPools: nil, topUpAmount: nil), relayAccountStatus, freeTransactionFeeLimit))
+                    }
+                    
+                    throw FeeRelayer.Error.feePayingTokenMissing
                 }
-                .flatMap { [weak self] params, relayAccountStatus in
+                .flatMap { [weak self] params, relayAccountStatus, freeTransactionFeeLimit in
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     guard let feePayer = self.cache?.feePayerAddress
@@ -218,7 +238,8 @@ extension FeeRelayer {
                     var paybackFee = preparedTransaction.expectedFee.accountBalances
                     
                     // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    if self.cache?.freeTransactionFeeLimit?.hasFreeTransactionFee == true {
+                    if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
+                    {
                         paybackFee += preparedTransaction.expectedFee.transaction
                     }
                     
@@ -251,7 +272,9 @@ extension FeeRelayer {
                     
                     // check if top up is needed
                     if let topUpFeesAndPools = params.topUpFeesAndPools,
-                       let topUpAmount = params.topUpAmount {
+                       let topUpAmount = params.topUpAmount,
+                       let payingFeeToken = payingFeeToken
+                    {
                         // STEP 2.2.1: Top up
                         return self.topUp(
                             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,

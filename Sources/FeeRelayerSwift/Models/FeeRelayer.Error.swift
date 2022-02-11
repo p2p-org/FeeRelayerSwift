@@ -77,6 +77,10 @@ extension FeeRelayer {
             .init(code: 7, message: "Invalid fee payer", data: nil)
         }
         
+        public static var feePayingTokenMissing: Self {
+            .init(code: 8, message: "No token for paying fee is provided", data: nil)
+        }
+        
         public static var unauthorized: Self {
             .init(code: 403, message: "Unauthorized", data: nil)
         }

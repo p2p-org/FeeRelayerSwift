@@ -15,4 +15,10 @@ class APIClientTests: XCTestCase {
         
         XCTAssertNotEqual(result, result2)
     }
+    
+    func testGetFreeTransactionFeeLimit() throws {
+        let feeRelayer = FeeRelayer.APIClient(version: 2)
+        let result = try feeRelayer.requestFreeFeeLimits(for: "GZpacnxxvtFDMg16KWSH8q2g8tM7fwJvNMkb2Df34h9N").toBlocking().first()
+        XCTAssertNotNil(result)
+    }
 }
