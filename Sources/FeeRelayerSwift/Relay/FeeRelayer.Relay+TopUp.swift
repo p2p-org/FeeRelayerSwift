@@ -26,23 +26,23 @@ extension FeeRelayer.Relay {
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .flatMap { [weak self] recentBlockhash in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
-                guard let info = self.info else { throw FeeRelayer.Error.relayInfoMissing }
+                guard let cache = self.cache else { throw FeeRelayer.Error.relayInfoMissing }
                 
                 // STEP 3: prepare for topUp
                 let topUpTransaction = try self.prepareForTopUp(
                     network: self.solanaClient.endpoint.network,
                     sourceToken: sourceToken,
                     userAuthorityAddress: owner.publicKey,
-                    userRelayAddress: self.userRelayAddress,
+                    userRelayAddress: cache.userRelayAddress,
                     topUpPools: topUpPools,
                     amount: amount,
                     feeAmount: topUpFee,
                     blockhash: recentBlockhash,
-                    minimumRelayAccountBalance: info.minimumRelayAccountBalance,
-                    minimumTokenAccountBalance: info.minimumTokenAccountBalance,
+                    minimumRelayAccountBalance: cache.minimumRelayAccountBalance,
+                    minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
                     needsCreateUserRelayAccount: needsCreateUserRelayAddress,
-                    feePayerAddress: info.feePayerAddress,
-                    lamportsPerSignature: info.lamportsPerSignature
+                    feePayerAddress: cache.feePayerAddress,
+                    lamportsPerSignature: cache.lamportsPerSignature
                 )
                 
                 // STEP 4: send transaction
@@ -75,9 +75,9 @@ extension FeeRelayer.Relay {
                     decodedTo: [String].self
                 )
                     .do(onSuccess: {_ in
-                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) completed", event: .info)
+                        Logger.log(message: "Top up \(amount) into \(self.cache?.userRelayAddress ?? "") completed", event: .info)
                     }, onSubscribe: {
-                        Logger.log(message: "Top up \(amount) into \(self.userRelayAddress) processing", event: .info)
+                        Logger.log(message: "Top up \(amount) into \(self.cache?.userRelayAddress ?? "") processing", event: .info)
                     })
             }
             .observe(on: MainScheduler.instance)
@@ -127,7 +127,7 @@ extension FeeRelayer.Relay {
     
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
-        guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
+        guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
         let fee = try prepareForTopUp(
             network: solanaClient.endpoint.network,
             sourceToken: .init(
@@ -135,16 +135,16 @@ extension FeeRelayer.Relay {
                 mint: "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn" // fake
             ),
             userAuthorityAddress: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", // fake
-            userRelayAddress: userRelayAddress,
+            userRelayAddress: cache.userRelayAddress,
             topUpPools: topUpPools,
             amount: 10000, // fake
             feeAmount: .zero, // fake
             blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
-            minimumRelayAccountBalance: info.minimumRelayAccountBalance,
-            minimumTokenAccountBalance: info.minimumTokenAccountBalance,
+            minimumRelayAccountBalance: cache.minimumRelayAccountBalance,
+            minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
             needsCreateUserRelayAccount: relayAccountStatus == .notYetCreated,
             feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
-            lamportsPerSignature: info.lamportsPerSignature
+            lamportsPerSignature: cache.lamportsPerSignature
         ).preparedTransaction.expectedFee
         return fee
     }

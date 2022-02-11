@@ -127,7 +127,7 @@ extension FeeRelayer.Relay {
             .map { [weak self] preparedParams, destination, recentBlockhash in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 // get needed info
-                guard let info = self.info else {
+                guard let cache = self.cache else {
                     throw FeeRelayer.Error.relayInfoMissing
                 }
                 
@@ -149,10 +149,10 @@ extension FeeRelayer.Relay {
                     slippage: slippage,
                     feeAmount: swappingFee,
                     blockhash: recentBlockhash,
-                    minimumTokenAccountBalance: info.minimumTokenAccountBalance,
+                    minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
                     needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-                    feePayerAddress: info.feePayerAddress,
-                    lamportsPerSignature: info.lamportsPerSignature
+                    feePayerAddress: cache.feePayerAddress,
+                    lamportsPerSignature: cache.lamportsPerSignature
                 )
             }
             .observe(on: MainScheduler.instance)
@@ -164,32 +164,32 @@ extension FeeRelayer.Relay {
         destinationToken: TokenInfo,
         needsCreateDestinationTokenAccount: Bool
     ) throws -> SolanaSDK.FeeAmount {
-        guard let info = info else {throw FeeRelayer.Error.relayInfoMissing}
+        guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
         var expectedFee = SolanaSDK.FeeAmount.zero
         
         // fee for payer's signature
-        expectedFee.transaction += info.lamportsPerSignature
+        expectedFee.transaction += cache.lamportsPerSignature
         
         // fee for owner's signature
-        expectedFee.transaction += info.lamportsPerSignature
+        expectedFee.transaction += cache.lamportsPerSignature
         
         // when source token is native SOL
         if sourceToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
             // WSOL's signature
-            expectedFee.transaction += info.lamportsPerSignature
+            expectedFee.transaction += cache.lamportsPerSignature
             
             // TODO: - Account creation fee?
-            expectedFee.accountBalances += info.minimumTokenAccountBalance
+            expectedFee.accountBalances += cache.minimumTokenAccountBalance
         }
         
         // when needed to create destination
         if needsCreateDestinationTokenAccount && destinationToken.mint != SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            expectedFee.accountBalances += info.minimumTokenAccountBalance
+            expectedFee.accountBalances += cache.minimumTokenAccountBalance
         }
         
         // when destination is native SOL
         if destinationToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            expectedFee.transaction += info.lamportsPerSignature
+            expectedFee.transaction += cache.lamportsPerSignature
         }
         
         return expectedFee
@@ -430,7 +430,7 @@ extension FeeRelayer.Relay {
     ) -> Single<TopUpAndActionPreparedParams> {
         // form request
         let request: Single<TopUpAndActionPreparedParams>
-        if reuseCache, let cachedPreparedParams = cachedPreparedParams {
+        if reuseCache, let cachedPreparedParams = cache?.preparedParams {
             request = .just(cachedPreparedParams)
         } else {
             request = Single.zip(
@@ -488,7 +488,7 @@ extension FeeRelayer.Relay {
                 }
                 .do(onSuccess: { [weak self] in
                     self?.locker.lock()
-                    self?.cachedPreparedParams = $0
+                    self?.cache?.preparedParams = $0
                     self?.locker.unlock()
                 })
         }

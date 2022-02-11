@@ -12,7 +12,7 @@ import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
     func getRelayAccountCreationCost() -> UInt64 {
-        info?.lamportsPerSignature ?? 0 // TODO: Check again
+        cache?.lamportsPerSignature ?? 0 // TODO: Check again
     }
     
     // MARK: - Top up
