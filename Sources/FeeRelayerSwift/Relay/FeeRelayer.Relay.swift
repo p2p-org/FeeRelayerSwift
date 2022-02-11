@@ -180,8 +180,7 @@ extension FeeRelayer {
             if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: fee.transaction) == true
             {
                 fee.transaction = 0
-            }
-            if cache?.relayAccountStatus == .notYetCreated {
+            } else if cache?.relayAccountStatus == .notYetCreated {
                 fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
             }
             return fee
