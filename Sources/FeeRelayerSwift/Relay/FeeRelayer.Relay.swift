@@ -201,13 +201,8 @@ extension FeeRelayer {
                     
                     // Check fee
                     var expectedFee = preparedTransaction.expectedFee
-                    
-                    // User has free transaction
-                    if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction)
-                    {
-                        // skip topup
-                        return .just(
-                            (.init(topUpFeesAndPools: nil, topUpAmount: nil), relayAccountStatus, freeTransactionFeeLimit))
+                    if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) {
+                        expectedFee.transaction = 0
                     }
                     
                     // if payingFeeToken is provided
