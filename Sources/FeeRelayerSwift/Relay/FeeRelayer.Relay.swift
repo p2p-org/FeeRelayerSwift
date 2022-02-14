@@ -196,7 +196,7 @@ extension FeeRelayer {
                 getFreeTransactionFeeLimit(useCache: false)
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams, RelayAccountStatus, FreeTransactionFeeLimit)> in
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams?, RelayAccountStatus, FreeTransactionFeeLimit)> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
                     // Check fee
@@ -207,11 +207,7 @@ extension FeeRelayer {
                     
                     // if payingFeeToken is provided
                     if let payingFeeToken = payingFeeToken {
-                        // if it is the first time user using fee relayer
-                        if relayAccountStatus == .notYetCreated {
-                            expectedFee.transaction += self.getRelayAccountCreationCost()
-                        }
-                        return self.prepareForTopUp(amount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus)
+                        return self.prepareForTopUp(targetAmount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
                             .map {($0, relayAccountStatus, freeTransactionFeeLimit)}
                     }
                     
@@ -219,7 +215,7 @@ extension FeeRelayer {
                     if (relayAccountStatus.balance ?? 0) >= expectedFee.total {
                         // skip topup
                         return .just(
-                            (.init(topUpFeesAndPools: nil, topUpAmount: nil), relayAccountStatus, freeTransactionFeeLimit))
+                            (nil, relayAccountStatus, freeTransactionFeeLimit))
                     }
                     
                     throw FeeRelayer.Error.feePayingTokenMissing
@@ -274,17 +270,13 @@ extension FeeRelayer {
                     }
                     
                     // check if top up is needed
-                    if let topUpFeesAndPools = params.topUpFeesAndPools,
-                       let topUpAmount = params.topUpAmount,
-                       let payingFeeToken = payingFeeToken
-                    {
-                        // STEP 2.2.1: Top up
+                    if let topUpParams = params, let payingFeeToken = payingFeeToken {
                         return self.topUp(
                             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
                             sourceToken: payingFeeToken,
-                            amount: topUpAmount,
-                            topUpPools: topUpFeesAndPools.poolsPair,
-                            topUpFee: topUpFeesAndPools.fee
+                            targetAmount: topUpParams.amount,
+                            topUpPools: topUpParams.poolsPair,
+                            expectedFee: topUpParams.expectedFee
                         )
                             // STEP 2.2.2: Swap
                             .flatMap { _ in try transfer() }

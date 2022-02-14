@@ -324,14 +324,14 @@ extension FeeRelayer.Relay {
     }
     
     public struct TopUpPreparedParams {
-        public let topUpFeesAndPools: FeesAndPools?
-        public let topUpAmount: UInt64?
+        public let amount: UInt64
+        public let expectedFee: UInt64
+        public let poolsPair: OrcaSwap.PoolsPair
     }
     
     public struct TopUpAndActionPreparedParams {
-        public let topUpFeesAndPools: FeesAndPools?
+        public let topUpPreparedParam: TopUpPreparedParams?
         public let actionFeesAndPools: FeesAndPools
-        public let topUpAmount: UInt64?
     }
     
     public struct FeesAndPools {
