@@ -180,8 +180,12 @@ extension FeeRelayer {
             if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: fee.transaction) == true
             {
                 fee.transaction = 0
-            } else if cache?.relayAccountStatus == .notYetCreated {
-                fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
+            } else {
+                if cache?.relayAccountStatus == .notYetCreated {
+                    fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
+                } else {
+                    fee.transaction += 2 * (cache?.lamportsPerSignature ?? 5000) // Top up network fee
+                }
             }
             return fee
         }

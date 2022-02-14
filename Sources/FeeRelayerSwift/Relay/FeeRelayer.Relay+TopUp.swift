@@ -187,6 +187,8 @@ extension FeeRelayer.Relay {
         var swapAmountOut = targetAmount
         if relayAccountStatus == .notYetCreated {
             swapAmountOut += getRelayAccountCreationCost() // Temporary solution
+        } else {
+            swapAmountOut += currentFee
         }
         
         // expected_fee
