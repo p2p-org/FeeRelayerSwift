@@ -16,8 +16,8 @@ extension FeeRelayer.Relay {
                 return "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9"
             case .devnet:
                 return "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k"
-            default:
-                fatalError("Unsupported network")
+            case .testnet:
+                return "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k" // unknown
             }
         }
         
