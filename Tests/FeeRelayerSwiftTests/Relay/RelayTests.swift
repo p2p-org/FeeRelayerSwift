@@ -85,7 +85,7 @@ class RelayTests: XCTestCase {
         let signatures = try relayService.topUp(
             needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
             sourceToken: payingToken,
-            targetAmount: testInfo.amount,
+            targetAmount: params!.amount,
             topUpPools: params!.poolsPair,
             expectedFee: params!.expectedFee
         ).toBlocking().first()!
