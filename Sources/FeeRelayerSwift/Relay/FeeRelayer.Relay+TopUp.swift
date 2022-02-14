@@ -19,9 +19,12 @@ extension FeeRelayer.Relay {
         topUpPools: OrcaSwap.PoolsPair,
         topUpFee: SolanaSDK.FeeAmount
     ) -> Single<[String]> {
-        solanaClient.getRecentBlockhash(commitment: nil)
+        Single.zip(
+            solanaClient.getRecentBlockhash(commitment: nil),
+            getFreeTransactionFeeLimit(useCache: false)
+        )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] recentBlockhash in
+            .flatMap { [weak self] recentBlockhash, freeTransactionFeeLimit in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard let cache = self.cache else { throw FeeRelayer.Error.relayInfoMissing }
                 
@@ -39,7 +42,8 @@ extension FeeRelayer.Relay {
                     minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
                     needsCreateUserRelayAccount: needsCreateUserRelayAddress,
                     feePayerAddress: cache.feePayerAddress,
-                    lamportsPerSignature: cache.lamportsPerSignature
+                    lamportsPerSignature: cache.lamportsPerSignature,
+                    freeTransactionFeeLimit: freeTransactionFeeLimit
                 )
                 
                 // STEP 4: send transaction
@@ -127,25 +131,22 @@ extension FeeRelayer.Relay {
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
         guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
-        let fee = try prepareForTopUp(
-            network: solanaClient.endpoint.network,
-            sourceToken: .init(
-                address: "C5B13tQA4pq1zEVSVkWbWni51xdWB16C2QsC72URq9AJ", // fake
-                mint: "2Kc38rfQ49DFaKHQaWbijkE7fcymUMLY5guUiUsDmFfn" // fake
-            ),
-            userAuthorityAddress: "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V", // fake
-            userRelayAddress: userRelayAddress,
-            topUpPools: topUpPools,
-            amount: 10000, // fake
-            feeAmount: .zero, // fake
-            blockhash: "FR1GgH83nmcEdoNXyztnpUL2G13KkUv6iwJPwVfnqEgW", // fake
-            minimumRelayAccountBalance: cache.minimumRelayAccountBalance,
-            minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
-            needsCreateUserRelayAccount: relayAccountStatus == .notYetCreated,
-            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT", // fake
-            lamportsPerSignature: cache.lamportsPerSignature
-        ).preparedTransaction.expectedFee
-        return fee
+        var topUpFee = SolanaSDK.FeeAmount.zero
+        
+        // transaction fee
+        let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
+//        numberOfSignatures += 1 // transferAuthority
+        topUpFee.transaction = numberOfSignatures * cache.lamportsPerSignature
+        
+        // account creation fee
+        if relayAccountStatus == .notYetCreated {
+            topUpFee.accountBalances += cache.minimumRelayAccountBalance
+        }
+        
+        // swap fee
+        topUpFee.accountBalances += cache.minimumTokenAccountBalance
+        
+        return topUpFee
     }
     
     /// Prepare transaction and expected fee for a given relay transaction
@@ -162,7 +163,8 @@ extension FeeRelayer.Relay {
         minimumTokenAccountBalance: UInt64,
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: String,
-        lamportsPerSignature: UInt64
+        lamportsPerSignature: UInt64,
+        freeTransactionFeeLimit: FreeTransactionFeeLimit?
     ) throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: SolanaSDK.PreparedTransaction) {
         // assertion
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
@@ -275,12 +277,22 @@ extension FeeRelayer.Relay {
             fatalError("unsupported swap type")
         }
         
+        // Calculate the fee to send back to feePayer
+        // Account creation fee (accountBalances) is a must-pay-back fee
+        var paybackFee = feeAmount.accountBalances
+        
+        // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
+        if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: feeAmount.transaction) == false
+        {
+            paybackFee += feeAmount.transaction
+        }
+        
         // transfer
         instructions.append(
             try Program.transferSolInstruction(
                 userAuthorityAddress: userAuthorityAddress,
                 recipient: feePayerAddress,
-                lamports: feeAmount.accountBalances,
+                lamports: paybackFee,
                 network: network
             )
         )
