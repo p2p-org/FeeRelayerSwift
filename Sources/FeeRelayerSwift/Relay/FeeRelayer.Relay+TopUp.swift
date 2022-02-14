@@ -117,7 +117,7 @@ extension FeeRelayer.Relay {
                     guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair) else {
                         throw FeeRelayer.Error.swapPoolsNotFound
                     }
-                    let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
+                    let topUpFee = try self.calculateTopUpFee(relayAccountStatus: relayAccountStatus)
                     topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
                 }
                 
@@ -129,7 +129,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(topUpPools: OrcaSwap.PoolsPair, relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
+    func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
         guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
         var topUpFee = SolanaSDK.FeeAmount.zero
         
@@ -277,22 +277,12 @@ extension FeeRelayer.Relay {
             fatalError("unsupported swap type")
         }
         
-        // Calculate the fee to send back to feePayer
-        // Account creation fee (accountBalances) is a must-pay-back fee
-        var paybackFee = feeAmount.accountBalances
-        
-        // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-        if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: feeAmount.transaction) == false
-        {
-            paybackFee += feeAmount.transaction
-        }
-        
         // transfer
         instructions.append(
             try Program.transferSolInstruction(
                 userAuthorityAddress: userAuthorityAddress,
                 recipient: feePayerAddress,
-                lamports: paybackFee,
+                lamports: feeAmount.accountBalances,
                 network: network
             )
         )

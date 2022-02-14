@@ -475,7 +475,7 @@ extension FeeRelayer.Relay {
                         } else {
                             throw FeeRelayer.Error.swapPoolsNotFound
                         }
-                        let topUpFee = try self.calculateTopUpFee(topUpPools: topUpPools, relayAccountStatus: relayAccountStatus)
+                        let topUpFee = try self.calculateTopUpFee(relayAccountStatus: relayAccountStatus)
                         topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
                     }
                     
