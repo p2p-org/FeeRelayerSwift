@@ -63,30 +63,33 @@ class RelayTests: XCTestCase {
     // MARK: - Helpers
     private func topUp(testInfo: RelayTopUpTest) throws {
         try loadTest(testInfo)
-        
+
         // paying token
         let payingToken = FeeRelayer.Relay.TokenInfo(
             address: testInfo.payingTokenAddress,
             mint: testInfo.payingTokenMint
         )
-        
+
         // prepare params
         let relayAccountStatus = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()!
+        let freeTransactionFeeLimit = try relayService.getFreeTransactionFeeLimit(useCache: false).toBlocking().first()!
         
         let params = try relayService.prepareForTopUp(
-            amount: testInfo.amount,
+            targetAmount: testInfo.amount,
             payingFeeToken: payingToken,
-            relayAccountStatus: relayAccountStatus
+            relayAccountStatus: relayAccountStatus,
+            freeTransactionFeeLimit: freeTransactionFeeLimit,
+            checkIfBalanceHaveEnoughAmount: false
         ).toBlocking().first()!
         
         let signatures = try relayService.topUp(
-            needsCreateUserRelayAddress: false,
+            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
             sourceToken: payingToken,
-            amount: testInfo.amount,
-            topUpPools: params.topUpFeesAndPools!.poolsPair,
-            topUpFee: params.topUpFeesAndPools!.fee
+            targetAmount: params!.amount,
+            topUpPools: params!.poolsPair,
+            expectedFee: params!.expectedFee
         ).toBlocking().first()!
-        
+
         XCTAssertTrue(signatures.count > 0)
     }
     

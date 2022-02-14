@@ -19,8 +19,11 @@ extension FeeRelayer.Relay {
         payingFeeToken: FeeRelayer.Relay.TokenInfo,
         swapPools: OrcaSwap.PoolsPair
     ) -> Single<FeesAndTopUpAmount> {
-        getRelayAccountStatus(reuseCache: true)
-            .flatMap { [weak self] relayAccountStatus -> Single<(TopUpAndActionPreparedParams, RelayAccountStatus)> in
+        Single.zip(
+            getRelayAccountStatus(reuseCache: true),
+            getFreeTransactionFeeLimit(useCache: true)
+        )
+            .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpAndActionPreparedParams, RelayAccountStatus)> in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 return self.prepareForTopUpAndSwap(
                     sourceToken: sourceToken,
@@ -29,12 +32,13 @@ extension FeeRelayer.Relay {
                     payingFeeToken: payingFeeToken,
                     swapPools: swapPools,
                     relayAccountStatus: relayAccountStatus,
+                    freeTransactionFeeLimit: freeTransactionFeeLimit,
                     reuseCache: true
                 ).map {($0, relayAccountStatus)}
             }
             .map { [weak self] preparedParams, relayAccountStatus in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
-                let topUpPools = preparedParams.topUpFeesAndPools?.poolsPair
+                let topUpPools = preparedParams.topUpPreparedParam?.poolsPair
                 
                 var feeAmountInSOL = preparedParams.actionFeesAndPools.fee
                 
@@ -43,8 +47,8 @@ extension FeeRelayer.Relay {
                 }
                 
                 var topUpAmount: SolanaSDK.Lamports?
-                if let amount = preparedParams.topUpAmount {
-                    topUpAmount = amount + (preparedParams.topUpFeesAndPools?.fee.accountBalances ?? 0)
+                if let amount = preparedParams.topUpPreparedParam?.amount {
+                    topUpAmount = amount + (preparedParams.topUpPreparedParam?.expectedFee ?? 0)
                 }
                 
                 var feeAmountInPayingToken: SolanaSDK.FeeAmount?
@@ -106,9 +110,12 @@ extension FeeRelayer.Relay {
     ) -> Single<SolanaSDK.PreparedTransaction> {
         // get fresh data by ignoring cache
         Single.zip(
-            getRelayAccountStatus(reuseCache: false)
+            Single.zip(
+                getRelayAccountStatus(reuseCache: false),
+                getFreeTransactionFeeLimit(useCache: false)
+            )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus -> Single<TopUpAndActionPreparedParams> in
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<TopUpAndActionPreparedParams> in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
                     return self.prepareForTopUpAndSwap(
                         sourceToken: sourceToken,
@@ -117,6 +124,7 @@ extension FeeRelayer.Relay {
                         payingFeeToken: payingFeeToken,
                         swapPools: swapPools,
                         relayAccountStatus: relayAccountStatus,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit,
                         reuseCache: false
                     )
                 },
@@ -425,6 +433,7 @@ extension FeeRelayer.Relay {
         payingFeeToken: TokenInfo,
         swapPools: OrcaSwap.PoolsPair,
         relayAccountStatus: RelayAccountStatus,
+        freeTransactionFeeLimit: FreeTransactionFeeLimit,
         reuseCache: Bool
     ) -> Single<TopUpAndActionPreparedParams> {
         // form request
@@ -454,35 +463,39 @@ extension FeeRelayer.Relay {
                     )
                     
                     // TOP UP
-                    let topUpFeesAndPools: FeesAndPools?
-                    var topUpAmount: UInt64?
+                    let topUpPreparedParam: TopUpPreparedParams?
                     if let relayAccountBalance = relayAccountStatus.balance,
                        relayAccountBalance >= swappingFee.total {
-                        topUpFeesAndPools = nil
+                        topUpPreparedParam = nil
                     }
                     // STEP 2.2: Else
                     else {
                         // Get best poolpairs for topping up
-                        topUpAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
+                        let targetAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
                         
+                        // Get real amounts needed for topping up
+                        let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
+                        let topUpAmount = amounts.topUpAmount
+                        let expectedFee = amounts.expectedFee
+                        
+                        // Get pools
                         // TODO: - Temporary solution, prefer direct swap to transitive swap to omit error Non-zero account can only be close if balance zero
                         let topUpPools: OrcaSwap.PoolsPair
                         if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
                             topUpPools = directSwapPools
-                        } else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount!, from: tradableTopUpPoolsPair)
+                        } else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
                         {
                             topUpPools = transitiveSwapPools
                         } else {
                             throw FeeRelayer.Error.swapPoolsNotFound
                         }
-                        let topUpFee = try self.calculateTopUpFee(relayAccountStatus: relayAccountStatus)
-                        topUpFeesAndPools = .init(fee: topUpFee, poolsPair: topUpPools)
+                        
+                        topUpPreparedParam = .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
                     }
                     
                     return .init(
-                        topUpFeesAndPools: topUpFeesAndPools,
-                        actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools),
-                        topUpAmount: topUpAmount
+                        topUpPreparedParam: topUpPreparedParam,
+                        actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools)
                     )
                 }
                 .do(onSuccess: { [weak self] in
