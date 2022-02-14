@@ -91,7 +91,8 @@ extension FeeRelayer.Relay {
         targetAmount: SolanaSDK.Lamports,
         payingFeeToken: TokenInfo,
         relayAccountStatus: RelayAccountStatus,
-        freeTransactionFeeLimit: FreeTransactionFeeLimit?
+        freeTransactionFeeLimit: FreeTransactionFeeLimit?,
+        checkIfBalanceHaveEnoughAmount: Bool = true
     ) -> Single<TopUpPreparedParams?> {
         // form request
         orcaSwapClient
@@ -104,14 +105,19 @@ extension FeeRelayer.Relay {
                 
                 
                 // TOP UP
-                if let relayAccountBalance = relayAccountStatus.balance,
-                   relayAccountBalance >= targetAmount {
+                if checkIfBalanceHaveEnoughAmount,
+                   let relayAccountBalance = relayAccountStatus.balance,
+                   relayAccountBalance >= targetAmount
+                {
                     return nil
                 }
                 // STEP 2.2: Else
                 else {
                     // Get target amount for topping up
-                    let targetAmount = targetAmount - (relayAccountStatus.balance ?? 0)
+                    var targetAmount = targetAmount
+                    if checkIfBalanceHaveEnoughAmount {
+                        targetAmount -= (relayAccountStatus.balance ?? 0)
+                    }
                     
                     // Get real amounts needed for topping up
                     let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
