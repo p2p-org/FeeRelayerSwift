@@ -6,6 +6,21 @@ import RxSwift
 import OrcaSwapSwift
 
 class RelaySwapTests: RelayTests {
+    // MARK: - Fee calculator
+    func testFeeCalculatorSwapToSOL() throws {
+        let swapInfo = try loadSwap(testInfo: testsInfo.splToSOL!)
+        
+        let swapTransactions = swapInfo.0
+        let payingToken = swapInfo.1
+        let feePayer = swapInfo.2
+        
+        let fees = try relayService.calculateFees(swapInfo.0)
+        
+        print(fees)
+        
+    }
+    
+    // MARK: - Swap action
     /// Swap from SOL to SPL
     func testTopUpAndSwapFromSOL() throws {
         try swap(testInfo: testsInfo.solToSPL!)
@@ -26,7 +41,7 @@ class RelaySwapTests: RelayTests {
     }
     
     // MARK: - Helpers
-    private func swap(testInfo: RelaySwapTestInfo) throws {
+    private func loadSwap(testInfo: RelaySwapTestInfo) throws -> ([OrcaSwap.PreparedSwapTransaction], FeeRelayer.Relay.TokenInfo, SolanaSDK.PublicKey?) {
         try loadTest(testInfo)
         
         // get pools pair
@@ -56,6 +71,15 @@ class RelaySwapTests: RelayTests {
             address: testInfo.payingTokenAddress,
             mint: testInfo.payingTokenMint
         )
+        return (swapTransactions, payingToken, feePayer)
+    }
+    
+    private func swap(testInfo: RelaySwapTestInfo) throws {
+        let swapInfo = try loadSwap(testInfo: testInfo)
+        
+        let swapTransactions = swapInfo.0
+        let payingToken = swapInfo.1
+        let feePayer = swapInfo.2
         
         // send
         let signatures = try relayService.topUpAndSwap(
