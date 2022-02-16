@@ -77,27 +77,6 @@ extension FeeRelayer.Relay {
             }
     }
     
-    /// Calculate needed fee (count in payingToken)
-    public func calculateFeeInPayingToken(
-        feeInSOL: SolanaSDK.Lamports,
-        payingFeeToken: TokenInfo
-    ) -> Single<SolanaSDK.Lamports?> {
-        orcaSwapClient
-            .getTradablePoolsPairs(
-                fromMint: payingFeeToken.mint,
-                toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
-            )
-            .map { [weak self] tradableTopUpPoolsPair in
-                guard let self = self else { throw FeeRelayer.Error.unknown }
-                guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL, from: tradableTopUpPoolsPair) else {
-                    throw FeeRelayer.Error.swapPoolsNotFound
-                }
-                
-                return topUpPools.getInputAmount(minimumAmountOut: feeInSOL, slippage: 0.01)
-            }
-            .debug()
-    }
-    
     /// Prepare swap transaction for relay
     public func prepareSwapTransaction(
         sourceToken: TokenInfo,

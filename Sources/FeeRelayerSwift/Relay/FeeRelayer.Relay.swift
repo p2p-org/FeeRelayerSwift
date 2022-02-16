@@ -221,6 +221,27 @@ extension FeeRelayer {
             return neededAmount
         }
         
+        /// Calculate needed fee (count in payingToken)
+        public func calculateFeeInPayingToken(
+            feeInSOL: SolanaSDK.Lamports,
+            payingFeeToken: TokenInfo
+        ) -> Single<SolanaSDK.Lamports?> {
+            orcaSwapClient
+                .getTradablePoolsPairs(
+                    fromMint: payingFeeToken.mint,
+                    toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                )
+                .map { [weak self] tradableTopUpPoolsPair in
+                    guard let self = self else { throw FeeRelayer.Error.unknown }
+                    guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL, from: tradableTopUpPoolsPair) else {
+                        throw FeeRelayer.Error.swapPoolsNotFound
+                    }
+                    
+                    return topUpPools.getInputAmount(minimumAmountOut: feeInSOL, slippage: 0.01)
+                }
+                .debug()
+        }
+        
         /// Generic function for sending transaction to fee relayer's relay
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
