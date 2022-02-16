@@ -37,7 +37,7 @@ public protocol FeeRelayerRelayType {
     ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
     /// Calculate fee
-    func calculateNeededFee(
+    func calculateNeededTopUpAmount(
         expectedFee: SolanaSDK.FeeAmount
     ) -> SolanaSDK.FeeAmount
     
@@ -187,19 +187,37 @@ extension FeeRelayer {
         }
         
         /// Calculate fee for given transaction, including top up fee
-        public func calculateNeededFee(expectedFee: SolanaSDK.FeeAmount) -> SolanaSDK.FeeAmount {
-            var expectedFee = expectedFee
-            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) == true
-            {
-                expectedFee.transaction = 0
-            } else {
-                if cache?.relayAccountStatus == .notYetCreated {
-                    expectedFee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
-                } else {
-                    expectedFee.transaction += 2 * (cache?.lamportsPerSignature ?? 5000) // Top up network fee
-                }
+        public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> SolanaSDK.FeeAmount {
+            var neededAmount = expectedFee
+            
+            // expected fees
+            let expectedTopUpNetworkFee = 2 * (cache?.lamportsPerSignature ?? 5000)
+            let expectedTransactionNetworkFee = expectedFee.transaction
+            
+            // real fees
+            var neededTopUpNetworkFee = expectedTopUpNetworkFee
+            var neededTransactionNetworkFee = expectedTransactionNetworkFee
+            
+            // is Top up free
+            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee) == true {
+                neededTopUpNetworkFee = 0
             }
-            return expectedFee
+            
+            // is transaction free
+            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(
+                transactionFee: expectedTopUpNetworkFee + expectedTransactionNetworkFee,
+                forNextTransaction: true
+            ) == true {
+                neededTransactionNetworkFee = 0
+            }
+            
+            neededAmount.transaction = neededTopUpNetworkFee + neededTransactionNetworkFee
+            
+            if expectedFee.total > 0 && cache?.relayAccountStatus == .notYetCreated {
+                neededAmount.transaction += getRelayAccountCreationCost()
+            }
+            
+            return neededAmount
         }
         
         /// Generic function for sending transaction to fee relayer's relay
@@ -247,7 +265,7 @@ extension FeeRelayer {
             let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
             
             let expectedFee = SolanaSDK.FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
-            return calculateNeededFee(expectedFee: expectedFee)
+            return calculateNeededTopUpAmount(expectedFee: expectedFee)
         }
         
         public func topUpAndSwap(

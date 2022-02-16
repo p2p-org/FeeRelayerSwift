@@ -57,8 +57,12 @@ extension FeeRelayer.Relay {
         public let maxAmount: UInt64
         public var amountUsed: UInt64
         
-        public func isFreeTransactionFeeAvailable(transactionFee: UInt64) -> Bool {
-            currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
+        public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
+            var currentUsage = currentUsage
+            if forNextTransaction {
+                currentUsage += 1
+            }
+            return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
         }
     }
     
