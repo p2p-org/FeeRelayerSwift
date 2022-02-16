@@ -119,6 +119,7 @@ extension FeeRelayer {
         }
         
         // MARK: - Methods
+        /// Load all needed info for relay operations, need to be completed before any operation
         public func load() -> Completable {
             Single.zip(
                 // get minimum token account balance
@@ -150,6 +151,7 @@ extension FeeRelayer {
                 .asCompletable()
         }
         
+        /// Check if user has free transaction fee
         public func getFreeTransactionFeeLimit(useCache: Bool) -> Single<FreeTransactionFeeLimit> {
             if useCache, let cachedUserAvailableInfo = cache?.freeTransactionFeeLimit {
                 print("Hit cache")
@@ -172,7 +174,7 @@ extension FeeRelayer {
                 }
         }
         
-        /// Get relayAccount status
+        /// Get info of relay account
         public func getRelayAccountStatus(reuseCache: Bool) -> Single<RelayAccountStatus> {
             if reuseCache,
                let cachedRelayAccountStatus = cache?.relayAccountStatus
@@ -188,7 +190,7 @@ extension FeeRelayer {
                 })
         }
         
-        /// Calculate fee for given transaction, including top up fee
+        /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> SolanaSDK.FeeAmount {
             var neededAmount = expectedFee
             
@@ -274,6 +276,8 @@ extension FeeRelayer {
                 .observe(on: MainScheduler.instance)
         }
         
+        // MARK: - Native swap
+        /// Calculate needed top up amount for swap
         public func calculateNeededTopUpAmount(
             swapTransactions: [OrcaSwap.PreparedSwapTransaction]
         ) throws -> SolanaSDK.FeeAmount {
@@ -357,6 +361,7 @@ extension FeeRelayer {
                 }
         }
         
+        // MARK: - Helpers
         private func prepareAndSend(
             _ swapTransaction: OrcaSwap.PreparedSwapTransaction,
             feePayer: OrcaSwap.PublicKey,
