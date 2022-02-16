@@ -225,53 +225,11 @@ extension FeeRelayer {
                 .flatMap { [weak self] freeTransactionFeeLimit in
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    guard let feePayer = self.cache?.feePayerAddress
-                    else {throw FeeRelayer.Error.unauthorized}
-                    
-                    // verify fee payer
-                    guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
-                    else {
-                        throw FeeRelayer.Error.invalidFeePayer
-                    }
-                    
-                    // Calculate the fee to send back to feePayer
-                    // Account creation fee (accountBalances) is a must-pay-back fee
-                    var paybackFee = preparedTransaction.expectedFee.accountBalances
-                    
-                    // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-                    if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
-                    {
-                        paybackFee += preparedTransaction.expectedFee.transaction
-                    }
-                    
-                    // transfer sol back to feerelayer's feePayer
-                    var preparedTransaction = preparedTransaction
-                    if paybackFee > 0 {
-                        preparedTransaction.transaction.instructions.append(
-                            try Program.transferSolInstruction(
-                                userAuthorityAddress: self.owner.publicKey,
-                                recipient: try SolanaSDK.PublicKey(string: feePayer),
-                                lamports: paybackFee,
-                                network: self.solanaClient.endpoint.network
-                            )
-                        )
-                    }
-                    
-                    // resign transaction
-                    try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
-                    
-                    return self.apiClient.sendTransaction(
-                        .relayTransaction(
-                            try .init(preparedTransaction: preparedTransaction)
-                        ),
-                        decodedTo: [String].self
+                    return try self.relayTransaction(
+                        preparedTransaction: preparedTransaction,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
                     )
                 }
-                .do(onSuccess: {[weak self] _ in
-                    self?.locker.lock()
-                    self?.cache?.freeTransactionFeeLimit?.currentUsage += 1
-                    self?.locker.unlock()
-                })
                 .observe(on: MainScheduler.instance)
         }
         
@@ -296,49 +254,72 @@ extension FeeRelayer {
             feePayer: SolanaSDK.PublicKey?,
             payingFeeToken: FeeRelayer.Relay.TokenInfo?
         ) -> Single<[String]> {
-            guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
-                return .error(OrcaSwapError.invalidNumberOfTransactions)
-            }
-            var request = prepareAndSend(
-                swapTransactions[0],
-                feePayer: feePayer ?? owner.publicKey,
-                payingFeeToken: payingFeeToken
+            Single.zip(
+                getRelayAccountStatus(reuseCache: false),
+                getFreeTransactionFeeLimit(useCache: false)
             )
-            if swapTransactions.count == 2 {
-                request = request
-                    .flatMap {[weak self] _ in
-                        guard let self = self else {throw OrcaSwapError.unknown}
-                        return self.prepareAndSend(
-                            swapTransactions[1],
-                            feePayer: feePayer ?? self.owner.publicKey,
-                            payingFeeToken: payingFeeToken
-                        )
-                            .retry { errors in
-                                errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
-                                    if let error = error as? SolanaSDK.Error {
-                                        switch error {
-                                        case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
-                                            return .timer(.seconds(1), scheduler: MainScheduler.instance)
-                                        case .transactionError(_, logs: let logs) where logs.contains("Program log: Error: InvalidAccountData"):
-                                            return .timer(.seconds(1), scheduler: MainScheduler.instance)
-                                        default:
-                                            break
+                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<FreeTransactionFeeLimit> in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    let expectedFee = try self.calculateFees(swapTransactions)
+                    return self.checkAndTopUp(
+                        expectedFee: expectedFee,
+                        payingFeeToken: payingFeeToken,
+                        relayAccountStatus: relayAccountStatus,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                    )
+                        .map {_ in freeTransactionFeeLimit}
+                }
+                .flatMap { [weak self] freeTransactionFeeLimit in
+                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
+                        throw OrcaSwapError.invalidNumberOfTransactions
+                    }
+                    var request = self.prepareAndSend(
+                        swapTransactions[0],
+                        feePayer: feePayer ?? self.owner.publicKey,
+                        payingFeeToken: payingFeeToken,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                    )
+                    
+                    if swapTransactions.count == 2 {
+                        request = request
+                            .flatMap {[weak self] _ in
+                                guard let self = self else {throw OrcaSwapError.unknown}
+                                return self.prepareAndSend(
+                                    swapTransactions[1],
+                                    feePayer: feePayer ?? self.owner.publicKey,
+                                    payingFeeToken: payingFeeToken,
+                                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                                )
+                                    .retry { errors in
+                                        errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
+                                            if let error = error as? SolanaSDK.Error {
+                                                switch error {
+                                                case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
+                                                    return .timer(.seconds(1), scheduler: MainScheduler.instance)
+                                                case .transactionError(_, logs: let logs) where logs.contains("Program log: Error: InvalidAccountData"):
+                                                    return .timer(.seconds(1), scheduler: MainScheduler.instance)
+                                                default:
+                                                    break
+                                                }
+                                            }
+                                            
+                                            return .error(error)
                                         }
                                     }
-                                    
-                                    return .error(error)
-                                }
+                                    .timeout(.seconds(60), scheduler: MainScheduler.instance)
                             }
-                            .timeout(.seconds(60), scheduler: MainScheduler.instance)
                     }
-            }
-            return request
+                    return request
+                }
         }
         
         private func prepareAndSend(
             _ swapTransaction: OrcaSwap.PreparedSwapTransaction,
             feePayer: OrcaSwap.PublicKey,
-            payingFeeToken: FeeRelayer.Relay.TokenInfo?
+            payingFeeToken: FeeRelayer.Relay.TokenInfo?,
+            freeTransactionFeeLimit: FreeTransactionFeeLimit
         ) -> Single<[String]> {
             solanaClient.prepareTransaction(
                 instructions: swapTransaction.instructions,
@@ -350,9 +331,9 @@ extension FeeRelayer {
             )
                 .flatMap { [weak self] preparedTransaction in
                     guard let self = self else {throw OrcaSwapError.unknown}
-                    return self.topUpAndRelayTransaction(
+                    return try self.relayTransaction(
                         preparedTransaction: preparedTransaction,
-                        payingFeeToken: payingFeeToken
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
                     )
                 }
         }
@@ -369,9 +350,9 @@ extension FeeRelayer {
                 expectedFee.transaction = 0
             }
                     
-            // if payingFeeToken is provided
             let request: Single<TopUpPreparedParams?>
             
+            // if payingFeeToken is provided
             if let payingFeeToken = payingFeeToken {
                 request = self.prepareForTopUp(targetAmount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
             }
@@ -402,6 +383,58 @@ extension FeeRelayer {
                     }
                     return .just(nil)
                 }
+        }
+        
+        private func relayTransaction(
+            preparedTransaction: SolanaSDK.PreparedTransaction,
+            freeTransactionFeeLimit: FreeTransactionFeeLimit
+        ) throws -> Single<[String]> {
+            guard let feePayer = self.cache?.feePayerAddress
+            else { throw FeeRelayer.Error.unauthorized }
+            
+            // verify fee payer
+            guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
+            else {
+                throw FeeRelayer.Error.invalidFeePayer
+            }
+            
+            // Calculate the fee to send back to feePayer
+            // Account creation fee (accountBalances) is a must-pay-back fee
+            var paybackFee = preparedTransaction.expectedFee.accountBalances
+            
+            // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
+            if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
+            {
+                paybackFee += preparedTransaction.expectedFee.transaction
+            }
+            
+            // transfer sol back to feerelayer's feePayer
+            var preparedTransaction = preparedTransaction
+            if paybackFee > 0 {
+                preparedTransaction.transaction.instructions.append(
+                    try Program.transferSolInstruction(
+                        userAuthorityAddress: self.owner.publicKey,
+                        recipient: try SolanaSDK.PublicKey(string: feePayer),
+                        lamports: paybackFee,
+                        network: self.solanaClient.endpoint.network
+                    )
+                )
+            }
+            
+            // resign transaction
+            try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+            
+            return self.apiClient.sendTransaction(
+                .relayTransaction(
+                    try .init(preparedTransaction: preparedTransaction)
+                ),
+                decodedTo: [String].self
+            )
+                .do(onSuccess: {[weak self] _ in
+                    self?.locker.lock()
+                    self?.cache?.freeTransactionFeeLimit?.currentUsage += 1
+                    self?.locker.unlock()
+                })
         }
     }
 }
