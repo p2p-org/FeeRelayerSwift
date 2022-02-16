@@ -14,7 +14,7 @@ class RelaySwapTests: RelayTests {
         let payingToken = swapInfo.1
         let feePayer = swapInfo.2
         
-        let fees = try relayService.calculateFees(swapInfo.0)
+        let fees = try relayService.calculateNeededTopUpAmount(swapTransactions: swapInfo.0)
         
         print(fees)
         
