@@ -47,7 +47,12 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
-    /// Prepare for native swap
+    /// Calculate fees
+    func calculateFees(
+        _ swapTransactions: [OrcaSwap.PreparedSwapTransaction]
+    ) throws -> SolanaSDK.FeeAmount
+    
+    /// Native swap
     func topUpAndSwap(
         _ swapTransactions: [OrcaSwap.PreparedSwapTransaction],
         feePayer: SolanaSDK.PublicKey?,
@@ -301,6 +306,22 @@ extension FeeRelayer {
                     self?.locker.unlock()
                 })
                 .observe(on: MainScheduler.instance)
+        }
+        
+        public func calculateFees(
+            _ swapTransactions: [OrcaSwap.PreparedSwapTransaction]
+        ) throws -> SolanaSDK.FeeAmount {
+            guard let cache = cache else {
+                throw FeeRelayer.Error.relayInfoMissing
+            }
+
+            // transaction fee
+            let transactionFee = UInt64(swapTransactions.count) * 2 * cache.lamportsPerSignature
+            
+            // account creation fee
+            let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
+            
+            return .init(transaction: transactionFee, accountBalances: accountCreationFee)
         }
         
         public func topUpAndSwap(
