@@ -41,5 +41,5 @@ TODO: Add long description of the pod here.
   # s.frameworks = 'UIKit', 'MapKit'
   s.dependency 'RxAlamofire', '~> 6.1.1'
   s.dependency 'SolanaSwift', '~> 1.3.5'
-  s.dependency 'OrcaSwapSwift', '~> 1.0.13'
+  s.dependency 'OrcaSwapSwift', '~> 1.0.15'
 end
