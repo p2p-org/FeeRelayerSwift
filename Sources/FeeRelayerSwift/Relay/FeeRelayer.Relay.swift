@@ -53,7 +53,7 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
-    /// SPECIAL METHODS FOR SWAP
+    /// SPECIAL METHODS FOR SWAP NATIVELY
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
         swapTransactions: [OrcaSwap.PreparedSwapTransaction]
@@ -65,6 +65,27 @@ public protocol FeeRelayerRelayType {
         feePayer: SolanaSDK.PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
+    
+    /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
+    /// Calculate needed fee IN SOL for swapping using RelayProgram
+    func calculateFeeAndNeededTopUpAmountForSwapping(
+        sourceToken: FeeRelayer.Relay.TokenInfo,
+        destinationTokenMint: String,
+        destinationAddress: String?,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo,
+        swapPools: OrcaSwap.PoolsPair
+    ) -> Single<FeeRelayer.Relay.FeesAndTopUpAmount>
+    
+    /// Prepare swap transaction for relay using RelayProgram
+    func prepareSwapTransaction(
+        sourceToken: FeeRelayer.Relay.TokenInfo,
+        destinationTokenMint: String,
+        destinationAddress: String?,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo,
+        swapPools: OrcaSwap.PoolsPair,
+        inputAmount: UInt64,
+        slippage: Double
+    ) -> Single<SolanaSDK.PreparedTransaction>
 }
 
 extension FeeRelayer {
