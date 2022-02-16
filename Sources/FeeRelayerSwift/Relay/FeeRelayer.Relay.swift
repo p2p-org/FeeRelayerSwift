@@ -37,8 +37,8 @@ public protocol FeeRelayerRelayType {
     ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
     /// Calculate fee
-    func calculateFee(
-        preparedTransaction: SolanaSDK.PreparedTransaction
+    func calculateNeededFee(
+        expectedFee: SolanaSDK.FeeAmount
     ) -> SolanaSDK.FeeAmount
     
     /// Top up relay account (if needed) and relay transaction
@@ -187,19 +187,19 @@ extension FeeRelayer {
         }
         
         /// Calculate fee for given transaction, including top up fee
-        public func calculateFee(preparedTransaction: SolanaSDK.PreparedTransaction) -> SolanaSDK.FeeAmount {
-            var fee = preparedTransaction.expectedFee
-            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: fee.transaction) == true
+        public func calculateNeededFee(expectedFee: SolanaSDK.FeeAmount) -> SolanaSDK.FeeAmount {
+            var expectedFee = expectedFee
+            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) == true
             {
-                fee.transaction = 0
+                expectedFee.transaction = 0
             } else {
                 if cache?.relayAccountStatus == .notYetCreated {
-                    fee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
+                    expectedFee.transaction += getRelayAccountCreationCost() // TODO: - accountBalances or transaction?
                 } else {
-                    fee.transaction += 2 * (cache?.lamportsPerSignature ?? 5000) // Top up network fee
+                    expectedFee.transaction += 2 * (cache?.lamportsPerSignature ?? 5000) // Top up network fee
                 }
             }
-            return fee
+            return expectedFee
         }
         
         /// Generic function for sending transaction to fee relayer's relay
@@ -246,7 +246,8 @@ extension FeeRelayer {
             // account creation fee
             let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
             
-            return .init(transaction: transactionFee, accountBalances: accountCreationFee)
+            let expectedFee = SolanaSDK.FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
+            return calculateNeededFee(expectedFee: expectedFee)
         }
         
         public func topUpAndSwap(
