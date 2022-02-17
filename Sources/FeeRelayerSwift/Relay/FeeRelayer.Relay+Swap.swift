@@ -16,7 +16,7 @@ extension FeeRelayer.Relay {
         sourceToken: TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
-        payingFeeToken: TokenInfo,
+        payingFeeToken: TokenInfo?,
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
@@ -349,7 +349,7 @@ extension FeeRelayer.Relay {
         sourceToken: TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
-        payingFeeToken: TokenInfo,
+        payingFeeToken: TokenInfo?,
         swapPools: OrcaSwap.PoolsPair,
         relayAccountStatus: RelayAccountStatus,
         freeTransactionFeeLimit: FreeTransactionFeeLimit,
@@ -360,12 +360,19 @@ extension FeeRelayer.Relay {
         if reuseCache, let cachedPreparedParams = cache?.preparedParams {
             request = .just(cachedPreparedParams)
         } else {
-            request = Single.zip(
-                orcaSwapClient
+            let tradablePoolsPairRequest: Single<[OrcaSwap.PoolsPair]>
+            if let payingFeeToken = payingFeeToken {
+                tradablePoolsPairRequest = orcaSwapClient
                     .getTradablePoolsPairs(
                         fromMint: payingFeeToken.mint,
                         toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
-                    ),
+                    )
+            } else {
+                tradablePoolsPairRequest = .just([])
+            }
+            
+            request = Single.zip(
+                tradablePoolsPairRequest,
                 calculateSwappingNetworkFees(
                     sourceToken: sourceToken,
                     destinationTokenMint: destinationTokenMint,
@@ -392,11 +399,8 @@ extension FeeRelayer.Relay {
                         let expectedFee = amounts.expectedFee
                         
                         // Get pools
-                        // TODO: - Temporary solution, prefer direct swap to transitive swap to omit error Non-zero account can only be close if balance zero
                         let topUpPools: OrcaSwap.PoolsPair
-                        if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
-                            topUpPools = directSwapPools
-                        } else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
+                        if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
                         {
                             topUpPools = transitiveSwapPools
                         } else {

@@ -79,7 +79,7 @@ public protocol FeeRelayerRelayType {
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
         destinationAddress: String?,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
