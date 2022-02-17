@@ -39,7 +39,7 @@ public protocol FeeRelayerRelayType {
     /// Calculate needed top up amount for expected fee
     func calculateNeededTopUpAmount(
         expectedFee: SolanaSDK.FeeAmount
-    ) -> SolanaSDK.FeeAmount
+    ) -> Single<SolanaSDK.FeeAmount>
     
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
@@ -57,7 +57,7 @@ public protocol FeeRelayerRelayType {
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
         swapTransactions: [OrcaSwap.PreparedSwapTransaction]
-    ) throws -> SolanaSDK.FeeAmount
+    ) -> Single<SolanaSDK.FeeAmount>
     
     /// Top up relay account and swap natively
     func topUpAndSwap(
@@ -189,7 +189,7 @@ extension FeeRelayer {
         }
         
         /// Calculate needed top up amount for expected fee
-        public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> SolanaSDK.FeeAmount {
+        public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> Single<SolanaSDK.FeeAmount> {
             var neededAmount = expectedFee
             
             // expected fees
@@ -215,11 +215,47 @@ extension FeeRelayer {
             
             neededAmount.transaction = neededTopUpNetworkFee + neededTransactionNetworkFee
             
-            if neededAmount.total > 0 && cache?.relayAccountStatus == .notYetCreated {
-                neededAmount.transaction += getRelayAccountCreationCost()
+            // check relay account balance
+            if neededAmount.total > 0 {
+                return getRelayAccountStatus(reuseCache: false)
+                    .map { [weak self] relayAccountStatus in
+                        guard let self = self else { return expectedFee }
+                        // TODO: - Unknown fee when first time using fee relayer
+                        if relayAccountStatus == .notYetCreated {
+                            neededAmount.transaction += self.getRelayAccountCreationCost()
+                        }
+                        
+                        // Check account balance
+                        if var relayAccountBalance = self.cache?.relayAccountStatus?.balance,
+                           relayAccountBalance > 0
+                        {
+                            // if relayAccountBalance has enough balance to cover transaction fee
+                            if relayAccountBalance >= neededAmount.transaction {
+                                
+                                relayAccountBalance -= neededAmount.transaction
+                                neededAmount.transaction = 0
+                                
+                                // if relayAccountBlance has enough balance to cover accountBalances fee too
+                                if relayAccountBalance >= neededAmount.accountBalances {
+                                    neededAmount.accountBalances = 0
+                                }
+                                
+                                // Relay account balance can cover part of account creation fee
+                                else {
+                                    neededAmount.accountBalances -= relayAccountBalance
+                                }
+                            }
+                            // if not, relayAccountBalance can cover part of transaction fee
+                            else {
+                                neededAmount.transaction -= relayAccountBalance
+                            }
+                        }
+                        return neededAmount
+                    }
+                    .catchAndReturn(expectedFee)
             }
             
-            return neededAmount
+            return .just(neededAmount)
         }
         
         /// Calculate needed fee (count in payingToken)
@@ -278,9 +314,9 @@ extension FeeRelayer {
         /// Calculate needed top up amount for swap
         public func calculateNeededTopUpAmount(
             swapTransactions: [OrcaSwap.PreparedSwapTransaction]
-        ) throws -> SolanaSDK.FeeAmount {
+        ) -> Single<SolanaSDK.FeeAmount> {
             guard let cache = cache else {
-                throw FeeRelayer.Error.relayInfoMissing
+                return .error(FeeRelayer.Error.relayInfoMissing)
             }
 
             // transaction fee
@@ -300,12 +336,12 @@ extension FeeRelayer {
         ) -> Single<[String]> {
             Single.zip(
                 getRelayAccountStatus(reuseCache: false),
-                getFreeTransactionFeeLimit(useCache: false)
+                getFreeTransactionFeeLimit(useCache: false),
+                calculateNeededTopUpAmount(swapTransactions: swapTransactions)
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<FreeTransactionFeeLimit> in
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit, expectedFee -> Single<FreeTransactionFeeLimit> in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
-                    let expectedFee = try self.calculateNeededTopUpAmount(swapTransactions: swapTransactions)
                     return self.checkAndTopUp(
                         expectedFee: expectedFee,
                         payingFeeToken: payingFeeToken,
