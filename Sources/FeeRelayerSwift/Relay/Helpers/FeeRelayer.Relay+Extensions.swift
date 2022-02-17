@@ -102,6 +102,49 @@ extension FeeRelayer.Relay {
         }
         return transitTokenMintPubkey
     }
+    
+    func getTransitToken(
+        pools: OrcaSwap.PoolsPair
+    ) throws -> TokenInfo? {
+        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
+        
+        var transitTokenAccountAddress: SolanaSDK.PublicKey?
+        if let transitTokenMintPubkey = transitTokenMintPubkey {
+            transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+                user: owner.publicKey,
+                transitTokenMint: transitTokenMintPubkey,
+                network: solanaClient.endpoint.network
+            )
+        }
+    
+        if let transitTokenMintPubkey = transitTokenMintPubkey,
+           let transitTokenAccountAddress = transitTokenAccountAddress
+        {
+            return .init(address: transitTokenAccountAddress.base58EncodedString, mint: transitTokenMintPubkey.base58EncodedString)
+        }
+        return nil
+    }
+    
+    func checkIfNeedsCreateTransitTokenAccount(
+        transitToken: TokenInfo?
+    ) -> Single<Bool?> {
+        guard let transitToken = transitToken else {
+            return .just(nil)
+        }
+
+        return solanaClient.getAccountInfo(
+            account: transitToken.address,
+            decodedTo: SolanaSDK.AccountInfo.self
+        )
+            .map {info -> Bool in
+                // detect if destination address is already a SPLToken address
+                if info.data.mint.base58EncodedString == transitToken.mint {
+                    return true
+                }
+                return false
+            }
+            .catchAndReturn(false)
+    }
 }
 
 private extension OrcaSwap.Pool {
