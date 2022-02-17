@@ -231,16 +231,24 @@ extension FeeRelayer.Relay {
         let from: DirectSwapData
         let to: DirectSwapData
         let transitTokenMintPubkey: String
+        let needsCreateTransitTokenAccount: Bool
         
-        public init(from: FeeRelayer.Relay.DirectSwapData, to: FeeRelayer.Relay.DirectSwapData, transitTokenMintPubkey: String) {
+        public init(
+            from: FeeRelayer.Relay.DirectSwapData,
+            to: FeeRelayer.Relay.DirectSwapData,
+            transitTokenMintPubkey: String,
+            needsCreateTransitTokenAccount: Bool
+        ) {
             self.from = from
             self.to = to
             self.transitTokenMintPubkey = transitTokenMintPubkey
+            self.needsCreateTransitTokenAccount = needsCreateTransitTokenAccount
         }
         
         enum CodingKeys: String, CodingKey {
             case from, to
             case transitTokenMintPubkey = "transit_token_mint_pubkey"
+            case needsCreateTransitTokenAccount = "needs_create_transit_token_account"
         }
     }
     

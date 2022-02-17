@@ -216,6 +216,7 @@ extension FeeRelayer.Relay {
         feeAmount: UInt64,
         blockhash: String,
         minimumTokenAccountBalance: UInt64,
+        needsCreateTransitTokenAccount: Bool,
         needsCreateDestinationTokenAccount: Bool,
         feePayerAddress: String,
         lamportsPerSignature: UInt64
@@ -276,7 +277,7 @@ extension FeeRelayer.Relay {
         
         // swap
         let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
-        let swap = try prepareSwapData(network: network, pools: pools, inputAmount: inputAmount, minAmountOut: nil, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(network: network, pools: pools, inputAmount: inputAmount, minAmountOut: nil, slippage: slippage, transitTokenMintPubkey: transitTokenMintPubkey, needsCreateTransitTokenAccount: needsCreateTransitTokenAccount)
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
         
         switch swap.swapData {
@@ -328,15 +329,17 @@ extension FeeRelayer.Relay {
                 network: network
             )
             
-            instructions.append(
-                try Program.createTransitTokenAccountInstruction(
-                    feePayer: feePayerAddress,
-                    userAuthority: userAuthorityAddress,
-                    transitTokenAccount: transitTokenAccountAddress,
-                    transitTokenMint: transitTokenMint,
-                    network: network
+            if needsCreateTransitTokenAccount {
+                instructions.append(
+                    try Program.createTransitTokenAccountInstruction(
+                        feePayer: feePayerAddress,
+                        userAuthority: userAuthorityAddress,
+                        transitTokenAccount: transitTokenAccountAddress,
+                        transitTokenMint: transitTokenMint,
+                        network: network
+                    )
                 )
-            )
+            }
             
             // relay swap
             instructions.append(
@@ -348,16 +351,6 @@ extension FeeRelayer.Relay {
                     destinationAddressPubkey: try SolanaSDK.PublicKey(string: userDestinationTokenAccountAddress),
                     feePayerPubkey: feePayerAddress,
                     network: network
-                )
-            )
-            
-            // close transit token account
-            instructions.append(
-                SolanaSDK.TokenProgram.closeAccountInstruction(
-                    account: transitTokenAccountAddress,
-                    destination: feePayerAddress,
-                    owner: feePayerAddress,
-                    signers: []
                 )
             )
             

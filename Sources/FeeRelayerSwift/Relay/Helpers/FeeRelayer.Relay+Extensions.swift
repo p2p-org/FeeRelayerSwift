@@ -24,7 +24,8 @@ extension FeeRelayer.Relay {
         minAmountOut: UInt64?,
         slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
-        newTransferAuthority: Bool = false
+        newTransferAuthority: Bool = false,
+        needsCreateTransitTokenAccount: Bool
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
@@ -86,7 +87,8 @@ extension FeeRelayer.Relay {
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),
-                transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
+                transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString,
+                needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
             )
             return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
         }
