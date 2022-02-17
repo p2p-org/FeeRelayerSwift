@@ -215,7 +215,7 @@ extension FeeRelayer {
             
             neededAmount.transaction = neededTopUpNetworkFee + neededTransactionNetworkFee
             
-            if expectedFee.total > 0 && cache?.relayAccountStatus == .notYetCreated {
+            if neededAmount.total > 0 && cache?.relayAccountStatus == .notYetCreated {
                 neededAmount.transaction += getRelayAccountCreationCost()
             }
             
