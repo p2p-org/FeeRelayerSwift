@@ -185,21 +185,41 @@ extension FeeRelayer.Relay {
         var destinationNewAccount: SolanaSDK.Account?
         var userDestinationTokenAccountAddress = destinationToken.address
         if needsCreateDestinationTokenAccount {
-            destinationNewAccount = try SolanaSDK.Account(network: network)
-            instructions.append(contentsOf: [
-                SolanaSDK.SystemProgram.createAccountInstruction(
-                    from: feePayerAddress,
-                    toNewPubkey: destinationNewAccount!.publicKey,
-                    lamports: minimumTokenAccountBalance
-                ),
-                SolanaSDK.TokenProgram.initializeAccountInstruction(
-                    account: destinationNewAccount!.publicKey,
-                    mint: destinationTokenMintAddress,
-                    owner: userAuthorityAddress
+            if destinationTokenMintAddress == .wrappedSOLMint {
+                // For native solana, create and initialize WSOL
+                destinationNewAccount = try SolanaSDK.Account(network: network)
+                instructions.append(contentsOf: [
+                    SolanaSDK.SystemProgram.createAccountInstruction(
+                        from: feePayerAddress,
+                        toNewPubkey: destinationNewAccount!.publicKey,
+                        lamports: minimumTokenAccountBalance
+                    ),
+                    SolanaSDK.TokenProgram.initializeAccountInstruction(
+                        account: destinationNewAccount!.publicKey,
+                        mint: destinationTokenMintAddress,
+                        owner: userAuthorityAddress
+                    )
+                ])
+                userDestinationTokenAccountAddress = destinationNewAccount!.publicKey.base58EncodedString
+            } else {
+                // For other token, create associated token address
+                let associatedAddress = try SolanaSDK.PublicKey.associatedTokenAddress(
+                    walletAddress: userAuthorityAddress,
+                    tokenMintAddress: destinationTokenMintAddress
                 )
-            ])
+                
+                instructions.append(
+                    SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                        mint: destinationTokenMintAddress,
+                        associatedAccount: associatedAddress,
+                        owner: userAuthorityAddress,
+                        payer: feePayerAddress
+                    )
+                )
+                userDestinationTokenAccountAddress = associatedAddress.base58EncodedString
+            }
+            
             accountCreationFee += minimumTokenAccountBalance
-            userDestinationTokenAccountAddress = destinationNewAccount!.publicKey.base58EncodedString
         }
         
         // swap
