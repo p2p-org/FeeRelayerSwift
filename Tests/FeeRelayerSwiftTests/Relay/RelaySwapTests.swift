@@ -6,128 +6,73 @@ import RxSwift
 import OrcaSwapSwift
 
 class RelaySwapTests: RelayTests {
-    // MARK: - Fee calculator
-    func testFeeCalculatorSwapToSOL() throws {
-        let swapInfo = try loadSwap(testInfo: testsInfo.splToSOL!)
-        
-        let swapTransactions = swapInfo.0
-        let payingToken = swapInfo.1
-        let feePayer = swapInfo.2
-        
-        let fees = try relayService.calculateNeededTopUpAmount(swapTransactions: swapInfo.0)
-        
-        print(fees)
-        
-    }
-    
-    // MARK: - Swap action
+    // MARK: - DirectSwap
     /// Swap from SOL to SPL
-    func testTopUpAndSwapFromSOL() throws {
-        try swap(testInfo: testsInfo.solToSPL!)
-    }
+//    func testTopUpAndDirectSwapFromSOL() throws {
+//        try swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: false)
+//    }
     
     /// Swap from SPL to SOL
-    func testTopUpAndSwapToSOL() throws {
-        try swap(testInfo: testsInfo.splToSOL!)
+    func testTopUpAndDirectSwapToSOL() throws {
+        try swap(testInfo: testsInfo.splToSOL!, isTransitiveSwap: false)
     }
     
     /// Swap from SPL to SPL
-    func testTopUpAndSwapToCreatedToken() throws {
-        try swap(testInfo: testsInfo.splToCreatedSpl!)
+    func testTopUpAndDirectSwapToCreatedToken() throws {
+        try swap(testInfo: testsInfo.splToCreatedSpl!, isTransitiveSwap: false)
     }
     
-    func testTopUpAndSwapToNonCreatedToken() throws {
-        try swap(testInfo: testsInfo.splToNonCreatedSpl!)
+    func testTopUpAndDirectSwapToNonCreatedToken() throws {
+        try swap(testInfo: testsInfo.splToNonCreatedSpl!, isTransitiveSwap: false)
+    }
+    
+    // MARK: - TransitiveSwap
+    func testTopUpAndTransitiveSwapToSOL() throws {
+        try swap(testInfo: testsInfo.splToSOL!, isTransitiveSwap: true)
+    }
+    
+    func testTopUpAndTransitiveSwapToCreatedToken() throws {
+        try swap(testInfo: testsInfo.splToCreatedSpl!, isTransitiveSwap: true)
+    }
+    
+    func testTopUpAndTransitiveSwapToNonCreatedToken() throws {
+        try swap(testInfo: testsInfo.splToNonCreatedSpl!, isTransitiveSwap: true)
     }
     
     // MARK: - Helpers
-    private func loadSwap(testInfo: RelaySwapTestInfo) throws -> ([OrcaSwap.PreparedSwapTransaction], FeeRelayer.Relay.TokenInfo, SolanaSDK.PublicKey?) {
+    private func prepareTransaction(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws -> SolanaSDK.PreparedTransaction {
         try loadTest(testInfo)
         
         // get pools pair
         let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
         
         // get best pool pair
-        let pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
+        let pools: OrcaSwap.PoolsPair
+        if let isTransitiveSwap = isTransitiveSwap {
+            pools = poolPairs.last(where: {$0.count == (isTransitiveSwap ? 2: 1)})!
+        } else {
+            pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
+        }
         
-        // get fee payer
-        let feePayer = try relayService.apiClient.getFeePayerPubkey().map {try SolanaSDK.PublicKey(string: $0)}.toBlocking().first()!
-        
-        // prepare for swapping
-        let swapTransactions = try orcaSwap
-            .prepareForSwapping(
-                fromWalletPubkey: testInfo.sourceAddress,
-                toWalletPubkey: testInfo.destinationAddress,
-                bestPoolsPair: pools,
-                amount: testInfo.inputAmount.convertToBalance(decimals: pools[0].getTokenADecimals()),
-                feePayer: feePayer,
-                slippage: testInfo.slippage
-            )
-            .toBlocking()
-            .first()!
-            .0
-        
-        let payingToken = FeeRelayer.Relay.TokenInfo(
-            address: testInfo.payingTokenAddress,
-            mint: testInfo.payingTokenMint
-        )
-        return (swapTransactions, payingToken, feePayer)
+        return try relayService.prepareSwapTransaction(
+            sourceToken: .init(address: testInfo.sourceAddress, mint: testInfo.fromMint),
+            destinationTokenMint: testInfo.toMint,
+            destinationAddress: testInfo.destinationAddress,
+            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
+            swapPools: pools,
+            inputAmount: testInfo.inputAmount,
+            slippage: testInfo.slippage
+        ).toBlocking().first()!
     }
     
-    private func swap(testInfo: RelaySwapTestInfo) throws {
-        let swapInfo = try loadSwap(testInfo: testInfo)
-        
-        let swapTransactions = swapInfo.0
-        let payingToken = swapInfo.1
-        let feePayer = swapInfo.2
-        
-        // send
-        let signatures = try relayService.topUpAndSwap(
-            swapTransactions,
-            feePayer: feePayer,
-            payingFeeToken: payingToken
-        )
-            .toBlocking()
-            .first()!
-        
-        
-        
-//        // calculate fee and needed topup amount
-//        let feeAndTopUpAmount = try relayService.calculateFeeAndNeededTopUpAmountForSwapping(
-//            sourceToken: sourceToken,
-//            destinationTokenMint: testInfo.toMint,
-//            destinationAddress: testInfo.destinationAddress,
-//            payingFeeToken: payingToken,
-//            swapPools: pools
-//        ).toBlocking().first()!
-//        let fee = feeAndTopUpAmount.feeInSOL?.total ?? 0
-//        let topUpAmount = feeAndTopUpAmount.topUpAmountInSOL ?? 0
-//
-//        // get relay account balance
-//        let relayAccountBalance = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()?.balance ?? 0
-//
-//        if fee > relayAccountBalance {
-//            XCTAssertEqual(topUpAmount, fee - relayAccountBalance)
-//        } else {
-//            XCTAssertEqual(topUpAmount, 0)
-//        }
-//
-//        // prepare transaction
-//        let preparedTransaction = try relayService.prepareSwapTransaction(
-//            sourceToken: sourceToken,
-//            destinationTokenMint: testInfo.toMint,
-//            destinationAddress: testInfo.destinationAddress,
-//            payingFeeToken: payingToken,
-//            swapPools: pools,
-//            inputAmount: testInfo.inputAmount,
-//            slippage: 0.05
-//        ).toBlocking().first()!
-//
-//        // send to relay service
-//        let signatures = try relayService.topUpAndRelayTransaction(
-//            preparedTransaction: preparedTransaction,
-//            payingFeeToken: payingToken
-//        ).toBlocking().first()!
+    private func swap(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws {
+        let preparedTransaction = try prepareTransaction(testInfo: testInfo, isTransitiveSwap: isTransitiveSwap)
+  
+        // send to relay service
+        let signatures = try relayService.topUpAndRelayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint)
+        ).toBlocking().first()!
         
         print(signatures)
         XCTAssertTrue(signatures.count > 0)

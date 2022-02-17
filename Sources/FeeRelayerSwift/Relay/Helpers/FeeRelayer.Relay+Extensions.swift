@@ -143,6 +143,7 @@ extension FeeRelayer.Relay {
                 }
                 return true
             }
+            .catchAndReturn(true)
     }
 }
 
