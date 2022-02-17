@@ -47,8 +47,8 @@ extension FeeRelayer.Relay {
                     lamportsPerSignature: cache.lamportsPerSignature,
                     freeTransactionFeeLimit: freeTransactionFeeLimit,
                     needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
-                    transitTokenMintPubkey: try SolanaSDK.PublicKey(string: transitToken?.mint),
-                    transitTokenAccountAddress: try SolanaSDK.PublicKey(string: transitToken?.address)
+                    transitTokenMintPubkey: try? SolanaSDK.PublicKey(string: transitToken?.mint),
+                    transitTokenAccountAddress: try? SolanaSDK.PublicKey(string: transitToken?.address)
                 )
                 
                 // STEP 4: send transaction

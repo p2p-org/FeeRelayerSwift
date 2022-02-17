@@ -77,8 +77,8 @@ extension FeeRelayer.Relay {
                     feePayerAddress: cache.feePayerAddress,
                     lamportsPerSignature: cache.lamportsPerSignature,
                     needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
-                    transitTokenMintPubkey: try SolanaSDK.PublicKey(string: transitToken?.mint),
-                    transitTokenAccountAddress: try SolanaSDK.PublicKey(string: transitToken?.address)
+                    transitTokenMintPubkey: try? SolanaSDK.PublicKey(string: transitToken?.mint),
+                    transitTokenAccountAddress: try? SolanaSDK.PublicKey(string: transitToken?.address)
                 )
             }
             .observe(on: MainScheduler.instance)
