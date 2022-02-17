@@ -11,72 +11,6 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
-    /// Calculate fee and need amount for topup and swap
-    public func calculateFeeAndNeededTopUpAmountForSwapping(
-        sourceToken: FeeRelayer.Relay.TokenInfo,
-        destinationTokenMint: String,
-        destinationAddress: String?,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo,
-        swapPools: OrcaSwap.PoolsPair
-    ) -> Single<FeesAndTopUpAmount> {
-        Single.zip(
-            getRelayAccountStatus(reuseCache: true),
-            getFreeTransactionFeeLimit(useCache: true)
-        )
-            .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpAndActionPreparedParams, RelayAccountStatus)> in
-                guard let self = self else { throw FeeRelayer.Error.unknown }
-                return self.prepareForTopUpAndSwap(
-                    sourceToken: sourceToken,
-                    destinationTokenMint: destinationTokenMint,
-                    destinationAddress: destinationAddress,
-                    payingFeeToken: payingFeeToken,
-                    swapPools: swapPools,
-                    relayAccountStatus: relayAccountStatus,
-                    freeTransactionFeeLimit: freeTransactionFeeLimit,
-                    reuseCache: true
-                ).map {($0, relayAccountStatus)}
-            }
-            .map { [weak self] preparedParams, relayAccountStatus in
-                guard let self = self else { throw FeeRelayer.Error.unknown }
-                let topUpPools = preparedParams.topUpPreparedParam?.poolsPair
-                
-                var feeAmountInSOL = preparedParams.actionFeesAndPools.fee
-                
-                if relayAccountStatus == .notYetCreated {
-                    feeAmountInSOL.transaction += self.getRelayAccountCreationCost()
-                }
-                
-                var topUpAmount: SolanaSDK.Lamports?
-                if let amount = preparedParams.topUpPreparedParam?.amount {
-                    topUpAmount = amount + (preparedParams.topUpPreparedParam?.expectedFee ?? 0)
-                }
-                
-                var feeAmountInPayingToken: SolanaSDK.FeeAmount?
-                var topUpAmountInPayingToken: UInt64?
-                
-                if let topUpPools = topUpPools {
-                    if let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeAmountInSOL.transaction, slippage: 0.01),
-                       let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeAmountInSOL.accountBalances, slippage: 0.01) {
-                        feeAmountInPayingToken = .init(
-                            transaction: transactionFee,
-                            accountBalances: accountCreationFee
-                        )
-                    }
-                    
-                    if let topUpAmount = topUpAmount {
-                        topUpAmountInPayingToken = topUpPools.getInputAmount(minimumAmountOut: topUpAmount, slippage: 0.01)
-                    }
-                }
-                
-                return .init(
-                    feeInSOL: feeAmountInSOL,
-                    topUpAmountInSOL: topUpAmount,
-                    feeInPayingToken: feeAmountInPayingToken,
-                    topUpAmountInPayingToen: topUpAmountInPayingToken
-                )
-            }
-    }
-    
     /// Prepare swap transaction for relay
     public func prepareSwapTransaction(
         sourceToken: TokenInfo,
@@ -146,40 +80,46 @@ extension FeeRelayer.Relay {
     }
     
     // MARK: - Helpers
-    private func calculateSwappingFee(
+    public func calculateSwappingNetworkFees(
         sourceToken: TokenInfo,
-        destinationToken: TokenInfo,
-        needsCreateDestinationTokenAccount: Bool
-    ) throws -> SolanaSDK.FeeAmount {
-        guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
-        var expectedFee = SolanaSDK.FeeAmount.zero
-        
-        // fee for payer's signature
-        expectedFee.transaction += cache.lamportsPerSignature
-        
-        // fee for owner's signature
-        expectedFee.transaction += cache.lamportsPerSignature
-        
-        // when source token is native SOL
-        if sourceToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            // WSOL's signature
-            expectedFee.transaction += cache.lamportsPerSignature
-            
-            // TODO: - Account creation fee?
-            expectedFee.accountBalances += cache.minimumTokenAccountBalance
-        }
-        
-        // when needed to create destination
-        if needsCreateDestinationTokenAccount && destinationToken.mint != SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            expectedFee.accountBalances += cache.minimumTokenAccountBalance
-        }
-        
-        // when destination is native SOL
-        if destinationToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            expectedFee.transaction += cache.lamportsPerSignature
-        }
-        
-        return expectedFee
+        destinationTokenMint: String,
+        destinationAddress: String?
+    ) -> Single<SolanaSDK.FeeAmount> {
+        getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+            .map { [weak self] destination in
+                guard let self = self, let cache = self.cache else {throw FeeRelayer.Error.relayInfoMissing}
+                
+                let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
+                
+                var expectedFee = SolanaSDK.FeeAmount.zero
+                
+                // fee for payer's signature
+                expectedFee.transaction += cache.lamportsPerSignature
+                
+                // fee for owner's signature
+                expectedFee.transaction += cache.lamportsPerSignature
+                
+                // when source token is native SOL
+                if sourceToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    // WSOL's signature
+                    expectedFee.transaction += cache.lamportsPerSignature
+                    
+                    // TODO: - Account creation fee?
+                    expectedFee.accountBalances += cache.minimumTokenAccountBalance
+                }
+                
+                // when needed to create destination
+                if needsCreateDestinationTokenAccount && destinationTokenMint != SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    expectedFee.accountBalances += cache.minimumTokenAccountBalance
+                }
+                
+                // when destination is native SOL
+                if destinationTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    expectedFee.transaction += cache.lamportsPerSignature
+                }
+                
+                return expectedFee
+            }
     }
     
     private func prepareSwapTransaction(
@@ -426,20 +366,14 @@ extension FeeRelayer.Relay {
                         fromMint: payingFeeToken.mint,
                         toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
                     ),
-                getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
+                calculateSwappingNetworkFees(
+                    sourceToken: sourceToken,
+                    destinationTokenMint: destinationTokenMint,
+                    destinationAddress: destinationAddress
+                )
             )
-                .map { [weak self] tradableTopUpPoolsPair, destination in
+                .map { [weak self] tradableTopUpPoolsPair, swappingFee in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
-                    
-                    // SWAP
-                    let destinationToken = destination.destinationToken
-                    let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
-                    
-                    let swappingFee = try self.calculateSwappingFee(
-                        sourceToken: sourceToken,
-                        destinationToken: destinationToken,
-                        needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount
-                    )
                     
                     // TOP UP
                     let topUpPreparedParam: TopUpPreparedParams?
@@ -504,10 +438,15 @@ extension FeeRelayer.Relay {
         } else {
             // Swap to other SPL
             userDestinationAccountOwnerAddress = nil
-            destinationRequest = solanaClient.findSPLTokenDestinationAddress(
-                mintAddress: destinationTokenMint,
-                destinationAddress: owner.publicKey.base58EncodedString
-            )
+            
+            if let destinationAddress = try? SolanaSDK.PublicKey(string: destinationAddress) {
+                destinationRequest = .just((destination: destinationAddress, isUnregisteredAsocciatedToken: false))
+            } else {
+                destinationRequest = solanaClient.findSPLTokenDestinationAddress(
+                    mintAddress: destinationTokenMint,
+                    destinationAddress: owner.publicKey.base58EncodedString
+                )
+            }
         }
         
         return destinationRequest

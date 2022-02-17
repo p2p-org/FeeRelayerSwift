@@ -67,14 +67,12 @@ public protocol FeeRelayerRelayType {
     ) -> Single<[String]>
     
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
-    /// Calculate needed fee IN SOL for swapping using RelayProgram
-    func calculateFeeAndNeededTopUpAmountForSwapping(
+    /// Calculate network fees for swapping
+    func calculateSwappingNetworkFees(
         sourceToken: FeeRelayer.Relay.TokenInfo,
         destinationTokenMint: String,
-        destinationAddress: String?,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo,
-        swapPools: OrcaSwap.PoolsPair
-    ) -> Single<FeeRelayer.Relay.FeesAndTopUpAmount>
+        destinationAddress: String?
+    ) -> Single<SolanaSDK.FeeAmount>
     
     /// Prepare swap transaction for relay using RelayProgram
     func prepareSwapTransaction(
