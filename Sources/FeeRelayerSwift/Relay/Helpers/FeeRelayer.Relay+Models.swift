@@ -57,8 +57,12 @@ extension FeeRelayer.Relay {
         public let maxAmount: UInt64
         public var amountUsed: UInt64
         
-        public func isFreeTransactionFeeAvailable(transactionFee: UInt64) -> Bool {
-            currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
+        public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
+            var currentUsage = currentUsage
+            if forNextTransaction {
+                currentUsage += 1
+            }
+            return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
         }
     }
     
@@ -231,16 +235,24 @@ extension FeeRelayer.Relay {
         let from: DirectSwapData
         let to: DirectSwapData
         let transitTokenMintPubkey: String
+        let needsCreateTransitTokenAccount: Bool
         
-        public init(from: FeeRelayer.Relay.DirectSwapData, to: FeeRelayer.Relay.DirectSwapData, transitTokenMintPubkey: String) {
+        public init(
+            from: FeeRelayer.Relay.DirectSwapData,
+            to: FeeRelayer.Relay.DirectSwapData,
+            transitTokenMintPubkey: String,
+            needsCreateTransitTokenAccount: Bool
+        ) {
             self.from = from
             self.to = to
             self.transitTokenMintPubkey = transitTokenMintPubkey
+            self.needsCreateTransitTokenAccount = needsCreateTransitTokenAccount
         }
         
         enum CodingKeys: String, CodingKey {
             case from, to
             case transitTokenMintPubkey = "transit_token_mint_pubkey"
+            case needsCreateTransitTokenAccount = "needs_create_transit_token_account"
         }
     }
     

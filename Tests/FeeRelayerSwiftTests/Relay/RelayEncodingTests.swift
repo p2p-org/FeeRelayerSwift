@@ -29,7 +29,8 @@ class RelayEncodingTests: XCTestCase {
             topUpSwap: .init(FeeRelayer.Relay.TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
-                transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
+                transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+                needsCreateTransitTokenAccount: false
             )),
             feeAmount: 500000,
             signatures: fakeSignature,
@@ -73,7 +74,8 @@ class RelayEncodingTests: XCTestCase {
             userSwap: .init(FeeRelayer.Relay.TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
-                transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
+                transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+                needsCreateTransitTokenAccount: false
             )),
             feeAmount: 50000,
             signatures: fakeSignature,

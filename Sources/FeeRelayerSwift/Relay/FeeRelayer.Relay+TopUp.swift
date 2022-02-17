@@ -19,12 +19,14 @@ extension FeeRelayer.Relay {
         topUpPools: OrcaSwap.PoolsPair,
         expectedFee: UInt64
     ) -> Single<[String]> {
-        Single.zip(
+        let transitToken = try? getTransitToken(pools: topUpPools)
+        return Single.zip(
             solanaClient.getRecentBlockhash(commitment: nil),
-            getFreeTransactionFeeLimit(useCache: false)
+            getFreeTransactionFeeLimit(useCache: false),
+            checkIfNeedsCreateTransitTokenAccount(transitToken: transitToken)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] recentBlockhash, freeTransactionFeeLimit in
+            .flatMap { [weak self] recentBlockhash, freeTransactionFeeLimit, needsCreateTransitTokenAccount in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard let cache = self.cache else { throw FeeRelayer.Error.relayInfoMissing }
                 
@@ -43,7 +45,10 @@ extension FeeRelayer.Relay {
                     needsCreateUserRelayAccount: needsCreateUserRelayAddress,
                     feePayerAddress: cache.feePayerAddress,
                     lamportsPerSignature: cache.lamportsPerSignature,
-                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                    freeTransactionFeeLimit: freeTransactionFeeLimit,
+                    needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
+                    transitTokenMintPubkey: try? SolanaSDK.PublicKey(string: transitToken?.mint),
+                    transitTokenAccountAddress: try? SolanaSDK.PublicKey(string: transitToken?.address)
                 )
                 
                 // STEP 4: send transaction
@@ -212,7 +217,10 @@ extension FeeRelayer.Relay {
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: String,
         lamportsPerSignature: UInt64,
-        freeTransactionFeeLimit: FreeTransactionFeeLimit?
+        freeTransactionFeeLimit: FreeTransactionFeeLimit?,
+        needsCreateTransitTokenAccount: Bool?,
+        transitTokenMintPubkey: SolanaSDK.PublicKey?,
+        transitTokenAccountAddress: SolanaSDK.PublicKey?
     ) throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: SolanaSDK.PreparedTransaction) {
         // assertion
         guard let userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
@@ -239,8 +247,15 @@ extension FeeRelayer.Relay {
         }
         
         // top up swap
-        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: topUpPools)
-        let swap = try prepareSwapData(network: network, pools: topUpPools, inputAmount: nil, minAmountOut: targetAmount, slippage: 0.01, transitTokenMintPubkey: transitTokenMintPubkey)
+        let swap = try prepareSwapData(
+            network: network,
+            pools: topUpPools,
+            inputAmount: nil,
+            minAmountOut: targetAmount,
+            slippage: 0.01,
+            transitTokenMintPubkey: transitTokenMintPubkey,
+            needsCreateTransitTokenAccount: needsCreateTransitTokenAccount == true
+        )
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
         
         switch swap.swapData {
@@ -284,20 +299,17 @@ extension FeeRelayer.Relay {
             }
             
             // create transit token account
-            let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-                user: userAuthorityAddress,
-                transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
-                network: network
-            )
-            instructions.append(
-                try Program.createTransitTokenAccountInstruction(
-                    feePayer: feePayerAddress,
-                    userAuthority: userAuthorityAddress,
-                    transitTokenAccount: transitTokenAccountAddress,
-                    transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
-                    network: network
+            if needsCreateTransitTokenAccount == true, let transitTokenAccountAddress = transitTokenAccountAddress {
+                instructions.append(
+                    try Program.createTransitTokenAccountInstruction(
+                        feePayer: feePayerAddress,
+                        userAuthority: userAuthorityAddress,
+                        transitTokenAccount: transitTokenAccountAddress,
+                        transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
+                        network: network
+                    )
                 )
-            )
+            }
             
             // Destination WSOL account funding
             accountCreationFee += minimumTokenAccountBalance
@@ -310,15 +322,6 @@ extension FeeRelayer.Relay {
                     userAuthorityAddress: userAuthorityAddress,
                     userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                     feePayerAddress: feePayerAddress
-                )
-            )
-            
-            // close transit token account
-            instructions.append(
-                SolanaSDK.TokenProgram.closeAccountInstruction(
-                    account: transitTokenAccountAddress,
-                    destination: feePayerAddress,
-                    owner: feePayerAddress
                 )
             )
         default:
