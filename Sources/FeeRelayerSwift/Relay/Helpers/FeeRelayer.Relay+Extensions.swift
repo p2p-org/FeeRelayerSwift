@@ -24,7 +24,8 @@ extension FeeRelayer.Relay {
         minAmountOut: UInt64?,
         slippage: Double,
         transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
-        newTransferAuthority: Bool = false
+        newTransferAuthority: Bool = false,
+        needsCreateTransitTokenAccount: Bool
     ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
@@ -86,7 +87,8 @@ extension FeeRelayer.Relay {
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),
-                transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString
+                transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString,
+                needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
             )
             return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
         }
@@ -99,6 +101,49 @@ extension FeeRelayer.Relay {
             transitTokenMintPubkey = try SolanaSDK.PublicKey(string: orcaSwapClient.getMint(tokenName: interTokenName))
         }
         return transitTokenMintPubkey
+    }
+    
+    func getTransitToken(
+        pools: OrcaSwap.PoolsPair
+    ) throws -> TokenInfo? {
+        let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
+        
+        var transitTokenAccountAddress: SolanaSDK.PublicKey?
+        if let transitTokenMintPubkey = transitTokenMintPubkey {
+            transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+                user: owner.publicKey,
+                transitTokenMint: transitTokenMintPubkey,
+                network: solanaClient.endpoint.network
+            )
+        }
+    
+        if let transitTokenMintPubkey = transitTokenMintPubkey,
+           let transitTokenAccountAddress = transitTokenAccountAddress
+        {
+            return .init(address: transitTokenAccountAddress.base58EncodedString, mint: transitTokenMintPubkey.base58EncodedString)
+        }
+        return nil
+    }
+    
+    func checkIfNeedsCreateTransitTokenAccount(
+        transitToken: TokenInfo?
+    ) -> Single<Bool?> {
+        guard let transitToken = transitToken else {
+            return .just(nil)
+        }
+
+        return solanaClient.getAccountInfo(
+            account: transitToken.address,
+            decodedTo: SolanaSDK.AccountInfo.self
+        )
+            .map {info -> Bool in
+                // detect if destination address is already a SPLToken address
+                if info.data.mint.base58EncodedString == transitToken.mint {
+                    return true
+                }
+                return false
+            }
+            .catchAndReturn(false)
     }
 }
 
