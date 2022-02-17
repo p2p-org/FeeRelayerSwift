@@ -69,7 +69,7 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
     /// Calculate network fees for swapping
     func calculateSwappingNetworkFees(
-        sourceToken: FeeRelayer.Relay.TokenInfo,
+        sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
     ) -> Single<SolanaSDK.FeeAmount>

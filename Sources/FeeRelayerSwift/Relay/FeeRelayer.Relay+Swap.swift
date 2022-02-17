@@ -81,7 +81,7 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     public func calculateSwappingNetworkFees(
-        sourceToken: TokenInfo,
+        sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
     ) -> Single<SolanaSDK.FeeAmount> {
@@ -100,7 +100,7 @@ extension FeeRelayer.Relay {
                 expectedFee.transaction += cache.lamportsPerSignature
                 
                 // when source token is native SOL
-                if sourceToken.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                if sourceTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                     // WSOL's signature
                     expectedFee.transaction += cache.lamportsPerSignature
                     
@@ -374,7 +374,7 @@ extension FeeRelayer.Relay {
             request = Single.zip(
                 tradablePoolsPairRequest,
                 calculateSwappingNetworkFees(
-                    sourceToken: sourceToken,
+                    sourceTokenMint: sourceToken.mint,
                     destinationTokenMint: destinationTokenMint,
                     destinationAddress: destinationAddress
                 )
