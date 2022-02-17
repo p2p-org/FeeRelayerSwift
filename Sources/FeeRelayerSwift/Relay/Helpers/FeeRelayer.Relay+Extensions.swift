@@ -139,11 +139,10 @@ extension FeeRelayer.Relay {
             .map {info -> Bool in
                 // detect if destination address is already a SPLToken address
                 if info.data.mint.base58EncodedString == transitToken.mint {
-                    return true
+                    return false
                 }
-                return false
+                return true
             }
-            .catchAndReturn(false)
     }
 }
 
