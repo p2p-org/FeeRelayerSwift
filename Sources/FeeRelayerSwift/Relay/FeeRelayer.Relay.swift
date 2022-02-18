@@ -44,7 +44,7 @@ public protocol FeeRelayerRelayType {
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
         feeInSOL: SolanaSDK.Lamports,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo
+        payingFeeTokenMint: String
     ) -> Single<SolanaSDK.Lamports?>
     
     /// Top up relay account (if needed) and relay transaction
@@ -261,11 +261,11 @@ extension FeeRelayer {
         /// Calculate needed fee (count in payingToken)
         public func calculateFeeInPayingToken(
             feeInSOL: SolanaSDK.Lamports,
-            payingFeeToken: TokenInfo
+            payingFeeTokenMint: String
         ) -> Single<SolanaSDK.Lamports?> {
             orcaSwapClient
                 .getTradablePoolsPairs(
-                    fromMint: payingFeeToken.mint,
+                    fromMint: payingFeeTokenMint,
                     toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
                 )
                 .map { [weak self] tradableTopUpPoolsPair in
