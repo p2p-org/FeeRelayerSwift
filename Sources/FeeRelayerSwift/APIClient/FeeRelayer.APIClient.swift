@@ -9,6 +9,7 @@ import Alamofire
 import Foundation
 import RxAlamofire
 import RxSwift
+import SolanaSwift
 
 public protocol FeeRelayerAPIClientType {
     var version: Int { get }
@@ -104,8 +105,8 @@ extension FeeRelayer {
                         // Print
                         guard (200..<300).contains(response.statusCode) else {
                             #if DEBUG
-                                let rawString = String(data: data, encoding: .utf8) ?? ""
-                                print(NSString(string: rawString))
+                            let rawString = String(data: data, encoding: .utf8) ?? ""
+                            Logger.log(message: rawString, event: .error, apiMethod: requestType.path)
                             #endif
 
                             let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
