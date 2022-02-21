@@ -297,7 +297,12 @@ extension FeeRelayer {
                         relayAccountStatus: relayAccountStatus,
                         freeTransactionFeeLimit: freeTransactionFeeLimit
                     )
-                        .map {_ in freeTransactionFeeLimit}
+                        .map {[weak self] _ in
+                            var freeTransactionFeeLimit = freeTransactionFeeLimit
+                            freeTransactionFeeLimit.currentUsage += 1
+                            freeTransactionFeeLimit.amountUsed += (self?.cache?.lamportsPerSignature ?? 0) * 2 // fee for topping up
+                            return freeTransactionFeeLimit
+                        }
                 }
                 .flatMap { [weak self] freeTransactionFeeLimit in
                     // assertion
@@ -348,7 +353,12 @@ extension FeeRelayer {
                         relayAccountStatus: relayAccountStatus,
                         freeTransactionFeeLimit: freeTransactionFeeLimit
                     )
-                        .map {_ in freeTransactionFeeLimit}
+                        .map {[weak self] _ in
+                            var freeTransactionFeeLimit = freeTransactionFeeLimit
+                            freeTransactionFeeLimit.currentUsage += 1
+                            freeTransactionFeeLimit.amountUsed += (self?.cache?.lamportsPerSignature ?? 0) * 2 // fee for topping up
+                            return freeTransactionFeeLimit
+                        }
                 }
                 .flatMap { [weak self] freeTransactionFeeLimit in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
@@ -514,6 +524,7 @@ extension FeeRelayer {
                 .do(onSuccess: {[weak self] _ in
                     self?.locker.lock()
                     self?.cache?.freeTransactionFeeLimit?.currentUsage += 1
+                    self?.cache?.freeTransactionFeeLimit?.amountUsed = preparedTransaction.expectedFee.total - paybackFee
                     self?.locker.unlock()
                 })
         }

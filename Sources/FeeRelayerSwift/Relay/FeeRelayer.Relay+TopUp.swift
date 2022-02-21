@@ -83,6 +83,10 @@ extension FeeRelayer.Relay {
                     .do(onSuccess: { [weak self] _ in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)
+                        self.locker.lock()
+                        self.cache?.freeTransactionFeeLimit?.currentUsage += 1
+                        self.cache?.freeTransactionFeeLimit?.amountUsed += (self.cache?.lamportsPerSignature ?? 0) * 2
+                        self.locker.unlock()
                     }, onSubscribe: { [weak self] in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) processing", event: .info)
