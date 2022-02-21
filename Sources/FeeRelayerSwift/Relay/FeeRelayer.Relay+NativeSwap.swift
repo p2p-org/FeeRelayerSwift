@@ -15,12 +15,12 @@ extension FeeRelayer.Relay {
     public func calculateNeededTopUpAmount(
         swapTransactions: [OrcaSwap.PreparedSwapTransaction]
     ) -> Single<SolanaSDK.FeeAmount> {
-        guard let cache = cache else {
+        guard let lamportsPerSignature = cache.lamportsPerSignature else {
             return .error(FeeRelayer.Error.relayInfoMissing)
         }
 
         // transaction fee
-        let transactionFee = UInt64(swapTransactions.count) * 2 * cache.lamportsPerSignature
+        let transactionFee = UInt64(swapTransactions.count) * 2 * lamportsPerSignature
         
         // account creation fee
         let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
@@ -35,27 +35,19 @@ extension FeeRelayer.Relay {
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         Single.zip(
-            getRelayAccountStatus(reuseCache: false),
-            getFreeTransactionFeeLimit(useCache: false),
+            updateRelayAccountStatus().andThen(.just(())),
+            updateFreeTransactionFeeLimit().andThen(.just(())),
             calculateNeededTopUpAmount(swapTransactions: swapTransactions)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit, expectedFee -> Single<FreeTransactionFeeLimit> in
+            .flatMap { [weak self] _, _, expectedFee -> Single<[String]?> in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 return self.checkAndTopUp(
                     expectedFee: expectedFee,
-                    payingFeeToken: payingFeeToken,
-                    relayAccountStatus: relayAccountStatus,
-                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                    payingFeeToken: payingFeeToken
                 )
-                    .map {[weak self] _ in
-                        var freeTransactionFeeLimit = freeTransactionFeeLimit
-                        freeTransactionFeeLimit.currentUsage += 1
-                        freeTransactionFeeLimit.amountUsed += (self?.cache?.lamportsPerSignature ?? 0) * 2 // fee for topping up
-                        return freeTransactionFeeLimit
-                    }
             }
-            .flatMap { [weak self] freeTransactionFeeLimit in
+            .flatMap { [weak self] _ in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
                     throw OrcaSwapError.invalidNumberOfTransactions
@@ -63,8 +55,7 @@ extension FeeRelayer.Relay {
                 var request = self.prepareAndSend(
                     swapTransactions[0],
                     feePayer: feePayer ?? self.owner.publicKey,
-                    payingFeeToken: payingFeeToken,
-                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                    payingFeeToken: payingFeeToken
                 )
                 
                 if swapTransactions.count == 2 {
@@ -74,8 +65,7 @@ extension FeeRelayer.Relay {
                             return self.prepareAndSend(
                                 swapTransactions[1],
                                 feePayer: feePayer ?? self.owner.publicKey,
-                                payingFeeToken: payingFeeToken,
-                                freeTransactionFeeLimit: freeTransactionFeeLimit
+                                payingFeeToken: payingFeeToken
                             )
                                 .retry { errors in
                                     errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
@@ -104,8 +94,7 @@ extension FeeRelayer.Relay {
     private func prepareAndSend(
         _ swapTransaction: OrcaSwap.PreparedSwapTransaction,
         feePayer: OrcaSwap.PublicKey,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
-        freeTransactionFeeLimit: FreeTransactionFeeLimit
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         solanaClient.prepareTransaction(
             instructions: swapTransaction.instructions,
@@ -118,8 +107,7 @@ extension FeeRelayer.Relay {
             .flatMap { [weak self] preparedTransaction in
                 guard let self = self else {throw OrcaSwapError.unknown}
                 return try self.relayTransaction(
-                    preparedTransaction: preparedTransaction,
-                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                    preparedTransaction: preparedTransaction
                 )
             }
     }

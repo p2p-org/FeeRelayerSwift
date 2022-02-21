@@ -12,7 +12,7 @@ import OrcaSwapSwift
 
 extension FeeRelayer.Relay {
     func getRelayAccountCreationCost() -> UInt64 {
-        cache?.lamportsPerSignature ?? 0 // TODO: Check again
+        cache.lamportsPerSignature ?? 0 // TODO: Check again
     }
     
     // MARK: - Top up
@@ -144,6 +144,40 @@ extension FeeRelayer.Relay {
                 return true
             }
             .catchAndReturn(true)
+    }
+    
+    /// Update free transaction fee limit
+    func updateFreeTransactionFeeLimit() -> Completable {
+        apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
+            .do(onSuccess: { [weak self] info in
+                let info = FreeTransactionFeeLimit(
+                    maxUsage: info.limits.maxCount,
+                    currentUsage: info.processedFee.count,
+                    maxAmount: info.limits.maxAmount,
+                    amountUsed: info.processedFee.totalAmount
+                )
+                self?.locker.lock()
+                self?.cache.freeTransactionFeeLimit = info
+                self?.locker.unlock()
+            })
+            .asCompletable()
+    }
+    
+    func updateRelayAccountStatus() -> Completable {
+        solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+            .do(onSuccess: { [weak self] info in
+                self?.locker.lock()
+                self?.cache.relayAccountStatus = info
+                self?.locker.unlock()
+            })
+            .asCompletable()
+    }
+    
+    func markTransactionAsCompleted(freeFeeAmountUsed: UInt64) {
+        locker.lock()
+        cache.freeTransactionFeeLimit?.currentUsage += 1
+        cache.freeTransactionFeeLimit?.amountUsed = freeFeeAmountUsed
+        locker.unlock()
     }
 }
 

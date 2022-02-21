@@ -28,12 +28,10 @@ public protocol FeeRelayerRelayType {
     
     /// Check if user has free transaction fee
     func getFreeTransactionFeeLimit(
-        useCache: Bool
     ) -> Single<FeeRelayer.Relay.FreeTransactionFeeLimit>
     
     /// Get info of relay account
     func getRelayAccountStatus(
-        reuseCache: Bool
     ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
     
     /// Calculate needed top up amount for expected fee
@@ -96,7 +94,7 @@ extension FeeRelayer {
         
         // MARK: - Properties
         let locker = NSLock()
-        var cache: Cache? // All info needed to perform actions, works as a cache
+        var cache: Cache
         let owner: SolanaSDK.Account
         let userRelayAddress: SolanaSDK.PublicKey
         
@@ -114,6 +112,7 @@ extension FeeRelayer {
             self.orcaSwapClient = orcaSwapClient
             self.owner = owner
             self.userRelayAddress = try Program.getUserRelayAddress(user: owner.publicKey, network: self.solanaClient.endpoint.network)
+            self.cache = .init()
         }
         
         // MARK: - Methods
@@ -129,62 +128,37 @@ extension FeeRelayer {
                 // get lamportsPerSignature
                 solanaClient.getLamportsPerSignature(),
                 // get relayAccount status
-                getRelayAccountStatus(reuseCache: false),
+                updateRelayAccountStatus().andThen(.just(())),
                 // get free transaction fee limit
-                getFreeTransactionFeeLimit(useCache: false)
+                updateFreeTransactionFeeLimit().andThen(.just(()))
             )
-                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, relayAccountStatus, freeTransactionFeeLimit in
+                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _, _ in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     self.locker.lock()
-                    self.cache = .init(
-                        minimumTokenAccountBalance: minimumTokenAccountBalance,
-                        minimumRelayAccountBalance: minimumRelayAccountBalance,
-                        feePayerAddress: feePayerAddress,
-                        lamportsPerSignature: lamportsPerSignature,
-                        relayAccountStatus: relayAccountStatus,
-                        freeTransactionFeeLimit: freeTransactionFeeLimit
-                    )
+                    self.cache.minimumTokenAccountBalance = minimumTokenAccountBalance
+                    self.cache.minimumRelayAccountBalance = minimumRelayAccountBalance
+                    self.cache.feePayerAddress = feePayerAddress
+                    self.cache.lamportsPerSignature = lamportsPerSignature
                     self.locker.unlock()
                 })
                 .asCompletable()
         }
         
         /// Check if user has free transaction fee
-        public func getFreeTransactionFeeLimit(useCache: Bool) -> Single<FreeTransactionFeeLimit> {
-            if useCache, let cachedUserAvailableInfo = cache?.freeTransactionFeeLimit {
-                print("Hit cache")
-                return .just(cachedUserAvailableInfo)
-            }
-    
-            return apiClient
-                .requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
-                .map { [weak self] info in
-                    let info = FreeTransactionFeeLimit(
-                        maxUsage: info.limits.maxCount,
-                        currentUsage: info.processedFee.count,
-                        maxAmount: info.limits.maxAmount,
-                        amountUsed: info.processedFee.totalAmount
-                    )
-                    self?.locker.lock()
-                    self?.cache?.freeTransactionFeeLimit = info
-                    self?.locker.unlock()
-                    return info
-                }
+        public func getFreeTransactionFeeLimit() -> Single<FreeTransactionFeeLimit> {
+            updateFreeTransactionFeeLimit()
+                .andThen(.deferred { [weak self] in
+                    guard let self = self, let cached = self.cache.freeTransactionFeeLimit else {throw Error.unknown}
+                    return .just(cached)
+                })
         }
         
         /// Get info of relay account
-        public func getRelayAccountStatus(reuseCache: Bool) -> Single<RelayAccountStatus> {
-            if reuseCache,
-               let cachedRelayAccountStatus = cache?.relayAccountStatus
-            {
-                return .just(cachedRelayAccountStatus)
-            }
-            
-            return solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
-                .do(onSuccess: { [weak self] in
-                    self?.locker.lock()
-                    self?.cache?.relayAccountStatus = $0
-                    self?.locker.unlock()
+        public func getRelayAccountStatus() -> Single<RelayAccountStatus> {
+            updateRelayAccountStatus()
+                .andThen(.deferred { [weak self] in
+                    guard let self = self, let cached = self.cache.relayAccountStatus else {throw Error.unknown}
+                    return .just(cached)
                 })
         }
         
@@ -193,7 +167,7 @@ extension FeeRelayer {
             var neededAmount = expectedFee
             
             // expected fees
-            let expectedTopUpNetworkFee = 2 * (cache?.lamportsPerSignature ?? 5000)
+            let expectedTopUpNetworkFee = 2 * (cache.lamportsPerSignature ?? 5000)
             let expectedTransactionNetworkFee = expectedFee.transaction
             
             // real fees
@@ -201,12 +175,12 @@ extension FeeRelayer {
             var neededTransactionNetworkFee = expectedTransactionNetworkFee
             
             // is Top up free
-            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee) == true {
+            if cache.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee) == true {
                 neededTopUpNetworkFee = 0
             }
             
             // is transaction free
-            if cache?.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(
+            if cache.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(
                 transactionFee: expectedTopUpNetworkFee + expectedTransactionNetworkFee,
                 forNextTransaction: true
             ) == true {
@@ -217,7 +191,7 @@ extension FeeRelayer {
             
             // check relay account balance
             if neededAmount.total > 0 {
-                return getRelayAccountStatus(reuseCache: false)
+                return getRelayAccountStatus()
                     .map { [weak self] relayAccountStatus in
                         guard let self = self else { return expectedFee }
                         // TODO: - Unknown fee when first time using fee relayer
@@ -226,7 +200,7 @@ extension FeeRelayer {
                         }
                         
                         // Check account balance
-                        if var relayAccountBalance = self.cache?.relayAccountStatus?.balance,
+                        if var relayAccountBalance = relayAccountStatus.balance,
                            relayAccountBalance > 0
                         {
                             // if relayAccountBalance has enough balance to cover transaction fee
@@ -284,32 +258,23 @@ extension FeeRelayer {
             preparedTransaction: SolanaSDK.PreparedTransaction,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]> {
-            Single.zip(
-                getRelayAccountStatus(reuseCache: false),
-                getFreeTransactionFeeLimit(useCache: false)
+            Completable.zip(
+                updateRelayAccountStatus(),
+                updateFreeTransactionFeeLimit()
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<FreeTransactionFeeLimit> in
+                .andThen(Single<[String]?>.deferred { [weak self] in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return self.checkAndTopUp(
                         expectedFee: preparedTransaction.expectedFee,
-                        payingFeeToken: payingFeeToken,
-                        relayAccountStatus: relayAccountStatus,
-                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                        payingFeeToken: payingFeeToken
                     )
-                        .map {[weak self] _ in
-                            var freeTransactionFeeLimit = freeTransactionFeeLimit
-                            freeTransactionFeeLimit.currentUsage += 1
-                            freeTransactionFeeLimit.amountUsed += (self?.cache?.lamportsPerSignature ?? 0) * 2 // fee for topping up
-                            return freeTransactionFeeLimit
-                        }
-                }
-                .flatMap { [weak self] freeTransactionFeeLimit in
+                })
+                .flatMap { [weak self] _ in
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return try self.relayTransaction(
-                        preparedTransaction: preparedTransaction,
-                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                        preparedTransaction: preparedTransaction
                     )
                 }
                 .observe(on: MainScheduler.instance)
@@ -318,10 +283,14 @@ extension FeeRelayer {
         // MARK: - Helpers
         func checkAndTopUp(
             expectedFee: SolanaSDK.FeeAmount,
-            payingFeeToken: TokenInfo?,
-            relayAccountStatus: RelayAccountStatus,
-            freeTransactionFeeLimit: FreeTransactionFeeLimit
+            payingFeeToken: TokenInfo?
         ) -> Single<[String]?> {
+            guard let freeTransactionFeeLimit = cache.freeTransactionFeeLimit,
+                  let relayAccountStatus = cache.relayAccountStatus
+            else {
+                return .error(Error.relayInfoMissing)
+            }
+            
             // Check fee
             var expectedFee = expectedFee
             if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) {
@@ -364,10 +333,10 @@ extension FeeRelayer {
         }
         
         func relayTransaction(
-            preparedTransaction: SolanaSDK.PreparedTransaction,
-            freeTransactionFeeLimit: FreeTransactionFeeLimit
+            preparedTransaction: SolanaSDK.PreparedTransaction
         ) throws -> Single<[String]> {
-            guard let feePayer = self.cache?.feePayerAddress
+            guard let feePayer = cache.feePayerAddress,
+                  let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
             else { throw FeeRelayer.Error.unauthorized }
             
             // verify fee payer
@@ -409,10 +378,7 @@ extension FeeRelayer {
                 decodedTo: [String].self
             )
                 .do(onSuccess: {[weak self] _ in
-                    self?.locker.lock()
-                    self?.cache?.freeTransactionFeeLimit?.currentUsage += 1
-                    self?.cache?.freeTransactionFeeLimit?.amountUsed = preparedTransaction.expectedFee.total - paybackFee
-                    self?.locker.unlock()
+                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total - paybackFee)
                 })
         }
     }
