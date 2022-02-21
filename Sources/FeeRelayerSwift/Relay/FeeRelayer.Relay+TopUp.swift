@@ -60,7 +60,7 @@ extension FeeRelayer.Relay {
                 return self.solanaClient.getRecentBlockhash(commitment: nil)
                     .map {($0, needsCreateTransitTokenAccount)}
             }
-            .flatMap { [weak self] recentBlockhash, needsCreateTransitTokenAccount in
+            .flatMap { [weak self, weak scheduler] recentBlockhash, needsCreateTransitTokenAccount in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard let minimumRelayAccountBalance = self.cache.minimumRelayAccountBalance,
                       let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance,
@@ -131,7 +131,7 @@ extension FeeRelayer.Relay {
                             return .error(error)
                         }
                     }
-                    .timeout(.seconds(60), scheduler: MainScheduler.instance)
+                    .timeout(.seconds(60), scheduler: scheduler ?? ConcurrentDispatchQueueScheduler(qos: .default))
                     .do(onSuccess: { [weak self] _ in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)
