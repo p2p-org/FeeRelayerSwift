@@ -34,8 +34,8 @@ class RelayTests: XCTestCase {
         )
 
         // prepare params
-        let relayAccountStatus = try relayService.getRelayAccountStatus(reuseCache: false).toBlocking().first()!
-        let freeTransactionFeeLimit = try relayService.getFreeTransactionFeeLimit(useCache: false).toBlocking().first()!
+        let relayAccountStatus = try relayService.getRelayAccountStatus().toBlocking().first()!
+        let freeTransactionFeeLimit = try relayService.getFreeTransactionFeeLimit().toBlocking().first()!
         
         let params = try relayService.prepareForTopUp(
             targetAmount: testInfo.amount,

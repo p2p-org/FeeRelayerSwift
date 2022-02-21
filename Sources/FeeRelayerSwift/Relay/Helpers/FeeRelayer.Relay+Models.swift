@@ -68,10 +68,10 @@ extension FeeRelayer.Relay {
     
     // MARK: - Relay info
     public struct Cache {
-        var minimumTokenAccountBalance: UInt64
-        var minimumRelayAccountBalance: UInt64
-        var feePayerAddress: String
-        var lamportsPerSignature: UInt64
+        var minimumTokenAccountBalance: UInt64?
+        var minimumRelayAccountBalance: UInt64?
+        var feePayerAddress: String?
+        var lamportsPerSignature: UInt64?
         var relayAccountStatus: RelayAccountStatus?
         var preparedParams: TopUpAndActionPreparedParams?
         var freeTransactionFeeLimit: FreeTransactionFeeLimit?

@@ -24,12 +24,12 @@ extension FeeRelayer.Relay {
         let transitToken = try? getTransitToken(pools: swapPools)
         // get fresh data by ignoring cache
         return Single.zip(
-            Single.zip(
-                getRelayAccountStatus(reuseCache: false),
-                getFreeTransactionFeeLimit(useCache: false)
+            Completable.zip(
+                updateRelayAccountStatus(),
+                updateFreeTransactionFeeLimit()
             )
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<TopUpAndActionPreparedParams> in
+                .andThen(Single<TopUpAndActionPreparedParams>.deferred { [weak self] in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
                     return self.prepareForTopUpAndSwap(
                         sourceToken: sourceToken,
@@ -37,11 +37,9 @@ extension FeeRelayer.Relay {
                         destinationAddress: destinationAddress,
                         payingFeeToken: payingFeeToken,
                         swapPools: swapPools,
-                        relayAccountStatus: relayAccountStatus,
-                        freeTransactionFeeLimit: freeTransactionFeeLimit,
                         reuseCache: false
                     )
-                },
+                }),
             getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress),
             solanaClient.getRecentBlockhash(commitment: nil),
             checkIfNeedsCreateTransitTokenAccount(transitToken: transitToken)
@@ -50,7 +48,10 @@ extension FeeRelayer.Relay {
             .map { [weak self] preparedParams, destination, recentBlockhash, needsCreateTransitTokenAccount in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 // get needed info
-                guard let cache = self.cache else {
+                guard let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance,
+                      let feePayerAddress = self.cache.feePayerAddress,
+                      let lamportsPerSignature = self.cache.lamportsPerSignature
+                else {
                     throw FeeRelayer.Error.relayInfoMissing
                 }
                 
@@ -72,10 +73,10 @@ extension FeeRelayer.Relay {
                     slippage: slippage,
                     feeAmount: swappingFee,
                     blockhash: recentBlockhash,
-                    minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
+                    minimumTokenAccountBalance: minimumTokenAccountBalance,
                     needsCreateDestinationTokenAccount: needsCreateDestinationTokenAccount,
-                    feePayerAddress: cache.feePayerAddress,
-                    lamportsPerSignature: cache.lamportsPerSignature,
+                    feePayerAddress: feePayerAddress,
+                    lamportsPerSignature: lamportsPerSignature,
                     needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
                     transitTokenMintPubkey: try? SolanaSDK.PublicKey(string: transitToken?.mint),
                     transitTokenAccountAddress: try? SolanaSDK.PublicKey(string: transitToken?.address)
@@ -92,35 +93,38 @@ extension FeeRelayer.Relay {
     ) -> Single<SolanaSDK.FeeAmount> {
         getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
             .map { [weak self] destination in
-                guard let self = self, let cache = self.cache else {throw FeeRelayer.Error.relayInfoMissing}
+                guard let self = self,
+                      let lamportsPerSignature = self.cache.lamportsPerSignature,
+                      let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance
+                else {throw FeeRelayer.Error.relayInfoMissing}
                 
                 let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
                 
                 var expectedFee = SolanaSDK.FeeAmount.zero
                 
                 // fee for payer's signature
-                expectedFee.transaction += cache.lamportsPerSignature
+                expectedFee.transaction += lamportsPerSignature
                 
                 // fee for owner's signature
-                expectedFee.transaction += cache.lamportsPerSignature
+                expectedFee.transaction += lamportsPerSignature
                 
                 // when source token is native SOL
                 if sourceTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                     // WSOL's signature
-                    expectedFee.transaction += cache.lamportsPerSignature
+                    expectedFee.transaction += lamportsPerSignature
                     
                     // TODO: - Account creation fee?
-                    expectedFee.accountBalances += cache.minimumTokenAccountBalance
+                    expectedFee.accountBalances += minimumTokenAccountBalance
                 }
                 
                 // when needed to create destination
                 if needsCreateDestinationTokenAccount && destinationTokenMint != SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-                    expectedFee.accountBalances += cache.minimumTokenAccountBalance
+                    expectedFee.accountBalances += minimumTokenAccountBalance
                 }
                 
                 // when destination is native SOL
                 if destinationTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-                    expectedFee.transaction += cache.lamportsPerSignature
+                    expectedFee.transaction += lamportsPerSignature
                 }
                 
                 return expectedFee
@@ -371,13 +375,17 @@ extension FeeRelayer.Relay {
         destinationAddress: String?,
         payingFeeToken: TokenInfo?,
         swapPools: OrcaSwap.PoolsPair,
-        relayAccountStatus: RelayAccountStatus,
-        freeTransactionFeeLimit: FreeTransactionFeeLimit,
         reuseCache: Bool
     ) -> Single<TopUpAndActionPreparedParams> {
+        guard let relayAccountStatus = cache.relayAccountStatus,
+              let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
+        else {
+            return .error(FeeRelayer.Error.relayInfoMissing)
+        }
+        
         // form request
         let request: Single<TopUpAndActionPreparedParams>
-        if reuseCache, let cachedPreparedParams = cache?.preparedParams {
+        if reuseCache, let cachedPreparedParams = cache.preparedParams {
             request = .just(cachedPreparedParams)
         } else {
             let tradablePoolsPairRequest: Single<[OrcaSwap.PoolsPair]>
@@ -437,7 +445,7 @@ extension FeeRelayer.Relay {
                 }
                 .do(onSuccess: { [weak self] in
                     self?.locker.lock()
-                    self?.cache?.preparedParams = $0
+                    self?.cache.preparedParams = $0
                     self?.locker.unlock()
                 })
         }

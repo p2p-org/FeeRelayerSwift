@@ -22,13 +22,18 @@ extension FeeRelayer.Relay {
         let transitToken = try? getTransitToken(pools: topUpPools)
         return Single.zip(
             solanaClient.getRecentBlockhash(commitment: nil),
-            getFreeTransactionFeeLimit(useCache: false),
+            updateFreeTransactionFeeLimit().andThen(.just(())),
             checkIfNeedsCreateTransitTokenAccount(transitToken: transitToken)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] recentBlockhash, freeTransactionFeeLimit, needsCreateTransitTokenAccount in
+            .flatMap { [weak self] recentBlockhash, _, needsCreateTransitTokenAccount in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
-                guard let cache = self.cache else { throw FeeRelayer.Error.relayInfoMissing }
+                guard let minimumRelayAccountBalance = self.cache.minimumRelayAccountBalance,
+                      let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance,
+                      let feePayerAddress = self.cache.feePayerAddress,
+                      let lamportsPerSignature = self.cache.lamportsPerSignature,
+                      let freeTransactionFeeLimit = self.cache.freeTransactionFeeLimit
+                else { throw FeeRelayer.Error.relayInfoMissing }
                 
                 // STEP 3: prepare for topUp
                 let topUpTransaction = try self.prepareForTopUp(
@@ -40,11 +45,11 @@ extension FeeRelayer.Relay {
                     targetAmount: targetAmount,
                     expectedFee: expectedFee,
                     blockhash: recentBlockhash,
-                    minimumRelayAccountBalance: cache.minimumRelayAccountBalance,
-                    minimumTokenAccountBalance: cache.minimumTokenAccountBalance,
+                    minimumRelayAccountBalance: minimumRelayAccountBalance,
+                    minimumTokenAccountBalance: minimumTokenAccountBalance,
                     needsCreateUserRelayAccount: needsCreateUserRelayAddress,
-                    feePayerAddress: cache.feePayerAddress,
-                    lamportsPerSignature: cache.lamportsPerSignature,
+                    feePayerAddress: feePayerAddress,
+                    lamportsPerSignature: lamportsPerSignature,
                     freeTransactionFeeLimit: freeTransactionFeeLimit,
                     needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
                     transitTokenMintPubkey: try? SolanaSDK.PublicKey(string: transitToken?.mint),
@@ -84,8 +89,8 @@ extension FeeRelayer.Relay {
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)
                         self.locker.lock()
-                        self.cache?.freeTransactionFeeLimit?.currentUsage += 1
-                        self.cache?.freeTransactionFeeLimit?.amountUsed += (self.cache?.lamportsPerSignature ?? 0) * 2
+                        self.cache.freeTransactionFeeLimit?.currentUsage += 1
+                        self.cache.freeTransactionFeeLimit?.amountUsed += lamportsPerSignature * 2
                         self.locker.unlock()
                     }, onSubscribe: { [weak self] in
                         guard let self = self else {return}
@@ -153,21 +158,24 @@ extension FeeRelayer.Relay {
     
     /// Calculate needed fee for topup transaction by forming fake transaction
     func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
-        guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
+        guard let lamportsPerSignature = cache.lamportsPerSignature,
+              let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
+              let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
+        else {throw FeeRelayer.Error.relayInfoMissing}
         var topUpFee = SolanaSDK.FeeAmount.zero
         
         // transaction fee
         let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
 //        numberOfSignatures += 1 // transferAuthority
-        topUpFee.transaction = numberOfSignatures * cache.lamportsPerSignature
+        topUpFee.transaction = numberOfSignatures * lamportsPerSignature
         
         // account creation fee
         if relayAccountStatus == .notYetCreated {
-            topUpFee.accountBalances += cache.minimumRelayAccountBalance
+            topUpFee.accountBalances += minimumRelayAccountBalance
         }
         
         // swap fee
-        topUpFee.accountBalances += cache.minimumTokenAccountBalance
+        topUpFee.accountBalances += minimumTokenAccountBalance
         
         return topUpFee
     }
@@ -178,15 +186,18 @@ extension FeeRelayer.Relay {
         freeTransactionFeeLimit: FreeTransactionFeeLimit?
     ) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
         // get cache
-        guard let cache = cache else {throw FeeRelayer.Error.relayInfoMissing}
+        guard let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
+              let lamportsPerSignature = cache.lamportsPerSignature,
+              let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
+        else {throw FeeRelayer.Error.relayInfoMissing}
         
         // current_fee
         var currentFee: UInt64 = 0
         if relayAccountStatus == .notYetCreated {
-            currentFee += cache.minimumRelayAccountBalance
+            currentFee += minimumRelayAccountBalance
         }
         
-        let transactionNetworkFee = 2 * cache.lamportsPerSignature // feePayer, owner
+        let transactionNetworkFee = 2 * lamportsPerSignature // feePayer, owner
         if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
             currentFee += transactionNetworkFee
         }
@@ -201,7 +212,7 @@ extension FeeRelayer.Relay {
         }
         
         // expected_fee
-        let expectedFee = currentFee + cache.minimumTokenAccountBalance
+        let expectedFee = currentFee + minimumTokenAccountBalance
         
         return (topUpAmount: swapAmountOut, expectedFee: expectedFee)
     }
