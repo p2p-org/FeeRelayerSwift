@@ -42,7 +42,8 @@ class RelayTests: XCTestCase {
             payingFeeToken: payingToken,
             relayAccountStatus: relayAccountStatus,
             freeTransactionFeeLimit: freeTransactionFeeLimit,
-            checkIfBalanceHaveEnoughAmount: false
+            checkIfBalanceHaveEnoughAmount: false,
+            forceUsingTransitiveSwap: true
         ).toBlocking().first()!
         
         let signatures = try relayService.topUp(
