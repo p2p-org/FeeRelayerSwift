@@ -29,6 +29,7 @@ class ErrorTests: XCTestCase {
         )
         
         XCTAssertEqual(error.clientError?.type, .insufficientFunds)
+        XCTAssertEqual(error.clientError?.errorLog, "insufficient funds")
         
         // maximum number of instructions allowed
         let error2 = try doTest(
@@ -38,6 +39,7 @@ class ErrorTests: XCTestCase {
         )
         
         XCTAssertEqual(error2.clientError?.type, .maximumNumberOfInstructionsAllowedExceeded)
+        XCTAssertEqual(error2.clientError?.errorLog, "exceeded maximum number of instructions allowed (1940) at instruction #1675")
     }
     
     func testTooSmallAmountError() throws {

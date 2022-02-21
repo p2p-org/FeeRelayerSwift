@@ -52,17 +52,28 @@ extension FeeRelayer {
                     return string.replacingOccurrences(of: "\"", with: "")
                 }
             
+            let errorPrefixes = [
+                "Program failed to complete: ",
+                "Program log: Error: "
+            ]
+            var errorLog = programLogs?.first(
+                where: { log in
+                    errorPrefixes.contains(where: {log.starts(with: $0)})
+                }
+            )
+            for errorPrefix in errorPrefixes {
+                errorLog = errorLog?.replacingOccurrences(of: errorPrefix, with: "")
+            }
+            
             let type: ClientError.ClientErrorType?
             // execeeded maximum number of instructions
-            if let _ = programLogs?
-                .first(where: {$0.contains("exceeded maximum number of instructions allowed")})
+            if errorLog?.starts(with: "exceeded maximum number of instructions allowed") == true
             {
                 type = .maximumNumberOfInstructionsAllowedExceeded
             }
             
             // insufficient funds
-            else if let _ = programLogs?
-                .first(where: {$0.contains("insufficient funds")})
+            else if errorLog?.starts(with: "insufficient funds") == true
             {
                 type = .insufficientFunds
             }
@@ -71,7 +82,7 @@ extension FeeRelayer {
             else {
                 type = nil
             }
-            return .init(programLogs: programLogs, type: type)
+            return .init(programLogs: programLogs, type: type, errorLog: errorLog)
         }
         
         public static var unknown: Self {
@@ -155,12 +166,13 @@ extension FeeRelayer {
     }
     
     public struct ClientError {
-        let programLogs: [String]?
-        let type: ClientErrorType?
+        public let programLogs: [String]?
+        public let type: ClientErrorType?
+        public let errorLog: String?
         
-        public enum ClientErrorType {
-            case insufficientFunds
-            case maximumNumberOfInstructionsAllowedExceeded
+        public enum ClientErrorType: String {
+            case insufficientFunds = "Insufficient funds"
+            case maximumNumberOfInstructionsAllowedExceeded = "Exceeded maximum number of instructions allowed"
         }
     }
 }
