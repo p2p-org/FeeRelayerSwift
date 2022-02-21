@@ -479,10 +479,7 @@ extension FeeRelayer {
                 decodedTo: [String].self
             )
                 .do(onSuccess: {[weak self] _ in
-                    self?.locker.lock()
-                    self?.cache.freeTransactionFeeLimit?.currentUsage += 1
-                    self?.cache.freeTransactionFeeLimit?.amountUsed = preparedTransaction.expectedFee.total - paybackFee
-                    self?.locker.unlock()
+                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total - paybackFee)
                 })
         }
     }

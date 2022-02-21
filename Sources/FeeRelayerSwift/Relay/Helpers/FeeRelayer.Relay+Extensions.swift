@@ -172,6 +172,13 @@ extension FeeRelayer.Relay {
             })
             .asCompletable()
     }
+    
+    func markTransactionAsCompleted(freeFeeAmountUsed: UInt64) {
+        locker.lock()
+        cache.freeTransactionFeeLimit?.currentUsage += 1
+        cache.freeTransactionFeeLimit?.amountUsed = freeFeeAmountUsed
+        locker.unlock()
+    }
 }
 
 private extension OrcaSwap.Pool {
