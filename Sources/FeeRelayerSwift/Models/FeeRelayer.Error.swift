@@ -46,43 +46,43 @@ extension FeeRelayer {
         }
         
         public static var wrongAddress: Self {
-            .init(code: 0, message: "Wrong address", data: nil)
+            .init(code: -2, message: "Wrong address", data: nil)
         }
         
         public static var swapPoolsNotFound: Self {
-            .init(code: 1, message: "Swap pools not found", data: nil)
+            .init(code: -3, message: "Swap pools not found", data: nil)
         }
         
         public static var transitTokenMintNotFound: Self {
-            .init(code: 2, message: "Transit token mint not found", data: nil)
+            .init(code: -4, message: "Transit token mint not found", data: nil)
         }
         
         public static var invalidAmount: Self {
-            .init(code: 3, message: "Invalid amount", data: nil)
+            .init(code: -5, message: "Invalid amount", data: nil)
         }
         
         public static var invalidSignature: Self {
-            .init(code: 4, message: "Invalid signature", data: nil)
+            .init(code: -6, message: "Invalid signature", data: nil)
         }
         
         public static var unsupportedSwap: Self {
-            .init(code: 5, message: "Unssuported swap", data: nil)
+            .init(code: -7, message: "Unssuported swap", data: nil)
         }
         
         public static var relayInfoMissing: Self {
-            .init(code: 6, message: "Relay info missing", data: nil)
+            .init(code: -8, message: "Relay info missing", data: nil)
         }
         
         public static var invalidFeePayer: Self {
-            .init(code: 7, message: "Invalid fee payer", data: nil)
+            .init(code: -9, message: "Invalid fee payer", data: nil)
         }
         
         public static var feePayingTokenMissing: Self {
-            .init(code: 8, message: "No token for paying fee is provided", data: nil)
+            .init(code: -10, message: "No token for paying fee is provided", data: nil)
         }
         
         public static var unauthorized: Self {
-            .init(code: 403, message: "Unauthorized", data: nil)
+            .init(code: -11, message: "Unauthorized", data: nil)
         }
     }
     
