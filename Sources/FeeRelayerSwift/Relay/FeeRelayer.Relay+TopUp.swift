@@ -124,19 +124,16 @@ extension FeeRelayer.Relay {
                     ),
                     decodedTo: [String].self
                 )
-                    .retry { [weak scheduler] errors in
-                        errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
-                            if let error = error as? FeeRelayer.Error,
-                               let clientError = error.clientError,
-                               clientError.type == .maximumNumberOfInstructionsAllowedExceeded
-                            {
-                                return .timer(.seconds(3), scheduler: scheduler ?? ConcurrentDispatchQueueScheduler(qos: .default))
-                            }
-                            
-                            return .error(error)
+                    .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
+                        if let error = error as? FeeRelayer.Error,
+                           let clientError = error.clientError,
+                           clientError.type == .maximumNumberOfInstructionsAllowedExceeded
+                        {
+                            return true
                         }
-                    }
-                    .timeout(.seconds(60), scheduler: scheduler ?? ConcurrentDispatchQueueScheduler(qos: .default))
+                        
+                        return false
+                    })
                     .do(onSuccess: { [weak self] _ in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)
