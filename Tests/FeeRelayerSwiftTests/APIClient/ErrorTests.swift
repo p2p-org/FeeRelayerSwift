@@ -19,6 +19,25 @@ class ErrorTests: XCTestCase {
             expectedMessage: "Solana RPC client error: Account in use",
             expectedData: .init(type: .clientError, data: .init(array: ["RpcError"]))
         )
+        
+        // insufficient funds
+        let error = try doTest(
+            string: ClientError.insufficientFunds,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 3: custom program error: 0x1 [37 log messages]",
+            expectedData: nil
+        )
+        
+        XCTAssertEqual(error.clientError?.type, .insufficientFunds)
+        
+        // maximum number of instructions allowed
+        let error2 = try doTest(
+            string: ClientError.maxNumberOfInstructionsExceeded,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 2: Program failed to complete [64 log messages]"
+        )
+        
+        XCTAssertEqual(error2.clientError?.type, .maximumNumberOfInstructionsAllowedExceeded)
     }
     
     func testTooSmallAmountError() throws {
@@ -48,16 +67,20 @@ class ErrorTests: XCTestCase {
         )
     }
     
+    @discardableResult
     private func doTest(
         string: String,
         expectedErrorCode: Int,
         expectedMessage: String,
-        expectedData: FeeRelayer.ErrorDetail?
-    ) throws {
+        expectedData: FeeRelayer.ErrorDetail? = nil
+    ) throws -> FeeRelayer.Error {
         let data = string.data(using: .utf8)!
         let error = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
         XCTAssertEqual(error.code, expectedErrorCode)
         XCTAssertEqual(error.message, expectedMessage)
-        XCTAssertEqual(error.data, expectedData)
+        if let expectedData = expectedData {
+            XCTAssertEqual(error.data, expectedData)
+        }
+        return error
     }
 }

@@ -41,6 +41,39 @@ extension FeeRelayer {
         public let message: String
         public let data: ErrorDetail?
         
+        public var clientError: ClientError? {
+            guard let data = data,
+                  data.type == .clientError,
+                  let string = data.data?.array?.first
+            else {return nil}
+            let regexString = #"\"Program [^\"]+\""#
+            let programLogs = matches(for: regexString, in: string)?
+                .map { string in
+                    return string.replacingOccurrences(of: "\"", with: "")
+                }
+            
+            let type: ClientError.ClientErrorType?
+            // execeeded maximum number of instructions
+            if let _ = programLogs?
+                .first(where: {$0.contains("exceeded maximum number of instructions allowed")})
+            {
+                type = .maximumNumberOfInstructionsAllowedExceeded
+            }
+            
+            // insufficient funds
+            else if let _ = programLogs?
+                .first(where: {$0.contains("insufficient funds")})
+            {
+                type = .insufficientFunds
+            }
+            
+            // un parsed error
+            else {
+                type = nil
+            }
+            return .init(programLogs: programLogs, type: type)
+        }
+        
         public static var unknown: Self {
             .init(code: -1, message: "Unknown error", data: nil)
         }
@@ -119,5 +152,30 @@ extension FeeRelayer {
             array = try? values.decode([String].self)
             dict = try? values.decode([String: UInt64].self)
         }
+    }
+    
+    public struct ClientError {
+        let programLogs: [String]?
+        let type: ClientErrorType?
+        
+        public enum ClientErrorType {
+            case insufficientFunds
+            case maximumNumberOfInstructionsAllowedExceeded
+        }
+    }
+}
+
+
+private func matches(for regex: String, in text: String) -> [String]? {
+    do {
+        let regex = try NSRegularExpression(pattern: regex)
+        let results = regex.matches(in: text,
+                                    range: NSRange(text.startIndex..., in: text))
+        return results.map {
+            String(text[Range($0.range, in: text)!])
+        }
+    } catch let error {
+        print("invalid regex: \(error.localizedDescription)")
+        return nil
     }
 }
