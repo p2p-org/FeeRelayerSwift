@@ -20,13 +20,47 @@ extension FeeRelayer.Relay {
         expectedFee: UInt64
     ) -> Single<[String]> {
         let transitToken = try? getTransitToken(pools: topUpPools)
+        let scheduler = ConcurrentDispatchQueueScheduler(qos: .default)
+        
         return Single.zip(
-            solanaClient.getRecentBlockhash(commitment: nil),
             updateFreeTransactionFeeLimit().andThen(.just(())),
             checkIfNeedsCreateTransitTokenAccount(transitToken: transitToken)
         )
-            .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] recentBlockhash, _, needsCreateTransitTokenAccount in
+            .observe(on: scheduler)
+            .flatMap { [weak self] _, needsCreateTransitTokenAccount -> Single<Bool?> in
+                guard let self = self,
+                      let freeTransactionFeeLimit = self.cache.freeTransactionFeeLimit,
+                      let lamportsPerSignature = self.cache.lamportsPerSignature
+                else {
+                    throw FeeRelayer.Error.relayInfoMissing
+                }
+                
+                // IMPORTANT: IF NEEDS CREATE TRANSIT TOKEN ACCOUNT AND FREE TRANSACTION FEE IS AVAILABLE
+                // CREATE TRANSIT TOKEN ACCOUNT IN DIFFERENT TRANSACTION
+                if needsCreateTransitTokenAccount == true,
+                   freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: lamportsPerSignature * 2),
+                   let transitToken = transitToken
+                {
+                    return self.prepareForCreatingTransitTokenAccount(transitToken: transitToken)
+                        .flatMap { [weak self] preparedTransaction -> Single<[String]> in
+                            guard let self = self else {return .error(FeeRelayer.Error.unknown)}
+                            return try self.relayTransaction(preparedTransaction: preparedTransaction)
+                        }
+                        .map {_ in false}
+                }
+                
+                // ELSE, LET THE REQUEST THROWS
+                else {
+                    return .just(needsCreateTransitTokenAccount)
+                }
+            }
+        
+            .flatMap { [weak self] needsCreateTransitTokenAccount -> Single<(String, Bool?)> in
+                guard let self = self else {throw FeeRelayer.Error.unknown}
+                return self.solanaClient.getRecentBlockhash(commitment: nil)
+                    .map {($0, needsCreateTransitTokenAccount)}
+            }
+            .flatMap { [weak self] recentBlockhash, needsCreateTransitTokenAccount in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 guard let minimumRelayAccountBalance = self.cache.minimumRelayAccountBalance,
                       let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance,
@@ -85,6 +119,19 @@ extension FeeRelayer.Relay {
                     ),
                     decodedTo: [String].self
                 )
+                    .retry { [weak scheduler] errors in
+                        errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
+                            if let error = error as? FeeRelayer.Error,
+                               let clientError = error.clientError,
+                               clientError.type == .maximumNumberOfInstructionsAllowedExceeded
+                            {
+                                return .timer(.seconds(3), scheduler: scheduler ?? ConcurrentDispatchQueueScheduler(qos: .default))
+                            }
+                            
+                            return .error(error)
+                        }
+                    }
+                    .timeout(.seconds(60), scheduler: MainScheduler.instance)
                     .do(onSuccess: { [weak self] _ in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)

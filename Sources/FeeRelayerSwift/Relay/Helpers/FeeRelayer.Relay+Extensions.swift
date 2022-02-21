@@ -179,6 +179,37 @@ extension FeeRelayer.Relay {
         cache.freeTransactionFeeLimit?.amountUsed = freeFeeAmountUsed
         locker.unlock()
     }
+    
+    func prepareForCreatingTransitTokenAccount(
+        transitToken: TokenInfo
+    ) -> Single<SolanaSDK.PreparedTransaction> {
+        guard let feePayerAddressString = cache.feePayerAddress
+        else {
+            return .error(FeeRelayer.Error.relayInfoMissing)
+        }
+        
+        do {
+            let feePayerAddress = try SolanaSDK.PublicKey(string: feePayerAddressString)
+            let transitTokenAccountAddress = try SolanaSDK.PublicKey(string: transitToken.address)
+            let instruction = try Program.createTransitTokenAccountInstruction(
+                feePayer: feePayerAddress,
+                userAuthority: owner.publicKey,
+                transitTokenAccount: transitTokenAccountAddress,
+                transitTokenMint: try SolanaSDK.PublicKey(string: transitToken.mint),
+                network: solanaClient.endpoint.network
+            )
+            return solanaClient.prepareTransaction(
+                instructions: [instruction],
+                signers: [owner],
+                feePayer: feePayerAddress,
+                accountsCreationFee: 0,
+                recentBlockhash: nil,
+                lamportsPerSignature: nil
+            )
+        } catch {
+            return .error(error)
+        }
+    }
 }
 
 private extension OrcaSwap.Pool {
