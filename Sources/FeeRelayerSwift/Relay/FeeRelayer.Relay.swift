@@ -23,6 +23,9 @@ import OrcaSwapSwift
 /// - Returns: Array of strings contain transactions' signatures
 
 public protocol FeeRelayerRelayType {
+    /// Expose current variable
+    var cache: FeeRelayer.Relay.Cache {get}
+    
     /// Load all needed info for relay operations, need to be completed before any operation
     func load() -> Completable
     
@@ -94,7 +97,7 @@ extension FeeRelayer {
         
         // MARK: - Properties
         let locker = NSLock()
-        var cache: Cache
+        public internal(set) var cache: Cache
         let owner: SolanaSDK.Account
         let userRelayAddress: SolanaSDK.PublicKey
         
