@@ -112,9 +112,6 @@ extension FeeRelayer.Relay {
                 if sourceTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                     // WSOL's signature
                     expectedFee.transaction += lamportsPerSignature
-                    
-                    // TODO: - Account creation fee?
-                    expectedFee.accountBalances += minimumTokenAccountBalance
                 }
                 
                 // when needed to create destination
