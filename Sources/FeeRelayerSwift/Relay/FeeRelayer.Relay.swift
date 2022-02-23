@@ -44,9 +44,9 @@ public protocol FeeRelayerRelayType {
     
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
-        feeInSOL: SolanaSDK.Lamports,
+        feeInSOL: SolanaSDK.FeeAmount,
         payingFeeTokenMint: String
-    ) -> Single<SolanaSDK.Lamports?>
+    ) -> Single<SolanaSDK.FeeAmount?>
     
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
@@ -237,9 +237,9 @@ extension FeeRelayer {
         
         /// Calculate needed fee (count in payingToken)
         public func calculateFeeInPayingToken(
-            feeInSOL: SolanaSDK.Lamports,
+            feeInSOL: SolanaSDK.FeeAmount,
             payingFeeTokenMint: String
-        ) -> Single<SolanaSDK.Lamports?> {
+        ) -> Single<SolanaSDK.FeeAmount?> {
             orcaSwapClient
                 .getTradablePoolsPairs(
                     fromMint: payingFeeTokenMint,
@@ -247,11 +247,14 @@ extension FeeRelayer {
                 )
                 .map { [weak self] tradableTopUpPoolsPair in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
-                    guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL, from: tradableTopUpPoolsPair) else {
+                    guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL.total, from: tradableTopUpPoolsPair) else {
                         throw FeeRelayer.Error.swapPoolsNotFound
                     }
                     
-                    return topUpPools.getInputAmount(minimumAmountOut: feeInSOL, slippage: 0.01)
+                    let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: 0.01)
+                    let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: 0.01)
+                    
+                    return .init(transaction: transactionFee ?? 0, accountBalances: accountCreationFee ?? 0)
                 }
                 .debug()
         }
