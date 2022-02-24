@@ -114,7 +114,8 @@ extension FeeRelayer.Relay {
         payingFeeToken: TokenInfo,
         relayAccountStatus: RelayAccountStatus,
         freeTransactionFeeLimit: FreeTransactionFeeLimit?,
-        checkIfBalanceHaveEnoughAmount: Bool = true
+        checkIfBalanceHaveEnoughAmount: Bool = true,
+        forceUsingTransitiveSwap: Bool = false // true for testing purpose only
     ) -> Single<TopUpPreparedParams?> {
         // form request
         orcaSwapClient
@@ -147,18 +148,31 @@ extension FeeRelayer.Relay {
                     let expectedFee = amounts.expectedFee
                     
                     // Get pools for topping up
-                    // Get pools
-                    // TODO: - Temporary solution, prefer direct swap to transitive swap to omit error Non-zero account can only be close if balance zero
                     let topUpPools: OrcaSwap.PoolsPair
-                    if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
+                    
+                    // force using transitive swap (for testing only)
+                    if forceUsingTransitiveSwap {
+                        let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})!
+                        topUpPools = pools
+                    }
+                    
+                    // prefer direct swap to transitive swap
+                    else if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
                         topUpPools = directSwapPools
-                    } else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
+                    }
+                    
+                    // if direct swap is not available, use transitive swap
+                    else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
                     {
                         topUpPools = transitiveSwapPools
-                    } else {
+                    }
+                    
+                    // no swap is available
+                    else {
                         throw FeeRelayer.Error.swapPoolsNotFound
                     }
                     
+                    // return needed amount and pools
                     return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
                 }
             }
