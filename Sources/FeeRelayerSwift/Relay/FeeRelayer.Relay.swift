@@ -282,6 +282,16 @@ extension FeeRelayer {
                     return try self.relayTransaction(
                         preparedTransaction: preparedTransaction
                     )
+                        .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
+                            if let error = error as? FeeRelayer.Error,
+                               let clientError = error.clientError,
+                               clientError.type == .maximumNumberOfInstructionsAllowedExceeded
+                            {
+                                return true
+                            }
+                            
+                            return false
+                        })
                 }
                 .observe(on: MainScheduler.instance)
         }
