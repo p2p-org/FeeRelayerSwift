@@ -415,11 +415,8 @@ extension FeeRelayer.Relay {
                     }
                     // STEP 2.2: Else
                     else {
-                        // Get best poolpairs for topping up
-                        let targetAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
-                        
                         // Get real amounts needed for topping up
-                        let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
+                        let amounts = try self.calculateTopUpAmount(targetAmount: swappingFee.total, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
                         let topUpAmount = amounts.topUpAmount
                         let expectedFee = amounts.expectedFee
                         

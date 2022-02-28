@@ -136,12 +136,6 @@ extension FeeRelayer.Relay {
                 }
                 // STEP 2.2: Else
                 else {
-                    // Get target amount for topping up
-                    var targetAmount = targetAmount
-                    if checkIfBalanceHaveEnoughAmount {
-                        targetAmount -= (relayAccountStatus.balance ?? 0)
-                    }
-                    
                     // Get real amounts needed for topping up
                     let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
                     let topUpAmount = amounts.topUpAmount
