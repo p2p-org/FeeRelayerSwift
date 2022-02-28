@@ -199,15 +199,11 @@ extension FeeRelayer {
                         guard let self = self,
                               let minimumRelayAccountBalance = self.cache.minimumRelayAccountBalance
                         else { return expectedFee }
+                        // Relay account needs minimumRelayAccountBalance to stay active
+                        neededAmount.transaction += minimumRelayAccountBalance
                         
-                        // Relay account has not been created
-                        if relayAccountStatus == .notYetCreated {
-                            // Relay account must keep minimum balance of minimumRelayAccountBalance to keeps address alive (es: 890880 lamports)
-                            neededAmount.transaction += minimumRelayAccountBalance
-                        }
-                        
-                        // Relay account has already been created
-                        else if let relayAccountBalance = relayAccountStatus.balance {
+                        // check if relay account current balance can cover part of needed amount
+                        if let relayAccountBalance = relayAccountStatus.balance {
                             // if relayAccountBalance has enough balance to cover transaction fee
                             if relayAccountBalance >= neededAmount.transaction {
                                 
@@ -226,11 +222,6 @@ extension FeeRelayer {
                             // if not, relayAccountBalance can cover part of transaction fee
                             else {
                                 neededAmount.transaction -= relayAccountBalance
-                            }
-                            
-                            // if relayAccountBalance has less than min relay balance
-                            if relayAccountBalance < minimumRelayAccountBalance {
-                                neededAmount.transaction += minimumRelayAccountBalance - relayAccountBalance
                             }
                         }
                         return neededAmount
