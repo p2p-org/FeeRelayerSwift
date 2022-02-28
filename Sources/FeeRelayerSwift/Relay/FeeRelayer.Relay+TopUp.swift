@@ -226,15 +226,13 @@ extension FeeRelayer.Relay {
         
         // swap_amount_out
 //        let swapAmountOut = targetAmount + currentFee
-        var swapAmountOut = targetAmount
-        if relayAccountStatus == .notYetCreated {
-            swapAmountOut += minimumRelayAccountBalance
-        } else {
-            swapAmountOut += currentFee
-            if let relayAccountBalance = relayAccountStatus.balance,
-               relayAccountBalance < minimumRelayAccountBalance
-            {
-                swapAmountOut += minimumRelayAccountBalance - relayAccountBalance
+        var swapAmountOut = targetAmount + minimumRelayAccountBalance
+        
+        if let relayAccountBalance = relayAccountStatus.balance {
+            if relayAccountBalance >= swapAmountOut {
+                swapAmountOut = 0
+            } else {
+                swapAmountOut = swapAmountOut - relayAccountBalance
             }
         }
         
