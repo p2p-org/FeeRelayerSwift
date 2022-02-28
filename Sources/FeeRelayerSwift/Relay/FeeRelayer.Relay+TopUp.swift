@@ -228,9 +228,14 @@ extension FeeRelayer.Relay {
 //        let swapAmountOut = targetAmount + currentFee
         var swapAmountOut = targetAmount
         if relayAccountStatus == .notYetCreated {
-            swapAmountOut += getRelayAccountCreationCost() // Temporary solution
+            swapAmountOut += minimumRelayAccountBalance
         } else {
             swapAmountOut += currentFee
+            if let relayAccountBalance = relayAccountStatus.balance,
+               relayAccountBalance < minimumRelayAccountBalance
+            {
+                swapAmountOut += minimumRelayAccountBalance - relayAccountBalance
+            }
         }
         
         // expected_fee
