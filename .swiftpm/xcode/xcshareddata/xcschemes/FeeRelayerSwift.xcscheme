@@ -53,10 +53,7 @@
             </BuildableReference>
             <SkippedTests>
                <Test
-                  Identifier = "RelaySendTests/testTopUp()">
-               </Test>
-               <Test
-                  Identifier = "RelaySwapTests/testTopUp()">
+                  Identifier = "RelayTests">
                </Test>
             </SkippedTests>
          </TestableReference>
