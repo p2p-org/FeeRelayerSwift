@@ -199,30 +199,41 @@ extension FeeRelayer {
                         guard let self = self,
                               let minimumRelayAccountBalance = self.cache.minimumRelayAccountBalance
                         else { return expectedFee }
-                        // Relay account needs minimumRelayAccountBalance to stay active
-                        neededAmount.transaction += minimumRelayAccountBalance
+                        
+                        // if transaction is totally free
+                        if neededAmount.transaction == 0 && neededAmount.accountBalances == 0 {
+                            return neededAmount
+                        }
                         
                         // check if relay account current balance can cover part of needed amount
-                        if let relayAccountBalance = relayAccountStatus.balance {
-                            // if relayAccountBalance has enough balance to cover transaction fee
-                            if relayAccountBalance >= neededAmount.transaction {
+                        if var relayAccountBalance = relayAccountStatus.balance {
+                            if relayAccountBalance < minimumRelayAccountBalance {
+                                neededAmount.transaction += minimumRelayAccountBalance - relayAccountBalance
+                            } else {
+                                relayAccountBalance -= minimumRelayAccountBalance
                                 
-                                neededAmount.transaction = 0
-                                
-                                // if relayAccountBlance has enough balance to cover accountBalances fee too
-                                if relayAccountBalance - neededAmount.transaction >= neededAmount.accountBalances {
-                                    neededAmount.accountBalances = 0
+                                // if relayAccountBalance has enough balance to cover transaction fee
+                                if relayAccountBalance >= neededAmount.transaction {
+                                    
+                                    neededAmount.transaction = 0
+                                    
+                                    // if relayAccountBlance has enough balance to cover accountBalances fee too
+                                    if relayAccountBalance - neededAmount.transaction >= neededAmount.accountBalances {
+                                        neededAmount.accountBalances = 0
+                                    }
+                                    
+                                    // Relay account balance can cover part of account creation fee
+                                    else {
+                                        neededAmount.accountBalances -= (relayAccountBalance - neededAmount.transaction)
+                                    }
                                 }
-                                
-                                // Relay account balance can cover part of account creation fee
+                                // if not, relayAccountBalance can cover part of transaction fee
                                 else {
-                                    neededAmount.accountBalances -= (relayAccountBalance - neededAmount.transaction)
+                                    neededAmount.transaction -= relayAccountBalance
                                 }
                             }
-                            // if not, relayAccountBalance can cover part of transaction fee
-                            else {
-                                neededAmount.transaction -= relayAccountBalance
-                            }
+                        } else {
+                            neededAmount.transaction += minimumRelayAccountBalance
                         }
                         return neededAmount
                     }
