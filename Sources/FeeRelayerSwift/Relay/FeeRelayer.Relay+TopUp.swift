@@ -110,11 +110,10 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     func prepareForTopUp(
-        targetAmount: SolanaSDK.Lamports,
+        topUpAmount: SolanaSDK.Lamports,
         payingFeeToken: TokenInfo,
         relayAccountStatus: RelayAccountStatus,
         freeTransactionFeeLimit: FreeTransactionFeeLimit?,
-        checkIfBalanceHaveEnoughAmount: Bool = true,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
     ) -> Single<TopUpPreparedParams?> {
         // form request
@@ -125,115 +124,133 @@ extension FeeRelayer.Relay {
             )
             .map { [weak self] tradableTopUpPoolsPair in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
+                // Get fee
+                let expectedFee = try self.calculateExpectedFeeForTopUp(relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
                 
+                // Get pools for topping up
+                let topUpPools: OrcaSwap.PoolsPair
                 
-                // TOP UP
-                if checkIfBalanceHaveEnoughAmount,
-                   let relayAccountBalance = relayAccountStatus.balance,
-                   relayAccountBalance >= targetAmount
+                // force using transitive swap (for testing only)
+                if forceUsingTransitiveSwap {
+                    let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})!
+                    topUpPools = pools
+                }
+                
+                // prefer direct swap to transitive swap
+                else if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
+                    topUpPools = directSwapPools
+                }
+                
+                // if direct swap is not available, use transitive swap
+                else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
                 {
-                    return nil
+                    topUpPools = transitiveSwapPools
                 }
-                // STEP 2.2: Else
+                
+                // no swap is available
                 else {
-                    // Get real amounts needed for topping up
-                    let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
-                    let topUpAmount = amounts.topUpAmount
-                    let expectedFee = amounts.expectedFee
-                    
-                    // Get pools for topping up
-                    let topUpPools: OrcaSwap.PoolsPair
-                    
-                    // force using transitive swap (for testing only)
-                    if forceUsingTransitiveSwap {
-                        let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})!
-                        topUpPools = pools
-                    }
-                    
-                    // prefer direct swap to transitive swap
-                    else if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
-                        topUpPools = directSwapPools
-                    }
-                    
-                    // if direct swap is not available, use transitive swap
-                    else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
-                    {
-                        topUpPools = transitiveSwapPools
-                    }
-                    
-                    // no swap is available
-                    else {
-                        throw FeeRelayer.Error.swapPoolsNotFound
-                    }
-                    
-                    // return needed amount and pools
-                    return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
+                    throw FeeRelayer.Error.swapPoolsNotFound
                 }
+                
+                // return needed amount and pools
+                return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
             }
     }
     
-    /// Calculate needed fee for topup transaction by forming fake transaction
-    func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> SolanaSDK.FeeAmount {
-        guard let lamportsPerSignature = cache.lamportsPerSignature,
-              let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
-              let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
-        else {throw FeeRelayer.Error.relayInfoMissing}
-        var topUpFee = SolanaSDK.FeeAmount.zero
+    func calculateNeededTopUpAmount(
+        expectedFee: SolanaSDK.FeeAmount,
+        freeTransactionFeeLimit: FreeTransactionFeeLimit,
+        relayAccountStatus: RelayAccountStatus
+    ) -> SolanaSDK.FeeAmount {
+        var neededAmount = expectedFee
         
-        // transaction fee
-        let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
-//        numberOfSignatures += 1 // transferAuthority
-        topUpFee.transaction = numberOfSignatures * lamportsPerSignature
+        // expected fees
+        let expectedTopUpNetworkFee = 2 * (cache.lamportsPerSignature ?? 5000)
+        let expectedTransactionNetworkFee = expectedFee.transaction
         
-        // account creation fee
-        if relayAccountStatus == .notYetCreated {
-            topUpFee.accountBalances += minimumRelayAccountBalance
+        // real fees
+        var neededTopUpNetworkFee = expectedTopUpNetworkFee
+        var neededTransactionNetworkFee = expectedTransactionNetworkFee
+        
+        // is Top up free
+        if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee) {
+            neededTopUpNetworkFee = 0
         }
         
-        // swap fee
-        topUpFee.accountBalances += minimumTokenAccountBalance
+        // is transaction free
+        if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee + expectedTransactionNetworkFee, forNextTransaction: true)
+        {
+            neededTransactionNetworkFee = 0
+        }
         
-        return topUpFee
+        neededAmount.transaction = neededTopUpNetworkFee + neededTransactionNetworkFee
+        
+        // transaction is totally free
+        if neededAmount.total == 0 {
+            return neededAmount
+        }
+        
+        let minimumRelayAccountBalance = cache.minimumRelayAccountBalance ?? 890880
+        
+        if neededAmount.transaction == 0 && neededAmount.accountBalances == 0 {
+            return neededAmount
+        }
+        
+        // check if relay account current balance can cover part of needed amount
+        if var relayAccountBalance = relayAccountStatus.balance {
+            if relayAccountBalance < minimumRelayAccountBalance {
+                neededAmount.transaction += minimumRelayAccountBalance - relayAccountBalance
+            } else {
+                relayAccountBalance -= minimumRelayAccountBalance
+                
+                // if relayAccountBalance has enough balance to cover transaction fee
+                if relayAccountBalance >= neededAmount.transaction {
+                    
+                    neededAmount.transaction = 0
+                    
+                    // if relayAccountBlance has enough balance to cover accountBalances fee too
+                    if relayAccountBalance - neededAmount.transaction >= neededAmount.accountBalances {
+                        neededAmount.accountBalances = 0
+                    }
+                    
+                    // Relay account balance can cover part of account creation fee
+                    else {
+                        neededAmount.accountBalances -= (relayAccountBalance - neededAmount.transaction)
+                    }
+                }
+                // if not, relayAccountBalance can cover part of transaction fee
+                else {
+                    neededAmount.transaction -= relayAccountBalance
+                }
+            }
+        } else {
+            neededAmount.transaction += minimumRelayAccountBalance
+        }
+        return neededAmount
     }
     
-    func calculateTopUpAmount(
-        targetAmount: UInt64,
+    func calculateExpectedFeeForTopUp(
         relayAccountStatus: RelayAccountStatus,
         freeTransactionFeeLimit: FreeTransactionFeeLimit?
-    ) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
+    ) throws -> UInt64 {
         // get cache
         guard let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
               let lamportsPerSignature = cache.lamportsPerSignature,
               let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
         else {throw FeeRelayer.Error.relayInfoMissing}
         
-        // current_fee
-        var currentFee: UInt64 = 0
+        var expectedFee: UInt64 = 0
         if relayAccountStatus == .notYetCreated {
-            currentFee += minimumRelayAccountBalance
+            expectedFee += minimumRelayAccountBalance
         }
         
         let transactionNetworkFee = 2 * lamportsPerSignature // feePayer, owner
         if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
-            currentFee += transactionNetworkFee
+            expectedFee += transactionNetworkFee
         }
         
-        // swap_amount_out
-//        let swapAmountOut = targetAmount + currentFee
-        var swapAmountOut = targetAmount + minimumRelayAccountBalance
-        
-        if let relayAccountBalance = relayAccountStatus.balance {
-            if relayAccountBalance >= swapAmountOut {
-                swapAmountOut = 0
-            } else {
-                swapAmountOut = swapAmountOut - relayAccountBalance
-            }
-        }
-        
-        // expected_fee
-        let expectedFee = currentFee + minimumTokenAccountBalance
-        
-        return (topUpAmount: swapAmountOut, expectedFee: expectedFee)
+        expectedFee += minimumTokenAccountBalance
+        return expectedFee
     }
     
     /// Prepare transaction and expected fee for a given relay transaction

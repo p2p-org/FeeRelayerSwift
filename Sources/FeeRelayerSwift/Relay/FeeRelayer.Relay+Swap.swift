@@ -416,9 +416,16 @@ extension FeeRelayer.Relay {
                     // STEP 2.2: Else
                     else {
                         // Get real amounts needed for topping up
-                        let amounts = try self.calculateTopUpAmount(targetAmount: swappingFee.total, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
-                        let topUpAmount = amounts.topUpAmount
-                        let expectedFee = amounts.expectedFee
+                        let topUpAmount = self.calculateNeededTopUpAmount(
+                            expectedFee: swappingFee,
+                            freeTransactionFeeLimit: freeTransactionFeeLimit,
+                            relayAccountStatus: relayAccountStatus
+                        )
+                            .total
+                        let expectedFee = try self.calculateExpectedFeeForTopUp(
+                            relayAccountStatus: relayAccountStatus,
+                            freeTransactionFeeLimit: freeTransactionFeeLimit
+                        )
                         
                         // Get pools
                         let topUpPools: OrcaSwap.PoolsPair

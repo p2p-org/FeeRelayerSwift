@@ -178,12 +178,13 @@ class RelayTopUpTests: RelayTests {
         let relayAccountStatus = try relayService.getRelayAccountStatus().toBlocking().first()!
         let freeTransactionFeeLimit = try relayService.getFreeTransactionFeeLimit().toBlocking().first()!
         
+        let topUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: .init(transaction: 10000, accountBalances: testInfo.amount)).toBlocking().first()!.total
+        
         let params = try relayService.prepareForTopUp(
-            targetAmount: testInfo.amount,
+            topUpAmount: topUpAmount,
             payingFeeToken: payingToken,
             relayAccountStatus: relayAccountStatus,
             freeTransactionFeeLimit: freeTransactionFeeLimit,
-            checkIfBalanceHaveEnoughAmount: false,
             forceUsingTransitiveSwap: true
         ).toBlocking().first()!
         
