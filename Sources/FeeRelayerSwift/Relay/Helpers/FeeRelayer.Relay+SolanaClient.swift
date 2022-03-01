@@ -11,11 +11,23 @@ import RxSwift
 
 public protocol FeeRelayerRelaySolanaClient {
     func getRelayAccountStatus(_ relayAccountAddress: String) -> Single<FeeRelayer.Relay.RelayAccountStatus>
-    func getTokenAccountBalance(pubkey: String, commitment: SolanaSDK.Commitment?) -> Single<SolanaSDK.TokenAccountBalance>
     func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
     func getRecentBlockhash(commitment: SolanaSDK.Commitment?) -> Single<String>
     func getLamportsPerSignature() -> Single<UInt64>
     var endpoint: SolanaSDK.APIEndPoint {get}
+    func prepareTransaction(
+        instructions: [SolanaSDK.TransactionInstruction],
+        signers: [SolanaSDK.Account],
+        feePayer: SolanaSDK.PublicKey,
+        accountsCreationFee: SolanaSDK.Lamports,
+        recentBlockhash: String?,
+        lamportsPerSignature: SolanaSDK.Lamports?
+    ) -> Single<SolanaSDK.PreparedTransaction>
+    func findSPLTokenDestinationAddress(
+        mintAddress: String,
+        destinationAddress: String
+    ) -> Single<SolanaSDK.SPLTokenDestinationAddress>
+    func getAccountInfo<T: DecodableBufferLayout>(account: String, decodedTo: T.Type) -> Single<SolanaSDK.BufferInfo<T>>
 }
 
 extension SolanaSDK: FeeRelayerRelaySolanaClient {

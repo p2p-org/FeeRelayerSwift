@@ -91,7 +91,7 @@ extension FeeRelayer {
     public class Relay: FeeRelayerRelayType {
         // MARK: - Dependencies
         let apiClient: FeeRelayerAPIClientType
-        let solanaClient: SolanaSDK
+        let solanaClient: FeeRelayerRelaySolanaClient
         let accountStorage: SolanaSDKAccountStorage
         let orcaSwapClient: OrcaSwapType
         
@@ -104,7 +104,7 @@ extension FeeRelayer {
         // MARK: - Initializers
         public init(
             apiClient: FeeRelayerAPIClientType,
-            solanaClient: SolanaSDK,
+            solanaClient: FeeRelayerRelaySolanaClient,
             accountStorage: SolanaSDKAccountStorage,
             orcaSwapClient: OrcaSwapType
         ) throws {
