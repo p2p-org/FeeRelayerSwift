@@ -16,6 +16,18 @@ class RelayTopUpTests: RelayTests {
         let neededTopUpTransactionFee: UInt64 = 10000
         
         // CASE1: FREE TRANSACTION FEE IS AVAILABLE
+        // account balance fee is zero
+        XCTAssertEqual(
+            try calculateNeededTopUpAmount(
+                endpoint: endpoint,
+                seedPhrase: relayTest.seedPhrase,
+                relayAccountStatus: .notYetCreated,
+                isFreeTransactionAvailable: true,
+                expectedFee: .init(transaction: neededTransactionFee, accountBalances: 0)
+            ).total,
+            0
+        )
+        
         // relay account is not yet created
         XCTAssertEqual(
             try calculateNeededTopUpAmount(
@@ -65,6 +77,18 @@ class RelayTopUpTests: RelayTests {
         )
         
         // CASE2: FREE TRANSACTION FEE IS NOT AVAILABLE
+        // account balance fee is zero
+        XCTAssertEqual(
+            try calculateNeededTopUpAmount(
+                endpoint: endpoint,
+                seedPhrase: relayTest.seedPhrase,
+                relayAccountStatus: .notYetCreated,
+                isFreeTransactionAvailable: false,
+                expectedFee: .init(transaction: neededTransactionFee, accountBalances: 0)
+            ).total,
+            890880 + neededTransactionFee + neededTopUpTransactionFee
+        )
+        
         // relay account is not yet created
         XCTAssertEqual(
             try calculateNeededTopUpAmount(
