@@ -87,6 +87,7 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     public func calculateSwappingNetworkFees(
+        swapPools: OrcaSwap.PoolsPair,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
@@ -122,6 +123,14 @@ extension FeeRelayer.Relay {
                 // when destination is native SOL
                 if destinationTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                     expectedFee.transaction += lamportsPerSignature
+                }
+                
+                // in transitive swap, there will be situation when swapping from SOL -> SPL that needs spliting transaction to 2 transactions
+                if swapPools.count == 2 &&
+                    sourceTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString &&
+                    destinationAddress == nil
+                {
+                    expectedFee.transaction += lamportsPerSignature * 2
                 }
                 
                 return expectedFee
@@ -394,6 +403,7 @@ extension FeeRelayer.Relay {
             request = Single.zip(
                 tradablePoolsPairRequest,
                 calculateSwappingNetworkFees(
+                    swapPools: swapPools,
                     sourceTokenMint: sourceToken.mint,
                     destinationTokenMint: destinationTokenMint,
                     destinationAddress: destinationAddress

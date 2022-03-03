@@ -72,6 +72,7 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
     /// Calculate network fees for swapping
     func calculateSwappingNetworkFees(
+        swapPools: OrcaSwap.PoolsPair,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
