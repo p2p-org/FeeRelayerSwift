@@ -159,6 +159,7 @@ extension FeeRelayer.Relay {
     
     func calculateNeededTopUpAmount(
         expectedFee: SolanaSDK.FeeAmount,
+        payingTokenMint: String?,
         freeTransactionFeeLimit: FreeTransactionFeeLimit,
         relayAccountStatus: RelayAccountStatus
     ) -> SolanaSDK.FeeAmount {
@@ -190,11 +191,12 @@ extension FeeRelayer.Relay {
             return neededAmount
         }
         
-        let minimumRelayAccountBalance = cache.minimumRelayAccountBalance ?? 890880
-        
-        if neededAmount.transaction == 0 && neededAmount.accountBalances == 0 {
+        // if paying token is WSOL, the compensation will be done without the existense of relay account
+        if payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
             return neededAmount
         }
+        
+        let minimumRelayAccountBalance = cache.minimumRelayAccountBalance ?? 890880
         
         // check if relay account current balance can cover part of needed amount
         if var relayAccountBalance = relayAccountStatus.balance {

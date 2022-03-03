@@ -161,7 +161,7 @@ class RelayTopUpTests: RelayTests {
             orcaSwapClient: orcaSwapClient
         )
         let _ = try relayService.load().toBlocking().first()
-        let neededTopUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: expectedFee).toBlocking().first()!
+        let neededTopUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: nil).toBlocking().first()!
         return neededTopUpAmount
     }
     
@@ -178,7 +178,7 @@ class RelayTopUpTests: RelayTests {
         let relayAccountStatus = try relayService.getRelayAccountStatus().toBlocking().first()!
         let freeTransactionFeeLimit = try relayService.getFreeTransactionFeeLimit().toBlocking().first()!
         
-        let topUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: .init(transaction: 10000, accountBalances: testInfo.amount)).toBlocking().first()!.total
+        let topUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: .init(transaction: 10000, accountBalances: testInfo.amount), payingTokenMint: nil).toBlocking().first()!.total
         
         let params = try relayService.prepareForTopUp(
             topUpAmount: topUpAmount,

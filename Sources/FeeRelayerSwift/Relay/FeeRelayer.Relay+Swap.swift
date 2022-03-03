@@ -418,6 +418,7 @@ extension FeeRelayer.Relay {
                         // Get real amounts needed for topping up
                         let topUpAmount = self.calculateNeededTopUpAmount(
                             expectedFee: swappingFee,
+                            payingTokenMint: payingFeeToken?.mint,
                             freeTransactionFeeLimit: freeTransactionFeeLimit,
                             relayAccountStatus: relayAccountStatus
                         )

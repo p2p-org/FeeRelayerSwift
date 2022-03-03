@@ -39,7 +39,8 @@ public protocol FeeRelayerRelayType {
     
     /// Calculate needed top up amount for expected fee
     func calculateNeededTopUpAmount(
-        expectedFee: SolanaSDK.FeeAmount
+        expectedFee: SolanaSDK.FeeAmount,
+        payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount>
     
     /// Calculate fee needed in paying token
@@ -57,7 +58,8 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP NATIVELY
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction]
+        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount>
     
     /// Top up relay account and swap natively
@@ -166,7 +168,10 @@ extension FeeRelayer {
         }
         
         /// Calculate needed top up amount for expected fee
-        public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> Single<SolanaSDK.FeeAmount> {
+        public func calculateNeededTopUpAmount(
+            expectedFee: SolanaSDK.FeeAmount,
+            payingTokenMint: String?
+        ) -> Single<SolanaSDK.FeeAmount> {
             let freeTransactionFeeLimitRequest: Single<FreeTransactionFeeLimit>
             if let freeTransactionFeeLimit = cache.freeTransactionFeeLimit {
                 freeTransactionFeeLimitRequest = .just(freeTransactionFeeLimit)
@@ -181,6 +186,7 @@ extension FeeRelayer {
                     guard let self = self else { return expectedFee }
                     return self.calculateNeededTopUpAmount(
                         expectedFee: expectedFee,
+                        payingTokenMint: payingTokenMint,
                         freeTransactionFeeLimit: freeTransactionFeeLimit,
                         relayAccountStatus: relayAccountStatus
                     )
@@ -233,7 +239,8 @@ extension FeeRelayer {
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return try self.relayTransaction(
-                        preparedTransaction: preparedTransaction
+                        preparedTransaction: preparedTransaction,
+                        payingFeeToken: payingFeeToken
                     )
                         .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
                             if let error = error as? FeeRelayer.Error,
@@ -254,14 +261,23 @@ extension FeeRelayer {
             expectedFee: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]?> {
+            
+            // if paying fee token is solana, skip the top up
+            if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                return .just(nil)
+            }
             return Single.zip(
                 getRelayAccountStatus(),
                 getFreeTransactionFeeLimit()
             )
                 .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams?, Bool)> in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
-                    
-                    let topUpAmount = self.calculateNeededTopUpAmount(expectedFee: expectedFee, freeTransactionFeeLimit: freeTransactionFeeLimit, relayAccountStatus: relayAccountStatus)
+                    let topUpAmount = self.calculateNeededTopUpAmount(
+                        expectedFee: expectedFee,
+                        payingTokenMint: payingFeeToken?.mint,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit,
+                        relayAccountStatus: relayAccountStatus
+                    )
                     // no need to top up
                     guard topUpAmount.total > 0, let payingFeeToken = payingFeeToken else {
                         return .just((nil, relayAccountStatus == .notYetCreated))
@@ -293,7 +309,8 @@ extension FeeRelayer {
         }
         
         func relayTransaction(
-            preparedTransaction: SolanaSDK.PreparedTransaction
+            preparedTransaction: SolanaSDK.PreparedTransaction,
+            payingFeeToken: TokenInfo?
         ) throws -> Single<[String]> {
             guard let feePayer = cache.feePayerAddress,
                   let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
@@ -318,14 +335,24 @@ extension FeeRelayer {
             // transfer sol back to feerelayer's feePayer
             var preparedTransaction = preparedTransaction
             if paybackFee > 0 {
-                preparedTransaction.transaction.instructions.append(
-                    try Program.transferSolInstruction(
-                        userAuthorityAddress: self.owner.publicKey,
-                        recipient: try SolanaSDK.PublicKey(string: feePayer),
-                        lamports: paybackFee,
-                        network: self.solanaClient.endpoint.network
+                if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    preparedTransaction.transaction.instructions.append(
+                        SolanaSDK.SystemProgram.transferInstruction(
+                            from: owner.publicKey,
+                            to: try SolanaSDK.PublicKey(string: feePayer),
+                            lamports: paybackFee
+                        )
                     )
-                )
+                } else {
+                    preparedTransaction.transaction.instructions.append(
+                        try Program.transferSolInstruction(
+                            userAuthorityAddress: owner.publicKey,
+                            recipient: try SolanaSDK.PublicKey(string: feePayer),
+                            lamports: paybackFee,
+                            network: self.solanaClient.endpoint.network
+                        )
+                    )
+                }
             }
             
             // resign transaction

@@ -13,7 +13,8 @@ import SolanaSwift
 extension FeeRelayer.Relay {
     /// Calculate needed top up amount for swap
     public func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction]
+        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount> {
         guard let lamportsPerSignature = cache.lamportsPerSignature else {
             return .error(FeeRelayer.Error.relayInfoMissing)
@@ -26,7 +27,7 @@ extension FeeRelayer.Relay {
         let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
         
         let expectedFee = SolanaSDK.FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
-        return calculateNeededTopUpAmount(expectedFee: expectedFee)
+        return calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: payingTokenMint)
     }
     
     public func topUpAndSwap(
@@ -37,7 +38,7 @@ extension FeeRelayer.Relay {
         Single.zip(
             updateRelayAccountStatus().andThen(.just(())),
             updateFreeTransactionFeeLimit().andThen(.just(())),
-            calculateNeededTopUpAmount(swapTransactions: swapTransactions)
+            calculateNeededTopUpAmount(swapTransactions: swapTransactions, payingTokenMint: payingFeeToken?.mint)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
             .flatMap { [weak self] _, _, expectedFee -> Single<[String]?> in
@@ -107,7 +108,8 @@ extension FeeRelayer.Relay {
             .flatMap { [weak self] preparedTransaction in
                 guard let self = self else {throw OrcaSwapError.unknown}
                 return try self.relayTransaction(
-                    preparedTransaction: preparedTransaction
+                    preparedTransaction: preparedTransaction,
+                    payingFeeToken: payingFeeToken
                 )
             }
     }
