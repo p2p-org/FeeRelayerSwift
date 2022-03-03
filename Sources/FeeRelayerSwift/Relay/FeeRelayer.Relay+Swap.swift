@@ -20,7 +20,7 @@ extension FeeRelayer.Relay {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<SolanaSDK.PreparedTransaction> {
+    ) -> Single<[SolanaSDK.PreparedTransaction]> {
         let transitToken = try? getTransitToken(pools: swapPools)
         // get fresh data by ignoring cache
         return Single.zip(
@@ -157,7 +157,7 @@ extension FeeRelayer.Relay {
         needsCreateTransitTokenAccount: Bool?,
         transitTokenMintPubkey: SolanaSDK.PublicKey?,
         transitTokenAccountAddress: SolanaSDK.PublicKey?
-    ) throws -> SolanaSDK.PreparedTransaction {
+    ) throws -> [SolanaSDK.PreparedTransaction] {
         // assertion
         let userAuthorityAddress = owner.publicKey
         guard var userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
@@ -169,6 +169,7 @@ extension FeeRelayer.Relay {
         let destinationTokenMintAddress = try SolanaSDK.PublicKey(string: destinationToken.mint)
         
         // forming transaction and count fees
+        var additionalTransaction: SolanaSDK.PreparedTransaction?
         var accountCreationFee: SolanaSDK.Lamports = 0
         var instructions = [SolanaSDK.TransactionInstruction]()
         
@@ -211,6 +212,7 @@ extension FeeRelayer.Relay {
                     )
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey.base58EncodedString
+                accountCreationFee += minimumTokenAccountBalance
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try SolanaSDK.PublicKey.associatedTokenAddress(
@@ -218,18 +220,29 @@ extension FeeRelayer.Relay {
                     tokenMintAddress: destinationTokenMintAddress
                 )
                 
-                instructions.append(
-                    SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-                        mint: destinationTokenMintAddress,
-                        associatedAccount: associatedAddress,
-                        owner: userAuthorityAddress,
-                        payer: feePayerAddress
-                    )
+                let instruction = SolanaSDK.AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                    mint: destinationTokenMintAddress,
+                    associatedAccount: associatedAddress,
+                    owner: userAuthorityAddress,
+                    payer: feePayerAddress
                 )
+                
+                // SPECIAL CASE WHEN WE SWAP FROM SOL TO NON-CREATED SPL TOKEN, THEN WE NEEDS ADDITIONAL TRANSACTION BECAUSE TRANSACTION IS TOO LARGE
+                if sourceWSOLNewAccount != nil {
+                    additionalTransaction = try prepareTransaction(
+                        instructions: [instruction],
+                        signers: [owner],
+                        blockhash: blockhash,
+                        feePayerAddress: feePayerAddress,
+                        accountCreationFee: minimumTokenAccountBalance,
+                        lamportsPerSignature: lamportsPerSignature
+                    )
+                } else {
+                    instructions.append(instruction)
+                    accountCreationFee += minimumTokenAccountBalance
+                }
                 userDestinationTokenAccountAddress = associatedAddress.base58EncodedString
             }
-            
-            accountCreationFee += minimumTokenAccountBalance
         }
         
         // swap
@@ -342,6 +355,42 @@ extension FeeRelayer.Relay {
             accountCreationFee -= minimumTokenAccountBalance
         }
         
+        // resign transaction
+        var signers = [owner]
+        if let sourceWSOLNewAccount = sourceWSOLNewAccount {
+            signers.append(sourceWSOLNewAccount)
+        }
+        if let destinationNewAccount = destinationNewAccount {
+            signers.append(destinationNewAccount)
+        }
+        
+        var transactions = [SolanaSDK.PreparedTransaction]()
+        
+        if let additionalTransaction = additionalTransaction {
+            transactions.append(additionalTransaction)
+        }
+        transactions.append(
+            try prepareTransaction(
+                instructions: instructions,
+                signers: signers,
+                blockhash: blockhash,
+                feePayerAddress: feePayerAddress,
+                accountCreationFee: accountCreationFee,
+                lamportsPerSignature: lamportsPerSignature
+            )
+        )
+        
+        return transactions
+    }
+    
+    private func prepareTransaction(
+        instructions: [SolanaSDK.TransactionInstruction],
+        signers: [SolanaSDK.Account],
+        blockhash: String,
+        feePayerAddress: SolanaSDK.PublicKey,
+        accountCreationFee: UInt64,
+        lamportsPerSignature: UInt64
+    ) throws -> SolanaSDK.PreparedTransaction {
         var transaction = SolanaSDK.Transaction()
         transaction.instructions = instructions
         transaction.recentBlockhash = blockhash
@@ -353,14 +402,6 @@ extension FeeRelayer.Relay {
             accountBalances: accountCreationFee
         )
         
-        // resign transaction
-        var signers = [owner]
-        if let sourceWSOLNewAccount = sourceWSOLNewAccount {
-            signers.append(sourceWSOLNewAccount)
-        }
-        if let destinationNewAccount = destinationNewAccount {
-            signers.append(destinationNewAccount)
-        }
         try transaction.sign(signers: signers)
         
         if let decodedTransaction = transaction.jsonString {

@@ -87,7 +87,7 @@ public protocol FeeRelayerRelayType {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<SolanaSDK.PreparedTransaction>
+    ) -> Single<[SolanaSDK.PreparedTransaction]>
 }
 
 extension FeeRelayer {
