@@ -291,7 +291,8 @@ extension FeeRelayer {
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return try self.relayTransaction(
-                        preparedTransaction: preparedTransaction
+                        preparedTransaction: preparedTransaction,
+                        payingFeeToken: payingFeeToken
                     )
                         .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
                             if let error = error as? FeeRelayer.Error,
@@ -312,6 +313,11 @@ extension FeeRelayer {
             expectedFee: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]?> {
+            // if paying fee token is solana, skip the top up
+            if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                return .just(nil)
+            }
+            
             guard let freeTransactionFeeLimit = cache.freeTransactionFeeLimit,
                   let relayAccountStatus = cache.relayAccountStatus
             else {
@@ -360,7 +366,8 @@ extension FeeRelayer {
         }
         
         func relayTransaction(
-            preparedTransaction: SolanaSDK.PreparedTransaction
+            preparedTransaction: SolanaSDK.PreparedTransaction,
+            payingFeeToken: TokenInfo?
         ) throws -> Single<[String]> {
             guard let feePayer = cache.feePayerAddress,
                   let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
@@ -385,14 +392,24 @@ extension FeeRelayer {
             // transfer sol back to feerelayer's feePayer
             var preparedTransaction = preparedTransaction
             if paybackFee > 0 {
-                preparedTransaction.transaction.instructions.append(
-                    try Program.transferSolInstruction(
-                        userAuthorityAddress: self.owner.publicKey,
-                        recipient: try SolanaSDK.PublicKey(string: feePayer),
-                        lamports: paybackFee,
-                        network: self.solanaClient.endpoint.network
+                if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    preparedTransaction.transaction.instructions.append(
+                        try SolanaSDK.SystemProgram.transferInstruction(
+                            from: owner.publicKey,
+                            to: try SolanaSDK.PublicKey(string: feePayer),
+                            lamports: paybackFee
+                        )
                     )
-                )
+                } else {
+                    preparedTransaction.transaction.instructions.append(
+                        try Program.transferSolInstruction(
+                            userAuthorityAddress: owner.publicKey,
+                            recipient: try SolanaSDK.PublicKey(string: feePayer),
+                            lamports: paybackFee,
+                            network: self.solanaClient.endpoint.network
+                        )
+                    )
+                }
             }
             
             // resign transaction

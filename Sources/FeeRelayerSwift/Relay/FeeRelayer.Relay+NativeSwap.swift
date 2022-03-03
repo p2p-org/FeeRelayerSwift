@@ -108,7 +108,8 @@ extension FeeRelayer.Relay {
             .flatMap { [weak self] preparedTransaction in
                 guard let self = self else {throw OrcaSwapError.unknown}
                 return try self.relayTransaction(
-                    preparedTransaction: preparedTransaction
+                    preparedTransaction: preparedTransaction,
+                    payingFeeToken: payingFeeToken
                 )
             }
     }
