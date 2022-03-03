@@ -313,19 +313,26 @@ extension FeeRelayer {
                 })
                 .flatMap { [weak self] _ in
                     // assertion
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
+                    guard let self = self, preparedTransactions.count > 0 else {throw FeeRelayer.Error.unknown}
+                    var request: Single<[String]> = try self.relayTransaction(
+                        preparedTransaction: preparedTransactions[0],
+                        payingFeeToken: payingFeeToken,
+                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                    )
                     
-                    let observables = try preparedTransactions.map {preparedTransaction in
-                        try self.relayTransaction(
-                            preparedTransaction: preparedTransaction,
-                            payingFeeToken: payingFeeToken,
-                            relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
-                        ).asObservable()
+                    if preparedTransactions.count == 2 {
+                        request = request
+                            .flatMap { [weak self] _ in
+                                guard let self = self else {throw FeeRelayer.Error.unknown}
+                                return try self.relayTransaction(
+                                    preparedTransaction: preparedTransactions[1],
+                                    payingFeeToken: payingFeeToken,
+                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                                )
+                            }
                     }
                     
-                    return Observable.concat(observables)
-                        .asSingle()
-                        .map { [$0.last ?? ""] }
+                    return request
                         
                 }
                 .observe(on: MainScheduler.instance)

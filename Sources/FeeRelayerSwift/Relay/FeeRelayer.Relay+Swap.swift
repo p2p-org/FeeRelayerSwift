@@ -395,14 +395,14 @@ extension FeeRelayer.Relay {
         transaction.instructions = instructions
         transaction.recentBlockhash = blockhash
         transaction.feePayer = feePayerAddress
+    
+        try transaction.sign(signers: signers)
         
         // calculate fee first
         let expectedFee = SolanaSDK.FeeAmount(
             transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature),
             accountBalances: accountCreationFee
         )
-        
-        try transaction.sign(signers: signers)
         
         if let decodedTransaction = transaction.jsonString {
             Logger.log(message: decodedTransaction, event: .info)
