@@ -169,7 +169,7 @@ extension FeeRelayer.Relay {
             sourceWSOLNewAccount = try SolanaSDK.Account(network: network)
             instructions.append(contentsOf: [
                 SolanaSDK.SystemProgram.createAccountInstruction(
-                    from: feePayerAddress,
+                    from: userAuthorityAddress,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
                     lamports: inputAmount + minimumTokenAccountBalance
                 ),
@@ -313,11 +313,6 @@ extension FeeRelayer.Relay {
                     account: newAccount.publicKey,
                     destination: userAuthorityAddress,
                     owner: userAuthorityAddress
-                ),
-                SolanaSDK.SystemProgram.transferInstruction(
-                    from: userAuthorityAddress,
-                    to: feePayerAddress,
-                    lamports: minimumTokenAccountBalance
                 )
             ])
         }
