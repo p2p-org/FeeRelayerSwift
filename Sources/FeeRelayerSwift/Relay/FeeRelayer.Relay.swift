@@ -394,7 +394,7 @@ extension FeeRelayer {
             if paybackFee > 0 {
                 if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                     preparedTransaction.transaction.instructions.append(
-                        try SolanaSDK.SystemProgram.transferInstruction(
+                        SolanaSDK.SystemProgram.transferInstruction(
                             from: owner.publicKey,
                             to: try SolanaSDK.PublicKey(string: feePayer),
                             lamports: paybackFee
