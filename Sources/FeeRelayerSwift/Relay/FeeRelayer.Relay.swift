@@ -199,10 +199,7 @@ extension FeeRelayer {
             
             // check relay account balance
             if neededAmount.total > 0 {
-                // if paying token is WSOL, the compensation will be done without the existense of relay account
-                if payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-                    return .just(neededAmount)
-                }
+                let neededAmountWithoutCheckingRelayAccount = neededAmount
                  
                 // for another token, check relay account status first
                 return getRelayAccountStatus()
@@ -238,6 +235,12 @@ extension FeeRelayer {
                                 neededAmount.transaction -= relayAccountBalance
                             }
                         }
+                        
+                        // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
+                        if neededAmount.total > 0, payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                            return neededAmountWithoutCheckingRelayAccount
+                        }
+                        
                         return neededAmount
                     }
                     .catchAndReturn(expectedFee)
@@ -292,7 +295,8 @@ extension FeeRelayer {
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     return try self.relayTransaction(
                         preparedTransaction: preparedTransaction,
-                        payingFeeToken: payingFeeToken
+                        payingFeeToken: payingFeeToken,
+                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
                     )
                         .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
                             if let error = error as? FeeRelayer.Error,
@@ -367,7 +371,8 @@ extension FeeRelayer {
         
         func relayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            payingFeeToken: TokenInfo?
+            payingFeeToken: TokenInfo?,
+            relayAccountStatus: RelayAccountStatus
         ) throws -> Single<[String]> {
             guard let feePayer = cache.feePayerAddress,
                   let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
@@ -392,7 +397,9 @@ extension FeeRelayer {
             // transfer sol back to feerelayer's feePayer
             var preparedTransaction = preparedTransaction
             if paybackFee > 0 {
-                if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString,
+                   (relayAccountStatus.balance ?? 0) < paybackFee
+                {
                     preparedTransaction.transaction.instructions.append(
                         SolanaSDK.SystemProgram.transferInstruction(
                             from: owner.publicKey,
