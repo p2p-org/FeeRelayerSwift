@@ -404,30 +404,35 @@ extension FeeRelayer.Relay {
                     
                     // TOP UP
                     let topUpPreparedParam: TopUpPreparedParams?
-                    if let relayAccountBalance = relayAccountStatus.balance,
-                       relayAccountBalance >= swappingFee.total {
+                    
+                    if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                         topUpPreparedParam = nil
-                    }
-                    // STEP 2.2: Else
-                    else {
-                        // Get best poolpairs for topping up
-                        let targetAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
-                        
-                        // Get real amounts needed for topping up
-                        let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
-                        let topUpAmount = amounts.topUpAmount
-                        let expectedFee = amounts.expectedFee
-                        
-                        // Get pools
-                        let topUpPools: OrcaSwap.PoolsPair
-                        if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
-                        {
-                            topUpPools = transitiveSwapPools
-                        } else {
-                            throw FeeRelayer.Error.swapPoolsNotFound
+                    } else {
+                        if let relayAccountBalance = relayAccountStatus.balance,
+                           relayAccountBalance >= swappingFee.total {
+                            topUpPreparedParam = nil
                         }
-                        
-                        topUpPreparedParam = .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
+                        // STEP 2.2: Else
+                        else {
+                            // Get best poolpairs for topping up
+                            let targetAmount = swappingFee.total - (relayAccountStatus.balance ?? 0)
+                            
+                            // Get real amounts needed for topping up
+                            let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
+                            let topUpAmount = amounts.topUpAmount
+                            let expectedFee = amounts.expectedFee
+                            
+                            // Get pools
+                            let topUpPools: OrcaSwap.PoolsPair
+                            if let bestPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
+                            {
+                                topUpPools = bestPools
+                            } else {
+                                throw FeeRelayer.Error.swapPoolsNotFound
+                            }
+                            
+                            topUpPreparedParam = .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
+                        }
                     }
                     
                     return .init(
