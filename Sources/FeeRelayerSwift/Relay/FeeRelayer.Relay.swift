@@ -58,7 +58,7 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay mutiple transactions
     func topUpAndRelayTransactions(
         preparedTransactions: [SolanaSDK.PreparedTransaction],
-        payingFeeToken: TokenInfo?
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
     /// SPECIAL METHODS FOR SWAP NATIVELY
@@ -315,15 +315,17 @@ extension FeeRelayer {
                     // assertion
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     
-                    let singles = try preparedTransactions.map {preparedTransaction in
+                    let observables = try preparedTransactions.map {preparedTransaction in
                         try self.relayTransaction(
                             preparedTransaction: preparedTransaction,
                             payingFeeToken: payingFeeToken,
                             relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
-                        )
+                        ).asObservable()
                     }
                     
-                    return .
+                    return Observable.concat(observables)
+                        .asSingle()
+                        .map { [$0.last ?? ""] }
                         
                 }
                 .observe(on: MainScheduler.instance)
