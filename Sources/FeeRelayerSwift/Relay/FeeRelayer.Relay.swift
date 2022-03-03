@@ -55,6 +55,12 @@ public protocol FeeRelayerRelayType {
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
+    /// Top up relay account (if needed) and relay mutiple transactions
+    func topUpAndRelayTransactions(
+        preparedTransactions: [SolanaSDK.PreparedTransaction],
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
+    ) -> Single<[String]>
+    
     /// SPECIAL METHODS FOR SWAP NATIVELY
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
@@ -72,6 +78,7 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
     /// Calculate network fees for swapping
     func calculateSwappingNetworkFees(
+        swapPools: OrcaSwap.PoolsPair,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
@@ -86,7 +93,7 @@ public protocol FeeRelayerRelayType {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<SolanaSDK.PreparedTransaction>
+    ) -> Single<[SolanaSDK.PreparedTransaction]>
 }
 
 extension FeeRelayer {
@@ -223,6 +230,16 @@ extension FeeRelayer {
             preparedTransaction: SolanaSDK.PreparedTransaction,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]> {
+            topUpAndRelayTransactions(
+                preparedTransactions: [preparedTransaction],
+                payingFeeToken: payingFeeToken
+            )
+        }
+        
+        public func topUpAndRelayTransactions(
+            preparedTransactions: [SolanaSDK.PreparedTransaction],
+            payingFeeToken: TokenInfo?
+        ) -> Single<[String]> {
             Completable.zip(
                 updateRelayAccountStatus(),
                 updateFreeTransactionFeeLimit()
@@ -230,30 +247,38 @@ extension FeeRelayer {
                 .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
                 .andThen(Single<[String]?>.deferred { [weak self] in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
+                    let expectedFees = preparedTransactions.map {$0.expectedFee}
                     return self.checkAndTopUp(
-                        expectedFee: preparedTransaction.expectedFee,
+                        expectedFee: .init(
+                            transaction: expectedFees.map {$0.transaction}.reduce(UInt64(0), +),
+                            accountBalances: expectedFees.map {$0.accountBalances}.reduce(UInt64(0), +)
+                        ),
                         payingFeeToken: payingFeeToken
                     )
                 })
                 .flatMap { [weak self] _ in
                     // assertion
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
-                    return try self.relayTransaction(
-                        preparedTransaction: preparedTransaction,
+                    guard let self = self, preparedTransactions.count > 0 else {throw FeeRelayer.Error.unknown}
+                    var request: Single<[String]> = try self.relayTransaction(
+                        preparedTransaction: preparedTransactions[0],
                         payingFeeToken: payingFeeToken,
                         relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
                     )
-                        .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
-                            if let error = error as? FeeRelayer.Error,
-                               let clientError = error.clientError,
-                               clientError.type == .maximumNumberOfInstructionsAllowedExceeded,
-                               clientError.errorLog?.starts(with: "insufficient lamports") == true
-                            {
-                                return true
+                    
+                    if preparedTransactions.count == 2 {
+                        request = request
+                            .flatMap { [weak self] _ in
+                                guard let self = self else {throw FeeRelayer.Error.unknown}
+                                return try self.relayTransaction(
+                                    preparedTransaction: preparedTransactions[1],
+                                    payingFeeToken: payingFeeToken,
+                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                                )
                             }
-                            
-                            return false
-                        })
+                    }
+                    
+                    return request
+                        
                 }
                 .observe(on: MainScheduler.instance)
         }
@@ -371,6 +396,17 @@ extension FeeRelayer {
             )
                 .do(onSuccess: {[weak self] _ in
                     self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total - paybackFee)
+                })
+                .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
+                    if let error = error as? FeeRelayer.Error,
+                       let clientError = error.clientError,
+                       clientError.type == .maximumNumberOfInstructionsAllowedExceeded,
+                       clientError.errorLog?.starts(with: "insufficient lamports") == true
+                    {
+                        return true
+                    }
+                    
+                    return false
                 })
         }
     }

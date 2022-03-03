@@ -62,7 +62,7 @@ class RelaySwapTests: RelayTests {
             swapPools: pools,
             inputAmount: testInfo.inputAmount,
             slippage: testInfo.slippage
-        ).toBlocking().first()!
+        ).toBlocking().first()!.first!
     }
     
     private func swap(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws {
