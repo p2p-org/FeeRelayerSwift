@@ -109,7 +109,8 @@ extension FeeRelayer.Relay {
                 guard let self = self else {throw OrcaSwapError.unknown}
                 return try self.relayTransaction(
                     preparedTransaction: preparedTransaction,
-                    payingFeeToken: payingFeeToken
+                    payingFeeToken: payingFeeToken,
+                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
                 )
             }
     }
