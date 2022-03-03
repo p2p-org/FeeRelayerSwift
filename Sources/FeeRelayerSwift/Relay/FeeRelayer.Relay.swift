@@ -39,7 +39,8 @@ public protocol FeeRelayerRelayType {
     
     /// Calculate needed top up amount for expected fee
     func calculateNeededTopUpAmount(
-        expectedFee: SolanaSDK.FeeAmount
+        expectedFee: SolanaSDK.FeeAmount,
+        payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount>
     
     /// Calculate fee needed in paying token
@@ -57,7 +58,8 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP NATIVELY
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction]
+        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount>
     
     /// Top up relay account and swap natively
@@ -166,7 +168,10 @@ extension FeeRelayer {
         }
         
         /// Calculate needed top up amount for expected fee
-        public func calculateNeededTopUpAmount(expectedFee: SolanaSDK.FeeAmount) -> Single<SolanaSDK.FeeAmount> {
+        public func calculateNeededTopUpAmount(
+            expectedFee: SolanaSDK.FeeAmount,
+            payingTokenMint: String?
+        ) -> Single<SolanaSDK.FeeAmount> {
             var neededAmount = expectedFee
             
             // expected fees
@@ -194,6 +199,12 @@ extension FeeRelayer {
             
             // check relay account balance
             if neededAmount.total > 0 {
+                // if paying token is WSOL, the compensation will be done without the existense of relay account
+                if payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                    return .just(neededAmount)
+                }
+                 
+                // for another token, check relay account status first
                 return getRelayAccountStatus()
                     .map { [weak self] relayAccountStatus in
                         guard let self = self else { return expectedFee }
