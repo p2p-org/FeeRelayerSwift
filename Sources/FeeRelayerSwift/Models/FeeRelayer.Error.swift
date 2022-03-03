@@ -46,7 +46,7 @@ extension FeeRelayer {
                   data.type == .clientError,
                   let string = data.data?.array?.first
             else {return nil}
-            let regexString = #"\"Program [^\"]+\""#
+            let regexString = #"\"(?:Program|Transfer:) [^\"]+\""#
             let programLogs = matches(for: regexString, in: string)?
                 .map { string in
                     return string.replacingOccurrences(of: "\"", with: "")
@@ -54,26 +54,25 @@ extension FeeRelayer {
             
             let errorPrefixes = [
                 "Program failed to complete: ",
-                "Program log: Error: "
+                "Program log: Error: ",
+                "Transfer: insufficient lamports " // 19266, need 2039280
             ]
-            var errorLog = programLogs?.first(
+            let errorLog = programLogs?.first(
                 where: { log in
                     errorPrefixes.contains(where: {log.starts(with: $0)})
                 }
             )
-            for errorPrefix in errorPrefixes {
-                errorLog = errorLog?.replacingOccurrences(of: errorPrefix, with: "")
-            }
             
             let type: ClientError.ClientErrorType?
             // execeeded maximum number of instructions
-            if errorLog?.starts(with: "exceeded maximum number of instructions allowed") == true
+            if errorLog?.contains("exceeded maximum number of instructions allowed") == true
             {
                 type = .maximumNumberOfInstructionsAllowedExceeded
             }
             
             // insufficient funds
-            else if errorLog?.starts(with: "insufficient funds") == true
+            else if errorLog?.contains("insufficient funds") == true ||
+                    errorLog?.contains("insufficient lamports") == true
             {
                 type = .insufficientFunds
             }
@@ -82,7 +81,14 @@ extension FeeRelayer {
             else {
                 type = nil
             }
-            return .init(programLogs: programLogs, type: type, errorLog: errorLog)
+            return .init(
+                programLogs: programLogs,
+                type: type,
+                errorLog: errorLog?
+                    .replacingOccurrences(of: "Program failed to complete: ", with: "")
+                    .replacingOccurrences(of: "Program log: Error: ", with: "")
+                    .replacingOccurrences(of: "Transfer: ", with: "")
+            )
         }
         
         public static var unknown: Self {

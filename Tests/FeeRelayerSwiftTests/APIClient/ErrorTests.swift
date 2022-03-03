@@ -31,15 +31,26 @@ class ErrorTests: XCTestCase {
         XCTAssertEqual(error.clientError?.type, .insufficientFunds)
         XCTAssertEqual(error.clientError?.errorLog, "insufficient funds")
         
-        // maximum number of instructions allowed
+        // insufficient funds 2
         let error2 = try doTest(
+            string: ClientError.insufficientFunds2,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 2: custom program error: 0x1 [28 log messages]",
+            expectedData: nil
+        )
+        
+        XCTAssertEqual(error2.clientError?.type, .insufficientFunds)
+        XCTAssertEqual(error2.clientError?.errorLog, "insufficient lamports 19266, need 2039280")
+        
+        // maximum number of instructions allowed
+        let error3 = try doTest(
             string: ClientError.maxNumberOfInstructionsExceeded,
             expectedErrorCode: 6,
             expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 2: Program failed to complete [64 log messages]"
         )
         
-        XCTAssertEqual(error2.clientError?.type, .maximumNumberOfInstructionsAllowedExceeded)
-        XCTAssertEqual(error2.clientError?.errorLog, "exceeded maximum number of instructions allowed (1940) at instruction #1675")
+        XCTAssertEqual(error3.clientError?.type, .maximumNumberOfInstructionsAllowedExceeded)
+        XCTAssertEqual(error3.clientError?.errorLog, "exceeded maximum number of instructions allowed (1940) at instruction #1675")
     }
     
     func testTooSmallAmountError() throws {
