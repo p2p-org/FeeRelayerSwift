@@ -8,9 +8,9 @@ import OrcaSwapSwift
 class RelaySwapTests: RelayTests {
     // MARK: - DirectSwap
     /// Swap from SOL to SPL
-//    func testTopUpAndDirectSwapFromSOL() throws {
-//        try swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: false)
-//    }
+    func testTopUpAndDirectSwapFromSOL() throws {
+        try swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: false)
+    }
     
     /// Swap from SPL to SOL
     func testTopUpAndDirectSwapToSOL() throws {

@@ -191,10 +191,7 @@ extension FeeRelayer.Relay {
             return neededAmount
         }
         
-        // if paying token is WSOL, the compensation will be done without the existense of relay account
-        if payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-            return neededAmount
-        }
+        let neededAmountWithoutCheckingRelayAccount = neededAmount
         
         let minimumRelayAccountBalance = cache.minimumRelayAccountBalance ?? 890880
         
@@ -228,6 +225,12 @@ extension FeeRelayer.Relay {
         } else {
             neededAmount.transaction += minimumRelayAccountBalance
         }
+        
+        // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
+        if neededAmount.total > 0, payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+            return neededAmountWithoutCheckingRelayAccount
+        }
+        
         return neededAmount
     }
     
