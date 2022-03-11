@@ -363,7 +363,7 @@ extension FeeRelayer {
             let request: Single<TopUpPreparedParams?>
             
             // if payingFeeToken is provided
-            if let payingFeeToken = payingFeeToken {
+            if let payingFeeToken = payingFeeToken, expectedFee.total > 0 {
                 request = self.prepareForTopUp(targetAmount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
             }
             
