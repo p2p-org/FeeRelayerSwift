@@ -85,16 +85,7 @@ extension FeeRelayer.Relay {
                     ),
                     decodedTo: [String].self
                 )
-                    .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
-                        if let error = error as? FeeRelayer.Error,
-                           let clientError = error.clientError,
-                           clientError.type == .maximumNumberOfInstructionsAllowedExceeded
-                        {
-                            return true
-                        }
-                        
-                        return false
-                    })
+                    .retryWhenNeeded()
                     .do(onSuccess: { [weak self] _ in
                         guard let self = self else {return}
                         Logger.log(message: "Top up \(targetAmount) into \(self.userRelayAddress) completed", event: .info)
