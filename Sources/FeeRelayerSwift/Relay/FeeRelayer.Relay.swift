@@ -461,9 +461,7 @@ extension FeeRelayer {
                     if let error = error as? FeeRelayer.Error,
                        let clientError = error.clientError
                     {
-                        if clientError.type == .maximumNumberOfInstructionsAllowedExceeded,
-                           clientError.errorLog?.starts(with: "insufficient lamports") == true
-                        {
+                        if clientError.type == .maximumNumberOfInstructionsAllowedExceeded {
                             return true
                         }
                         
