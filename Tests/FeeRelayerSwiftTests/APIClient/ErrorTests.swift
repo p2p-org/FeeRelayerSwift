@@ -51,6 +51,16 @@ class ErrorTests: XCTestCase {
         
         XCTAssertEqual(error3.clientError?.type, .maximumNumberOfInstructionsAllowedExceeded)
         XCTAssertEqual(error3.clientError?.errorLog, "exceeded maximum number of instructions allowed (1940) at instruction #1675")
+        
+        // connection closed before message completed
+        let error4 = try doTest(
+            string: ClientError.connectionClosedBeforeMessageCompleted,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: error sending request for url (https://p2p.rpcpool.com/82313b15169cb10f3ff230febb8d): connection closed before message completed"
+        )
+        
+        XCTAssertEqual(error4.clientError?.type, .connectionClosedBeforeMessageCompleted)
+        XCTAssertEqual(error4.clientError?.errorLog, "connection closed before message completed")
     }
     
     func testTooSmallAmountError() throws {

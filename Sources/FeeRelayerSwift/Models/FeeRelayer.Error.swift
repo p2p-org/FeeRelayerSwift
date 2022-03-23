@@ -43,52 +43,69 @@ extension FeeRelayer {
         
         public var clientError: ClientError? {
             guard let data = data,
-                  data.type == .clientError,
-                  let string = data.data?.array?.first
+                  data.type == .clientError
             else {return nil}
-            let regexString = #"\"(?:Program|Transfer:) [^\"]+\""#
-            let programLogs = matches(for: regexString, in: string)?
-                .map { string in
-                    return string.replacingOccurrences(of: "\"", with: "")
-                }
             
-            let errorPrefixes = [
-                "Program failed to complete: ",
-                "Program log: Error: ",
-                "Transfer: insufficient lamports " // 19266, need 2039280
-            ]
-            let errorLog = programLogs?.first(
-                where: { log in
-                    errorPrefixes.contains(where: {log.starts(with: $0)})
-                }
-            )
-            
-            let type: ClientError.ClientErrorType?
-            // execeeded maximum number of instructions
-            if errorLog?.contains("exceeded maximum number of instructions allowed") == true
-            {
-                type = .maximumNumberOfInstructionsAllowedExceeded
+            // look for message
+            if message.contains("connection closed before message completed") {
+                return .init(
+                    programLogs: [],
+                    type: .connectionClosedBeforeMessageCompleted,
+                    errorLog: "connection closed before message completed"
+                )
             }
             
-            // insufficient funds
-            else if errorLog?.contains("insufficient funds") == true ||
-                    errorLog?.contains("insufficient lamports") == true
-            {
-                type = .insufficientFunds
+            // look for error logs
+            else if let string = data.data?.array?.first {
+                let regexString = #"\"(?:Program|Transfer:) [^\"]+\""#
+                let programLogs = matches(for: regexString, in: string)?
+                    .map { string in
+                        return string.replacingOccurrences(of: "\"", with: "")
+                    }
+                
+                let errorPrefixes = [
+                    "Program failed to complete: ",
+                    "Program log: Error: ",
+                    "Transfer: insufficient lamports " // 19266, need 2039280
+                ]
+                let errorLog = programLogs?.first(
+                    where: { log in
+                        errorPrefixes.contains(where: {log.starts(with: $0)})
+                    }
+                )
+                
+                let type: ClientError.ClientErrorType?
+                // execeeded maximum number of instructions
+                if errorLog?.contains("exceeded maximum number of instructions allowed") == true
+                {
+                    type = .maximumNumberOfInstructionsAllowedExceeded
+                }
+                
+                // insufficient funds
+                else if errorLog?.contains("insufficient funds") == true ||
+                        errorLog?.contains("insufficient lamports") == true
+                {
+                    type = .insufficientFunds
+                }
+                
+                // un parsed error
+                else {
+                    type = nil
+                }
+                return .init(
+                    programLogs: programLogs,
+                    type: type,
+                    errorLog: errorLog?
+                        .replacingOccurrences(of: "Program failed to complete: ", with: "")
+                        .replacingOccurrences(of: "Program log: Error: ", with: "")
+                        .replacingOccurrences(of: "Transfer: ", with: "")
+                )
             }
             
-            // un parsed error
+            // nothing found
             else {
-                type = nil
+                return nil
             }
-            return .init(
-                programLogs: programLogs,
-                type: type,
-                errorLog: errorLog?
-                    .replacingOccurrences(of: "Program failed to complete: ", with: "")
-                    .replacingOccurrences(of: "Program log: Error: ", with: "")
-                    .replacingOccurrences(of: "Transfer: ", with: "")
-            )
         }
         
         public static var unknown: Self {
@@ -179,6 +196,7 @@ extension FeeRelayer {
         public enum ClientErrorType: String {
             case insufficientFunds = "Insufficient funds"
             case maximumNumberOfInstructionsAllowedExceeded = "Exceeded maximum number of instructions allowed"
+            case connectionClosedBeforeMessageCompleted = "Connection closed before message completed"
         }
     }
 }
