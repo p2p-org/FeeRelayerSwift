@@ -177,6 +177,26 @@ extension FeeRelayer.Relay {
     }
 }
 
+extension Single where Element == [String] {
+    func retryWhenNeeded() -> Single<Element> {
+        retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
+            if let error = error as? FeeRelayer.Error,
+               let clientError = error.clientError
+            {
+                if clientError.type == .maximumNumberOfInstructionsAllowedExceeded {
+                    return true
+                }
+                
+                if clientError.type == .connectionClosedBeforeMessageCompleted {
+                    return true
+                }
+            }
+            
+            return false
+        })
+    }
+}
+
 private extension OrcaSwap.Pool {
     func getSwapData(
         transferAuthorityPubkey: SolanaSDK.PublicKey,

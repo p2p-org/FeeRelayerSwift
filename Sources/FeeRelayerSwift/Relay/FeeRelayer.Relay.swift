@@ -397,23 +397,7 @@ extension FeeRelayer {
                 .do(onSuccess: {[weak self] _ in
                     self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total - paybackFee)
                 })
-                .retry(.delayed(maxCount: 3, time: 3.0), shouldRetry: {error in
-                    if let error = error as? FeeRelayer.Error,
-                       let clientError = error.clientError
-                    {
-                        if clientError.type == .maximumNumberOfInstructionsAllowedExceeded,
-                           clientError.errorLog?.starts(with: "insufficient lamports") == true
-                        {
-                            return true
-                        }
-                        
-                        if clientError.type == .connectionClosedBeforeMessageCompleted {
-                            return true
-                        }
-                    }
-                    
-                    return false
-                })
+                .retryWhenNeeded()
         }
     }
 }
