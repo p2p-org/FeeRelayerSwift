@@ -58,4 +58,16 @@ class ClientErrorTests: XCTestCase, ErrorTestsType {
         XCTAssertEqual(error.clientError?.type, .connectionClosedBeforeMessageCompleted)
         XCTAssertEqual(error.clientError?.errorLog, "connection closed before message completed")
     }
+    
+    func testGivenPoolTokenAmountResultsInZeroTradingTokensError() throws {
+        // given pool token amount results in zero trading tokens
+        let error = try doTest(
+            string: ClientError.givenPoolTokenAmountResultsInZeroTradingTokens,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 0: custom program error: 0x14 [10 log messages]"
+        )
+        
+        XCTAssertEqual(error.clientError?.type, .givenPoolTokenAmountResultsInZeroTradingTokens)
+        XCTAssertEqual(error.clientError?.errorLog, "Given pool token amount results in zero trading tokens")
+    }
 }

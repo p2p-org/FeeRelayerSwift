@@ -75,6 +75,7 @@ extension FeeRelayer {
                 )
                 
                 let type: ClientError.ClientErrorType?
+                
                 // execeeded maximum number of instructions
                 if errorLog?.contains("exceeded maximum number of instructions allowed") == true
                 {
@@ -86,6 +87,12 @@ extension FeeRelayer {
                         errorLog?.contains("insufficient lamports") == true
                 {
                     type = .insufficientFunds
+                }
+                
+                // given pool token amount results in zero trading tokens
+                else if errorLog?.contains("Given pool token amount results in zero trading tokens") == true
+                {
+                    type = .givenPoolTokenAmountResultsInZeroTradingTokens
                 }
                 
                 // un parsed error
@@ -197,6 +204,7 @@ extension FeeRelayer {
             case insufficientFunds = "Insufficient funds"
             case maximumNumberOfInstructionsAllowedExceeded = "Exceeded maximum number of instructions allowed"
             case connectionClosedBeforeMessageCompleted = "Connection closed before message completed"
+            case givenPoolTokenAmountResultsInZeroTradingTokens = "Given pool token amount results in zero trading tokens"
         }
     }
 }
