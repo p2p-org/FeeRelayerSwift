@@ -214,7 +214,11 @@ extension FeeRelayer {
                         guard let self = self else { return expectedFee }
                         // TODO: - Unknown fee when first time using fee relayer
                         if relayAccountStatus == .notYetCreated {
-                            neededAmount.transaction += self.getRelayAccountCreationCost()
+                            if neededAmount.accountBalances > 0 {
+                                neededAmount.accountBalances += self.getRelayAccountCreationCost()
+                            } else {
+                                neededAmount.transaction += self.getRelayAccountCreationCost()
+                            }
                         }
                         
                         // Check account balance
