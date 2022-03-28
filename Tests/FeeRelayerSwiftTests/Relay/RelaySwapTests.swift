@@ -9,7 +9,7 @@ class RelaySwapTests: RelayTests {
     // MARK: - DirectSwap
     /// Swap from SOL to SPL
     func testTopUpAndDirectSwapFromSOL() throws {
-        try swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: false)
+        try swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: true)
     }
     
     /// Swap from SPL to SOL
@@ -62,16 +62,16 @@ class RelaySwapTests: RelayTests {
             swapPools: pools,
             inputAmount: testInfo.inputAmount,
             slippage: testInfo.slippage
-        ).toBlocking().first()!.first!
+        ).toBlocking().first()!
     }
     
     private func swap(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws {
-        let preparedTransaction = try prepareTransaction(testInfo: testInfo, isTransitiveSwap: isTransitiveSwap)
+        let txs = try prepareTransaction(testInfo: testInfo, isTransitiveSwap: isTransitiveSwap)
   
         // send to relay service
-        let signatures = try relayService.topUpAndRelayTransaction(
-            preparedTransaction: preparedTransaction,
-            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint)
+        let signatures = try relayService.topUpAndRelayTransactions(
+            preparedTransactions: txs.preparedTransactions,
+            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
         ).toBlocking().first()!
         
         print(signatures)

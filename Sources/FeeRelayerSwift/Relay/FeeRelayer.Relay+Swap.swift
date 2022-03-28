@@ -179,14 +179,19 @@ extension FeeRelayer.Relay {
             sourceWSOLNewAccount = try SolanaSDK.Account(network: network)
             instructions.append(contentsOf: [
                 SolanaSDK.SystemProgram.createAccountInstruction(
-                    from: userAuthorityAddress,
+                    from: feePayerAddress,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
-                    lamports: inputAmount + minimumTokenAccountBalance
+                    lamports: minimumTokenAccountBalance
                 ),
                 SolanaSDK.TokenProgram.initializeAccountInstruction(
                     account: sourceWSOLNewAccount!.publicKey,
                     mint: .wrappedSOLMint,
-                    owner: userAuthorityAddress
+                    owner: feePayerAddress
+                ),
+                SolanaSDK.SystemProgram.transferInstruction(
+                    from: userAuthorityAddress,
+                    to: sourceWSOLNewAccount!.publicKey,
+                    lamports: inputAmount
                 )
             ])
             userSourceTokenAccountAddress = sourceWSOLNewAccount!.publicKey
@@ -333,8 +338,8 @@ extension FeeRelayer.Relay {
             instructions.append(contentsOf: [
                 SolanaSDK.TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
-                    destination: userAuthorityAddress,
-                    owner: userAuthorityAddress
+                    destination: feePayerAddress,
+                    owner: feePayerAddress
                 )
             ])
         }
