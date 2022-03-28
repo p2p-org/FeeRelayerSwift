@@ -110,7 +110,8 @@ extension FeeRelayer.Relay {
                 return try self.relayTransaction(
                     preparedTransaction: preparedTransaction,
                     payingFeeToken: payingFeeToken,
-                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+                    additionalPaybackFee: 0
                 )
             }
     }
