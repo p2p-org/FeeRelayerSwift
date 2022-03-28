@@ -40,7 +40,7 @@ class RelaySwapTests: RelayTests {
     }
     
     // MARK: - Helpers
-    private func prepareTransaction(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws -> SolanaSDK.PreparedTransaction {
+    private func prepareTransaction(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws -> [SolanaSDK.PreparedTransaction] {
         try loadTest(testInfo)
         
         // get pools pair
@@ -70,8 +70,8 @@ class RelaySwapTests: RelayTests {
   
         // send to relay service
         let signatures = try relayService.topUpAndRelayTransactions(
-            preparedTransactions: txs.preparedTransactions,
-            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
+            preparedTransactions: txs,
+            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint)
         ).toBlocking().first()!
         
         print(signatures)
