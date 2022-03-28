@@ -98,7 +98,7 @@ public protocol FeeRelayerRelayType {
     ) -> Single<(transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)>
 }
 
-extension FeeRelayerRelayType {
+public extension FeeRelayerRelayType {
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
