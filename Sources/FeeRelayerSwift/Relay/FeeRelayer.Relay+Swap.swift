@@ -20,7 +20,7 @@ extension FeeRelayer.Relay {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<[SolanaSDK.PreparedTransaction]> {
+    ) -> Single<(transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)> {
         let transitToken = try? getTransitToken(pools: swapPools)
         // get fresh data by ignoring cache
         return Single.zip(
@@ -157,7 +157,7 @@ extension FeeRelayer.Relay {
         needsCreateTransitTokenAccount: Bool?,
         transitTokenMintPubkey: SolanaSDK.PublicKey?,
         transitTokenAccountAddress: SolanaSDK.PublicKey?
-    ) throws -> [SolanaSDK.PreparedTransaction] {
+    ) throws -> (transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64) {
         // assertion
         let userAuthorityAddress = owner.publicKey
         guard var userSourceTokenAccountAddress = try? SolanaSDK.PublicKey(string: sourceToken.address),
@@ -172,6 +172,7 @@ extension FeeRelayer.Relay {
         var additionalTransaction: SolanaSDK.PreparedTransaction?
         var accountCreationFee: SolanaSDK.Lamports = 0
         var instructions = [SolanaSDK.TransactionInstruction]()
+        var additionalPaybackFee: UInt64 = 0
         
         // check source
         var sourceWSOLNewAccount: SolanaSDK.Account?
@@ -195,6 +196,7 @@ extension FeeRelayer.Relay {
                 )
             ])
             userSourceTokenAccountAddress = sourceWSOLNewAccount!.publicKey
+            additionalPaybackFee += minimumTokenAccountBalance
         }
         
         // check destination
@@ -385,7 +387,7 @@ extension FeeRelayer.Relay {
             )
         )
         
-        return transactions
+        return (transactions: transactions, additionalPaybackFee: additionalPaybackFee)
     }
     
     private func prepareTransaction(
