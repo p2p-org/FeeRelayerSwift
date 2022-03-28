@@ -52,13 +52,15 @@ public protocol FeeRelayerRelayType {
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
         preparedTransaction: SolanaSDK.PreparedTransaction,
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
+        additionalPaybackFee: UInt64
     ) -> Single<[String]>
     
     /// Top up relay account (if needed) and relay mutiple transactions
     func topUpAndRelayTransactions(
         preparedTransactions: [SolanaSDK.PreparedTransaction],
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
+        additionalPaybackFee: UInt64
     ) -> Single<[String]>
     
     /// SPECIAL METHODS FOR SWAP NATIVELY
@@ -93,7 +95,32 @@ public protocol FeeRelayerRelayType {
         swapPools: OrcaSwap.PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<[SolanaSDK.PreparedTransaction]>
+    ) -> Single<(transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)>
+}
+
+public extension FeeRelayerRelayType {
+    func topUpAndRelayTransaction(
+        preparedTransaction: SolanaSDK.PreparedTransaction,
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
+    ) -> Single<[String]> {
+        topUpAndRelayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: payingFeeToken,
+            additionalPaybackFee: 0
+        )
+    }
+    
+    func topUpAndRelayTransactions(
+        preparedTransactions: [SolanaSDK.PreparedTransaction],
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
+        additionalPaybackFee: UInt64
+    ) -> Single<[String]> {
+        topUpAndRelayTransactions(
+            preparedTransactions: preparedTransactions,
+            payingFeeToken: payingFeeToken,
+            additionalPaybackFee: 0
+        )
+    }
 }
 
 extension FeeRelayer {
@@ -287,17 +314,20 @@ extension FeeRelayer {
         /// Generic function for sending transaction to fee relayer's relay
         public func topUpAndRelayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
-            payingFeeToken: TokenInfo?
+            payingFeeToken: TokenInfo?,
+            additionalPaybackFee: UInt64
         ) -> Single<[String]> {
             topUpAndRelayTransactions(
                 preparedTransactions: [preparedTransaction],
-                payingFeeToken: payingFeeToken
+                payingFeeToken: payingFeeToken,
+                additionalPaybackFee: additionalPaybackFee
             )
         }
         
         public func topUpAndRelayTransactions(
             preparedTransactions: [SolanaSDK.PreparedTransaction],
-            payingFeeToken: TokenInfo?
+            payingFeeToken: TokenInfo?,
+            additionalPaybackFee: UInt64
         ) -> Single<[String]> {
             Completable.zip(
                 updateRelayAccountStatus(),
@@ -321,7 +351,8 @@ extension FeeRelayer {
                     var request: Single<[String]> = try self.relayTransaction(
                         preparedTransaction: preparedTransactions[0],
                         payingFeeToken: payingFeeToken,
-                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+                        additionalPaybackFee: preparedTransactions.count == 1 ? additionalPaybackFee : 0
                     )
                     
                     if preparedTransactions.count == 2 {
@@ -331,7 +362,8 @@ extension FeeRelayer {
                                 return try self.relayTransaction(
                                     preparedTransaction: preparedTransactions[1],
                                     payingFeeToken: payingFeeToken,
-                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated
+                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+                                    additionalPaybackFee: additionalPaybackFee
                                 )
                             }
                     }
@@ -402,7 +434,8 @@ extension FeeRelayer {
         func relayTransaction(
             preparedTransaction: SolanaSDK.PreparedTransaction,
             payingFeeToken: TokenInfo?,
-            relayAccountStatus: RelayAccountStatus
+            relayAccountStatus: RelayAccountStatus,
+            additionalPaybackFee: UInt64
         ) throws -> Single<[String]> {
             guard let feePayer = cache.feePayerAddress,
                   let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
@@ -416,7 +449,7 @@ extension FeeRelayer {
             
             // Calculate the fee to send back to feePayer
             // Account creation fee (accountBalances) is a must-pay-back fee
-            var paybackFee = preparedTransaction.expectedFee.accountBalances
+            var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
             
             // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
             if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
@@ -459,7 +492,7 @@ extension FeeRelayer {
                 decodedTo: [String].self
             )
                 .do(onSuccess: {[weak self] _ in
-                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total - paybackFee)
+                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total + additionalPaybackFee - paybackFee)
                 })
                 .retryWhenNeeded()
         }
