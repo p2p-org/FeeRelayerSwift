@@ -158,6 +158,10 @@ extension FeeRelayer {
         public static var unauthorized: Self {
             .init(code: -11, message: "Unauthorized", data: nil)
         }
+        
+        public static var topUpSuccessButTransactionThrows: Self {
+            .init(code: -12, message: "Topping up is successfull, but the transaction failed", data: nil)
+        }
     }
     
     public struct ErrorDetail: Decodable, Equatable {

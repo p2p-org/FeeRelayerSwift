@@ -345,7 +345,7 @@ extension FeeRelayer {
                         payingFeeToken: payingFeeToken
                     )
                 })
-                .flatMap { [weak self] _ in
+                .flatMap { [weak self] topUpTxIds in
                     // assertion
                     guard let self = self, preparedTransactions.count > 0 else {throw FeeRelayer.Error.unknown}
                     var request: Single<[String]> = try self.relayTransaction(
@@ -369,7 +369,12 @@ extension FeeRelayer {
                     }
                     
                     return request
-                        
+                        .catch { error in
+                            if topUpTxIds != nil {
+                                throw FeeRelayer.Error.topUpSuccessButTransactionThrows
+                            }
+                            throw error
+                        }
                 }
                 .observe(on: MainScheduler.instance)
         }
