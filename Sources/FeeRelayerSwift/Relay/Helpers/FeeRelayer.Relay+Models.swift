@@ -159,12 +159,15 @@ extension FeeRelayer.Relay {
             let message = try preparedTransaction.transaction.compileMessage()
             pubkeys = message.accountKeys.map {$0.base58EncodedString}
             blockhash = recentBlockhash
-            instructions = message.instructions.map {compiledInstruction -> RequestInstruction in
+            instructions = message.instructions.enumerated().map {index, compiledInstruction -> RequestInstruction in
                 let accounts: [RequestAccountMeta] = compiledInstruction.accounts.map { account in
-                    .init(
+                    let pubkey = message.accountKeys[account]
+                    let meta = preparedTransaction.transaction.instructions[index].keys
+                        .first(where: {$0.publicKey == pubkey})
+                    return .init(
                         pubkeyIndex: UInt8(account),
-                        isSigner: message.isAccountSigner(index: account),
-                        isWritable: message.isAccountWritable(index: account)
+                        isSigner: meta?.isSigner ?? message.isAccountSigner(index: account),
+                        isWritable: meta?.isWritable ?? message.isAccountWritable(index: account)
                     )
                 }
                 
