@@ -487,6 +487,12 @@ extension FeeRelayer {
                 }
             }
             
+            #if DEBUG
+            if let decodedTransaction = preparedTransaction.transaction.jsonString {
+                Logger.log(message: decodedTransaction, event: .info)
+            }
+            #endif
+            
             // resign transaction
             try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
             
