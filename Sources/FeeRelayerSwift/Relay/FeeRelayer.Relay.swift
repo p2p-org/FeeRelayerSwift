@@ -292,7 +292,10 @@ extension FeeRelayer {
             feeInSOL: SolanaSDK.FeeAmount,
             payingFeeTokenMint: String
         ) -> Single<SolanaSDK.FeeAmount?> {
-            orcaSwapClient
+            if payingFeeTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                return .just(feeInSOL)
+            }
+            return orcaSwapClient
                 .getTradablePoolsPairs(
                     fromMint: payingFeeTokenMint,
                     toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
