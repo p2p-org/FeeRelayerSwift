@@ -341,7 +341,7 @@ extension FeeRelayer.Relay {
     public struct TopUpPreparedParams {
         public let amount: UInt64
         public let expectedFee: UInt64
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let poolsPair: PoolsPair
     }
     
     public struct TopUpAndActionPreparedParams {
@@ -351,7 +351,7 @@ extension FeeRelayer.Relay {
     
     public struct FeesAndPools {
         public let fee: SolanaSDK.FeeAmount
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let poolsPair: PoolsPair
     }
     
     public struct FeesAndTopUpAmount {

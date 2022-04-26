@@ -13,7 +13,7 @@ import SolanaSwift
 extension FeeRelayer.Relay {
     /// Calculate needed top up amount for swap
     public func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        swapTransactions: [PreparedSwapTransaction],
         payingTokenMint: String?
     ) -> Single<SolanaSDK.FeeAmount> {
         guard let lamportsPerSignature = cache.lamportsPerSignature else {
@@ -31,7 +31,7 @@ extension FeeRelayer.Relay {
     }
     
     public func topUpAndSwap(
-        _ swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        _ swapTransactions: [PreparedSwapTransaction],
         feePayer: SolanaSDK.PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
@@ -93,8 +93,8 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     private func prepareAndSend(
-        _ swapTransaction: OrcaSwap.PreparedSwapTransaction,
-        feePayer: OrcaSwap.PublicKey,
+        _ swapTransaction: PreparedSwapTransaction,
+        feePayer: PublicKey,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         solanaClient.prepareTransaction(
