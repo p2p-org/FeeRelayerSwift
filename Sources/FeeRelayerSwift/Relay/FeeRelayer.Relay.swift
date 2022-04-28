@@ -211,7 +211,7 @@ extension FeeRelayer {
             ).map { amount -> SolanaSDK.FeeAmount in
                 // Correct amount if it's too small
                 var amount = amount
-                if amount.total < 1000 { amount.deposit = 1000 - amount.total }
+                if amount.total < 1000 { amount.transaction += 1000 - amount.total }
                 return amount
             }
         }
