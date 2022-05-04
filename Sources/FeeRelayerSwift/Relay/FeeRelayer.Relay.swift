@@ -201,8 +201,23 @@ extension FeeRelayer {
                 })
         }
         
-        /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(
+            expectedFee: SolanaSDK.FeeAmount,
+            payingTokenMint: String?
+        ) -> Single<SolanaSDK.FeeAmount> {
+            calculateMinNeededTopUpAmount(
+                expectedFee: expectedFee,
+                payingTokenMint: payingTokenMint
+            ).map { amount -> SolanaSDK.FeeAmount in
+                // Correct amount if it's too small
+                var amount = amount
+                if amount.total < 1000 { amount.transaction += 1000 - amount.total }
+                return amount
+            }
+        }
+        
+        /// Calculate needed top up amount for expected fee
+        private func calculateMinNeededTopUpAmount(
             expectedFee: SolanaSDK.FeeAmount,
             payingTokenMint: String?
         ) -> Single<SolanaSDK.FeeAmount> {
