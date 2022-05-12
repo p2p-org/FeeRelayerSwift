@@ -293,10 +293,10 @@ extension FeeRelayer.Relay {
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
                     SolanaSDK.TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
                         account: userSourceTokenAccountAddress,
                         delegate: userTransferAuthority,
                         owner: userAuthorityAddress,
+                        multiSigners: [],
                         amount: swap.amountIn
                     )
                 )
@@ -317,10 +317,10 @@ extension FeeRelayer.Relay {
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
                     SolanaSDK.TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
                         account: userSourceTokenAccountAddress,
                         delegate: userTransferAuthority,
                         owner: userAuthorityAddress,
+                        multiSigners: [],
                         amount: swap.from.amountIn
                     )
                 )
