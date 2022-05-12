@@ -112,8 +112,7 @@ public extension FeeRelayerRelayType {
     
     func topUpAndRelayTransactions(
         preparedTransactions: [SolanaSDK.PreparedTransaction],
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
-        additionalPaybackFee: UInt64
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         topUpAndRelayTransactions(
             preparedTransactions: preparedTransactions,
