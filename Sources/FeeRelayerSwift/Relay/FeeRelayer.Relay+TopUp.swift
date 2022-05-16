@@ -154,6 +154,25 @@ extension FeeRelayer.Relay {
         freeTransactionFeeLimit: FreeTransactionFeeLimit,
         relayAccountStatus: RelayAccountStatus
     ) -> SolanaSDK.FeeAmount {
+        var amount = calculateMinTopUpAmount(
+            expectedFee: expectedFee,
+            payingTokenMint: payingTokenMint,
+            freeTransactionFeeLimit: freeTransactionFeeLimit,
+            relayAccountStatus: relayAccountStatus
+        )
+        if amount.total > 0 && amount.total < 1000 {
+            amount.transaction += 1000 - amount.total
+        }
+        print("needed topup amount: \(amount)")
+        return amount
+    }
+    
+    private func calculateMinTopUpAmount(
+        expectedFee: SolanaSDK.FeeAmount,
+        payingTokenMint: String?,
+        freeTransactionFeeLimit: FreeTransactionFeeLimit,
+        relayAccountStatus: RelayAccountStatus
+    ) -> SolanaSDK.FeeAmount {
         var neededAmount = expectedFee
         
         // expected fees

@@ -112,8 +112,7 @@ public extension FeeRelayerRelayType {
     
     func topUpAndRelayTransactions(
         preparedTransactions: [SolanaSDK.PreparedTransaction],
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
-        additionalPaybackFee: UInt64
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         topUpAndRelayTransactions(
             preparedTransactions: preparedTransactions,
@@ -201,7 +200,6 @@ extension FeeRelayer {
                 })
         }
         
-        /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(
             expectedFee: SolanaSDK.FeeAmount,
             payingTokenMint: String?
@@ -233,7 +231,10 @@ extension FeeRelayer {
             feeInSOL: SolanaSDK.FeeAmount,
             payingFeeTokenMint: String
         ) -> Single<SolanaSDK.FeeAmount?> {
-            orcaSwapClient
+            if payingFeeTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                return .just(feeInSOL)
+            }
+            return orcaSwapClient
                 .getTradablePoolsPairs(
                     fromMint: payingFeeTokenMint,
                     toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
