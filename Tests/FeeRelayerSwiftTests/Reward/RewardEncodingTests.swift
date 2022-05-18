@@ -28,11 +28,13 @@ class RewardEncodingTests: XCTestCase {
             amount: 10000,
             decimals: 3,
             signature: "3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd",
-            blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"
+            blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
         let string = String(data: data, encoding: .utf8)
-        XCTAssertEqual(string, #"{"amount":10000,"sender_token_account_pubkey":"DruRdCUMQvZQLRPHPYnmBHtWabfDZqBGsdFR7RaipKQR","token_mint_pubkey":"AYemet2EiYqHUMGmrwwWx5Fhi8oM5nHmmgYJnnU9wnt8","decimals":3,"signature":"3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd","recipient_pubkey":"v7dovhZiQJrAho3gMdgBjWFLGNTtwfra2on2fMEKFWC","blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S","authority_pubkey":"9JVy3p9UZnXkho62drSdJ9nanUx5ykRYuyskTYrP6VDV"}"#)
+        XCTAssertEqual(string, #"{"amount":10000,"sender_token_account_pubkey":"DruRdCUMQvZQLRPHPYnmBHtWabfDZqBGsdFR7RaipKQR","token_mint_pubkey":"AYemet2EiYqHUMGmrwwWx5Fhi8oM5nHmmgYJnnU9wnt8","decimals":3,"signature":"3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd","recipient_pubkey":"v7dovhZiQJrAho3gMdgBjWFLGNTtwfra2on2fMEKFWC","blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S","authority_pubkey":"9JVy3p9UZnXkho62drSdJ9nanUx5ykRYuyskTYrP6VDV","info":{"build":"1.0.0(1234)","currency":"AYemet2EiYqHUMGmrwwWx5Fhi8oM5nHmmgYJnnU9wnt8","operation_type":"Transfer","device_type":"Ios"}}"#)
     }
 }
