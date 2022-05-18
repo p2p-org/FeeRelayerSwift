@@ -112,12 +112,8 @@ extension FeeRelayer.Relay {
                     payingFeeToken: payingFeeToken,
                     relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
                     additionalPaybackFee: 0,
-                    statsInfo: .init(
-                        operationType: .swap,
-                        deviceType: self.deviceType,
-                        currency: nil,
-                        build: self.deviceBuild
-                    )
+                    operationType: .swap,
+                    currency: nil // TODO: - Which?
                 )
             }
     }

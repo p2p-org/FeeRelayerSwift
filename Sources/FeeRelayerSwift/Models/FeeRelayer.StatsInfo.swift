@@ -45,7 +45,7 @@ public struct StatsInfo: Codable {
     let operationType: OperationType
     let deviceType: DeviceType
     let currency: String?
-    let build: String
+    let build: String?
     
     enum CodingKeys: String, CodingKey {
         case operationType = "operation_type"
@@ -54,7 +54,7 @@ public struct StatsInfo: Codable {
         case build
     }
     
-    public init(operationType: StatsInfo.OperationType, deviceType: StatsInfo.DeviceType, currency: String?, build: String) {
+    public init(operationType: StatsInfo.OperationType, deviceType: StatsInfo.DeviceType, currency: String?, build: String?) {
         self.operationType = operationType
         self.deviceType = deviceType
         self.currency = currency

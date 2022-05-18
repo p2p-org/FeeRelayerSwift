@@ -51,12 +51,8 @@ class RelaySendTests: RelayTests {
         let signature = try relayService.topUpAndRelayTransaction(
             preparedTransaction: preparedTransaction,
             payingFeeToken: payingToken,
-            statsInfo: .init(
-                operationType: .transfer,
-                deviceType: .iOS,
-                currency: "SOL",
-                build: "1.0.0(1234)"
-            )
+            operationType: .transfer,
+            currency: "SOL"
         ).toBlocking().first()
         print(signature ?? "Nothing")
     }
@@ -86,12 +82,8 @@ class RelaySendTests: RelayTests {
         let signature = try relayService.topUpAndRelayTransaction(
             preparedTransaction: preparedTransaction,
             payingFeeToken: payingToken,
-            statsInfo: .init(
-                operationType: .transfer,
-                deviceType: .iOS,
-                currency: test.mint,
-                build: "1.0.0(1234)"
-            )
+            operationType: .transfer,
+            currency: test.mint
         ).toBlocking().first()
         print(signature ?? "Nothing")
     }

@@ -73,12 +73,8 @@ class RelaySwapTests: RelayTests {
             preparedTransactions: txs.transactions,
             payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
             additionalPaybackFee: txs.additionalPaybackFee,
-            statsInfo: .init(
-                operationType: .swap,
-                deviceType: .iOS,
-                currency: nil,
-                build: "1.0.0(1234)"
-            )
+            operationType: .swap,
+            currency: nil
         ).toBlocking().first()!
         
         print(signatures)
