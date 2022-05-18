@@ -18,7 +18,7 @@ extension FeeRelayer.Reward {
         var blockhash: String
         let statsInfo: StatsInfo
         
-        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
+        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String?) {
             self.sender = sender
             self.recipient = recipient
             self.amount = amount
@@ -54,7 +54,7 @@ extension FeeRelayer.Reward {
         var blockhash: String
         let statsInfo: StatsInfo
         
-        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: SolanaSDK.Lamports, decimals: SolanaSDK.Decimals, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
+        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: SolanaSDK.Lamports, decimals: SolanaSDK.Decimals, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String?) {
             self.sender = sender
             self.recipient = recipient
             self.mintAddress = mintAddress
