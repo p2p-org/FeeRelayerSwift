@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-import FeeRelayerSwift
+@testable import FeeRelayerSwift
 
 class RewardEncodingTests: XCTestCase {
     func testEncodingTransferSOLParams() throws {
@@ -9,12 +9,14 @@ class RewardEncodingTests: XCTestCase {
             recipient: "4VsigVU3tx27Z68jis3Sxvxf2E3rUJKWy77G2xjYVqRa",
             amount: 5000000000,
             signature: "4pDHg6HXrXZ3MdAi7NeJW1LGcc9H83QaXZZXbsiFUhv3S14puroN695ukV4DUvSGq1GUug2oPBLwqG8t8547EXgy",
-            blockhash: "2zSkac7x52jjdD18zdDZfKDZpcmrKMq3RXodcN5G7MEx"
+            blockhash: "2zSkac7x52jjdD18zdDZfKDZpcmrKMq3RXodcN5G7MEx",
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
         let string = String(data: data, encoding: .utf8)
-        XCTAssertEqual(string, #"{"sender_pubkey":"JAmdLePQthdecE7rbgVbz1WUuCT3Q2g74vPbiQWSLxiH","signature":"4pDHg6HXrXZ3MdAi7NeJW1LGcc9H83QaXZZXbsiFUhv3S14puroN695ukV4DUvSGq1GUug2oPBLwqG8t8547EXgy","lamports":5000000000,"recipient_pubkey":"4VsigVU3tx27Z68jis3Sxvxf2E3rUJKWy77G2xjYVqRa","blockhash":"2zSkac7x52jjdD18zdDZfKDZpcmrKMq3RXodcN5G7MEx"}"#)
+        XCTAssertEqual(string, #"{"sender_pubkey":"JAmdLePQthdecE7rbgVbz1WUuCT3Q2g74vPbiQWSLxiH","signature":"4pDHg6HXrXZ3MdAi7NeJW1LGcc9H83QaXZZXbsiFUhv3S14puroN695ukV4DUvSGq1GUug2oPBLwqG8t8547EXgy","info":{"build":"1.0.0(1234)","currency":"SOL","operation_type":"Transfer","device_type":"Ios"},"lamports":5000000000,"recipient_pubkey":"4VsigVU3tx27Z68jis3Sxvxf2E3rUJKWy77G2xjYVqRa","blockhash":"2zSkac7x52jjdD18zdDZfKDZpcmrKMq3RXodcN5G7MEx"}"#)
     }
     
     func testEncodingTransferSPLTokenParams() throws {

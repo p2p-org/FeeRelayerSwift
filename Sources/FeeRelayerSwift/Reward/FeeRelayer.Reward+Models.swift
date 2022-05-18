@@ -16,13 +16,20 @@ extension FeeRelayer.Reward {
         let amount: SolanaSDK.Lamports
         var signature: String
         var blockhash: String
+        let statsInfo: StatsInfo
         
-        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String) {
+        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
             self.sender = sender
             self.recipient = recipient
             self.amount = amount
             self.signature = signature
             self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .transfer,
+                deviceType: deviceType,
+                currency: "SOL",
+                build: deviceBuild
+            )
         }
         
         enum CodingKeys: String, CodingKey {
@@ -31,6 +38,7 @@ extension FeeRelayer.Reward {
             case amount     =   "lamports"
             case signature
             case blockhash
+            case statsInfo  =   "info"
         }
     }
     
