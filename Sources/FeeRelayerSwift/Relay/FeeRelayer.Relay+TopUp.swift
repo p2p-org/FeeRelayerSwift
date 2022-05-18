@@ -80,7 +80,13 @@ extension FeeRelayer.Relay {
                             topUpSwap: .init(topUpTransaction.swapData),
                             feeAmount: expectedFee,
                             signatures: topUpSignatures,
-                            blockhash: recentBlockhash
+                            blockhash: recentBlockhash,
+                            statsInfo: .init(
+                                operationType: .topUp,
+                                deviceType: self.deviceType,
+                                currency: sourceToken.mint,
+                                build: self.deviceBuild
+                            )
                         )
                     ),
                     decodedTo: [String].self

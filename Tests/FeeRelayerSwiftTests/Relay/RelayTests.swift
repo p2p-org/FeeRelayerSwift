@@ -36,7 +36,9 @@ class RelayTests: XCTestCase {
             apiClient: apiClient,
             solanaClient: solanaClient,
             accountStorage: accountStorage,
-            orcaSwapClient: orcaSwap
+            orcaSwapClient: orcaSwap,
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         _ = try orcaSwap.load().toBlocking().first()
