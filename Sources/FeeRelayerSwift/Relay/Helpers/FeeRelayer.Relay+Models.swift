@@ -143,6 +143,25 @@ extension FeeRelayer.Relay {
             case blockhash = "blockhash"
             case statsInfo = "info"
         }
+        
+        init(userSourceTokenAccountPubkey: String, userDestinationPubkey: String, userDestinationAccountOwner: String?, sourceTokenMintPubkey: String, destinationTokenMintPubkey: String, userAuthorityPubkey: String, userSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+            self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
+            self.userDestinationPubkey = userDestinationPubkey
+            self.userDestinationAccountOwner = userDestinationAccountOwner
+            self.sourceTokenMintPubkey = sourceTokenMintPubkey
+            self.destinationTokenMintPubkey = destinationTokenMintPubkey
+            self.userAuthorityPubkey = userAuthorityPubkey
+            self.userSwap = userSwap
+            self.feeAmount = feeAmount
+            self.signatures = signatures
+            self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .swap,
+                deviceType: deviceType,
+                currency: sourceTokenMintPubkey,
+                build: deviceBuild
+            )
+        }
     }
     
     // MARK: - TransferParam
@@ -151,6 +170,7 @@ extension FeeRelayer.Relay {
         let amount, feeAmount: UInt64
         let decimals: UInt8
         let authoritySignature, blockhash: String
+        let statsInfo: StatsInfo
         
         enum CodingKeys: String, CodingKey {
             case senderTokenAccountPubkey = "sender_token_account_pubkey"
@@ -162,6 +182,25 @@ extension FeeRelayer.Relay {
             case feeAmount = "fee_amount"
             case authoritySignature = "authority_signature"
             case blockhash = "blockhash"
+            case statsInfo = "info"
+        }
+        
+        public init(senderTokenAccountPubkey: String, recipientPubkey: String, tokenMintPubkey: String, authorityPubkey: String, amount: UInt64, feeAmount: UInt64, decimals: UInt8, authoritySignature: String, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+            self.senderTokenAccountPubkey = senderTokenAccountPubkey
+            self.recipientPubkey = recipientPubkey
+            self.tokenMintPubkey = tokenMintPubkey
+            self.authorityPubkey = authorityPubkey
+            self.amount = amount
+            self.feeAmount = feeAmount
+            self.decimals = decimals
+            self.authoritySignature = authoritySignature
+            self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .transfer,
+                deviceType: deviceType,
+                currency: tokenMintPubkey,
+                build: deviceBuild
+            )
         }
     }
     
@@ -171,8 +210,14 @@ extension FeeRelayer.Relay {
         let signatures: [String: String]
         let pubkeys: [String]
         let blockhash: String
+        let statsInfo: StatsInfo
         
-        public init(preparedTransaction: SolanaSDK.PreparedTransaction) throws {
+        enum CodingKeys: String, CodingKey {
+            case instructions, signatures, pubkeys, blockhash
+            case statsInfo = "info"
+        }
+        
+        public init(preparedTransaction: SolanaSDK.PreparedTransaction, statsInfo: StatsInfo) throws {
             guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
             else {throw FeeRelayer.Error.unknown}
             
@@ -208,6 +253,7 @@ extension FeeRelayer.Relay {
                 }
             }
             self.signatures = signatures
+            self.statsInfo = statsInfo
         }
     }
     

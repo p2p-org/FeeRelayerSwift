@@ -60,12 +60,8 @@ class RelayEncodingTests: XCTestCase {
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
-            statsInfo: .init(
-                operationType: .swap,
-                deviceType: .iOS,
-                currency: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-                build: "1.0.0(1234)"
-            )
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -92,12 +88,8 @@ class RelayEncodingTests: XCTestCase {
             feeAmount: 50000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
-            statsInfo: .init(
-                operationType: .swap,
-                deviceType: .iOS,
-                currency: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-                build: "1.0.0(1234)"
-            )
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -131,12 +123,20 @@ class RelayEncodingTests: XCTestCase {
             expectedFee: .init(transaction: 0, accountBalances: 0)
         )
         
-        let params = try FeeRelayer.Relay.RelayTransactionParam(preparedTransaction: preparedTransaction)
+        let params = try FeeRelayer.Relay.RelayTransactionParam(
+            preparedTransaction: preparedTransaction,
+            statsInfo: .init(
+                operationType: .transfer,
+                deviceType: .iOS,
+                currency: "SOL",
+                build: "1.0.0(1234)"
+            )
+        )
         
         let data = try JSONEncoder().encode(params)
         let string = String(data: data, encoding: .utf8)
         
-        XCTAssertEqual(string, #"{"signatures":{"0":"5uvRMZRq2HopDZQx3pwgAn6WEUr1ETECm565EdyG5xwXtowpnetxdJzzSo6NEF1LffzwNMRaCByUhArMv23u3SJN"},"pubkeys":["Gd24j8rZNEZYQnnDEHrzzNW5KnyP9JCe4wpC2otNWt7z","6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D","11111111111111111111111111111111"],"instructions":[{"accounts":[{"is_signer":true,"is_writable":true,"pubkey":0},{"is_signer":false,"is_writable":true,"pubkey":1}],"data":[2,0,0,0,80,195,0,0,0,0,0,0],"program_id":2}],"blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"}"#)
+        XCTAssertEqual(string, #"{"signatures":{"0":"5uvRMZRq2HopDZQx3pwgAn6WEUr1ETECm565EdyG5xwXtowpnetxdJzzSo6NEF1LffzwNMRaCByUhArMv23u3SJN"},"pubkeys":["Gd24j8rZNEZYQnnDEHrzzNW5KnyP9JCe4wpC2otNWt7z","6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D","11111111111111111111111111111111"],"info":{"build":"1.0.0(1234)","currency":"SOL","operation_type":"Transfer","device_type":"Ios"},"instructions":[{"accounts":[{"is_signer":true,"is_writable":true,"pubkey":0},{"is_signer":false,"is_writable":true,"pubkey":1}],"data":[2,0,0,0,80,195,0,0,0,0,0,0],"program_id":2}],"blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"}"#)
     }
 }
 

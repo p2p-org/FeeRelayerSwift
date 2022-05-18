@@ -1,13 +1,13 @@
 import Foundation
 
-public struct StatsInfo: Encodable {
-    enum OperationType: String, Encodable {
+public struct StatsInfo: Codable {
+    enum OperationType: String, Codable {
         case topUp = "TopUp"
         case transfer = "Transfer"
         case swap = "Swap"
     }
     
-    public enum DeviceType: String, Encodable {
+    public enum DeviceType: String, Codable {
         case web = "Web"
         case android = "Android"
         case iOS = "Ios"
