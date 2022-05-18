@@ -13,12 +13,8 @@ class RelayEncodingTests: XCTestCase {
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
-            statsInfo: .init(
-                operationType: .topUp,
-                deviceType: .iOS,
-                currency: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-                build: "1.0.0(1234)"
-            )
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -41,12 +37,8 @@ class RelayEncodingTests: XCTestCase {
             feeAmount: 500000,
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
-            statsInfo: .init(
-                operationType: .topUp,
-                deviceType: .iOS,
-                currency: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-                build: "1.0.0(1234)"
-            )
+            deviceType: .iOS,
+            deviceBuild: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)

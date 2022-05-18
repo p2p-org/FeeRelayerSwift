@@ -98,6 +98,22 @@ extension FeeRelayer.Relay {
             case blockhash = "blockhash"
             case statsInfo = "info"
         }
+        
+        init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+            self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
+            self.sourceTokenMintPubkey = sourceTokenMintPubkey
+            self.userAuthorityPubkey = userAuthorityPubkey
+            self.topUpSwap = topUpSwap
+            self.feeAmount = feeAmount
+            self.signatures = signatures
+            self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .topUp,
+                deviceType: deviceType,
+                currency: sourceTokenMintPubkey,
+                build: deviceBuild
+            )
+        }
     }
     
     // MARK: - Swap
