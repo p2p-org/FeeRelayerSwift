@@ -112,6 +112,7 @@ extension FeeRelayer.Relay {
         let feeAmount: UInt64
         let signatures: SwapTransactionSignatures
         let blockhash: String
+        let statsInfo: StatsInfo
         
         enum CodingKeys: String, CodingKey {
             case userSourceTokenAccountPubkey = "user_source_token_account_pubkey"
@@ -124,6 +125,7 @@ extension FeeRelayer.Relay {
             case feeAmount = "fee_amount"
             case signatures = "signatures"
             case blockhash = "blockhash"
+            case statsInfo = "info"
         }
     }
     
