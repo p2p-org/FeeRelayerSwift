@@ -112,8 +112,7 @@ public extension FeeRelayerRelayType {
     
     func topUpAndRelayTransactions(
         preparedTransactions: [SolanaSDK.PreparedTransaction],
-        payingFeeToken: FeeRelayer.Relay.TokenInfo?,
-        additionalPaybackFee: UInt64
+        payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         topUpAndRelayTransactions(
             preparedTransactions: preparedTransactions,
@@ -201,90 +200,30 @@ extension FeeRelayer {
                 })
         }
         
-        /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(
             expectedFee: SolanaSDK.FeeAmount,
             payingTokenMint: String?
         ) -> Single<SolanaSDK.FeeAmount> {
-            var neededAmount = expectedFee
-            
-            // expected fees
-            let expectedTopUpNetworkFee = 2 * (cache.lamportsPerSignature ?? 5000)
-            let expectedTransactionNetworkFee = expectedFee.transaction
-            
-            // real fees
-            var neededTopUpNetworkFee = expectedTopUpNetworkFee
-            var neededTransactionNetworkFee = expectedTransactionNetworkFee
-            
-            // is Top up free
-            if cache.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee) == true {
-                neededTopUpNetworkFee = 0
+            let freeTransactionFeeLimitRequest: Single<FreeTransactionFeeLimit>
+            if let freeTransactionFeeLimit = cache.freeTransactionFeeLimit {
+                freeTransactionFeeLimitRequest = .just(freeTransactionFeeLimit)
+            } else {
+                freeTransactionFeeLimitRequest = getFreeTransactionFeeLimit()
             }
-            
-            // is transaction free
-            if cache.freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(
-                transactionFee: expectedTopUpNetworkFee + expectedTransactionNetworkFee,
-                forNextTransaction: true
-            ) == true {
-                neededTransactionNetworkFee = 0
-            }
-            
-            neededAmount.transaction = neededTopUpNetworkFee + neededTransactionNetworkFee
-            
-            // check relay account balance
-            if neededAmount.total > 0 {
-                let neededAmountWithoutCheckingRelayAccount = neededAmount
-                 
-                // for another token, check relay account status first
-                return getRelayAccountStatus()
-                    .map { [weak self] relayAccountStatus in
-                        guard let self = self else { return expectedFee }
-                        // TODO: - Unknown fee when first time using fee relayer
-                        if relayAccountStatus == .notYetCreated {
-                            if neededAmount.accountBalances > 0 {
-                                neededAmount.accountBalances += self.getRelayAccountCreationCost()
-                            } else {
-                                neededAmount.transaction += self.getRelayAccountCreationCost()
-                            }
-                        }
-                        
-                        // Check account balance
-                        if var relayAccountBalance = relayAccountStatus.balance,
-                           relayAccountBalance > 0
-                        {
-                            // if relayAccountBalance has enough balance to cover transaction fee
-                            if relayAccountBalance >= neededAmount.transaction {
-                                
-                                relayAccountBalance -= neededAmount.transaction
-                                neededAmount.transaction = 0
-                                
-                                // if relayAccountBlance has enough balance to cover accountBalances fee too
-                                if relayAccountBalance >= neededAmount.accountBalances {
-                                    neededAmount.accountBalances = 0
-                                }
-                                
-                                // Relay account balance can cover part of account creation fee
-                                else {
-                                    neededAmount.accountBalances -= relayAccountBalance
-                                }
-                            }
-                            // if not, relayAccountBalance can cover part of transaction fee
-                            else {
-                                neededAmount.transaction -= relayAccountBalance
-                            }
-                        }
-                        
-                        // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
-                        if neededAmount.total > 0, payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
-                            return neededAmountWithoutCheckingRelayAccount
-                        }
-                        
-                        return neededAmount
-                    }
-                    .catchAndReturn(expectedFee)
-            }
-            
-            return .just(neededAmount)
+            return Single.zip(
+                freeTransactionFeeLimitRequest,
+                getRelayAccountStatus()
+            )
+                .map { [weak self] freeTransactionFeeLimit, relayAccountStatus in
+                    guard let self = self else { return expectedFee }
+                    return self.calculateNeededTopUpAmount(
+                        expectedFee: expectedFee,
+                        payingTokenMint: payingTokenMint,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit,
+                        relayAccountStatus: relayAccountStatus
+                    )
+                }
+                .catchAndReturn(expectedFee)
         }
         
         /// Calculate needed fee (count in payingToken)
@@ -387,47 +326,42 @@ extension FeeRelayer {
             expectedFee: SolanaSDK.FeeAmount,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]?> {
+            
             // if paying fee token is solana, skip the top up
             if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
                 return .just(nil)
             }
-            
-            guard let freeTransactionFeeLimit = cache.freeTransactionFeeLimit,
-                  let relayAccountStatus = cache.relayAccountStatus
-            else {
-                return .error(Error.relayInfoMissing)
-            }
-            
-            // Check fee
-            var expectedFee = expectedFee
-            if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) {
-                expectedFee.transaction = 0
-            }
+            return Single.zip(
+                getRelayAccountStatus(),
+                getFreeTransactionFeeLimit()
+            )
+                .flatMap { [weak self] relayAccountStatus, freeTransactionFeeLimit -> Single<(TopUpPreparedParams?, Bool)> in
+                    guard let self = self else { throw FeeRelayer.Error.unknown }
+                    let topUpAmount = self.calculateNeededTopUpAmount(
+                        expectedFee: expectedFee,
+                        payingTokenMint: payingFeeToken?.mint,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit,
+                        relayAccountStatus: relayAccountStatus
+                    )
+                    // no need to top up
+                    guard topUpAmount.total > 0, let payingFeeToken = payingFeeToken else {
+                        return .just((nil, relayAccountStatus == .notYetCreated))
+                    }
                     
-            let request: Single<TopUpPreparedParams?>
-            
-            // if payingFeeToken is provided
-            if let payingFeeToken = payingFeeToken, expectedFee.total > 0 {
-                request = self.prepareForTopUp(targetAmount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
-            }
-            
-            // if not, make sure that relayAccountBalance is greater or equal to expected fee
-            else if (relayAccountStatus.balance ?? 0) >= expectedFee.total {
-                // skip topup
-                request = .just(nil)
-            }
-            
-            // fee paying token is required but missing
-            else {
-                request = .error(FeeRelayer.Error.feePayingTokenMissing)
-            }
-            
-            return request
-                .flatMap { [weak self] params in
+                    // top up
+                    return self.prepareForTopUp(
+                        topUpAmount: topUpAmount.total,
+                        payingFeeToken: payingFeeToken,
+                        relayAccountStatus: relayAccountStatus,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                    )
+                        .map {($0, relayAccountStatus == .notYetCreated)}
+                }
+                .flatMap { [weak self] params, needsCreateUserRelayAddress in
                     guard let self = self else {throw FeeRelayer.Error.unknown}
                     if let topUpParams = params, let payingFeeToken = payingFeeToken {
                         return self.topUp(
-                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                            needsCreateUserRelayAddress: needsCreateUserRelayAddress,
                             sourceToken: payingFeeToken,
                             targetAmount: topUpParams.amount,
                             topUpPools: topUpParams.poolsPair,

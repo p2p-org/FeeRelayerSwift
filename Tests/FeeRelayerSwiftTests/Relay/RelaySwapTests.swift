@@ -47,7 +47,7 @@ class RelaySwapTests: RelayTests {
         let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
         
         // get best pool pair
-        let pools: OrcaSwap.PoolsPair
+        let pools: PoolsPair
         if let isTransitiveSwap = isTransitiveSwap {
             pools = poolPairs.last(where: {$0.count == (isTransitiveSwap ? 2: 1)})!
         } else {
