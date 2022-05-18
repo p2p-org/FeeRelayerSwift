@@ -148,7 +148,7 @@ extension FeeRelayer {
         let owner: SolanaSDK.Account
         let userRelayAddress: SolanaSDK.PublicKey
         let deviceType: StatsInfo.DeviceType
-        let deviceBuild: String
+        let buildNumber: String?
         
         // MARK: - Initializers
         public init(
@@ -157,7 +157,7 @@ extension FeeRelayer {
             accountStorage: SolanaSDKAccountStorage,
             orcaSwapClient: OrcaSwapType,
             deviceType: StatsInfo.DeviceType,
-            deviceBuild: String
+            buildNumber: String?
         ) throws {
             guard let owner = accountStorage.account else {throw Error.unauthorized}
             self.apiClient = apiClient
@@ -168,7 +168,7 @@ extension FeeRelayer {
             self.userRelayAddress = try Program.getUserRelayAddress(user: owner.publicKey, network: self.solanaClient.endpoint.network)
             self.cache = .init()
             self.deviceType = deviceType
-            self.deviceBuild = deviceBuild
+            self.buildNumber = buildNumber
         }
         
         // MARK: - Methods
@@ -465,7 +465,7 @@ extension FeeRelayer {
             
             return self.apiClient.sendTransaction(
                 .relayTransaction(
-                    try .init(preparedTransaction: preparedTransaction, statsInfo: .init(operationType: operationType, deviceType: self.deviceType, currency: currency, build: self.deviceBuild))
+                    try .init(preparedTransaction: preparedTransaction, statsInfo: .init(operationType: operationType, deviceType: self.deviceType, currency: currency, build: self.buildNumber))
                 ),
                 decodedTo: [String].self
             )

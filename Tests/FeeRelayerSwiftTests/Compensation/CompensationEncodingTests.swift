@@ -36,7 +36,7 @@ class CompensationEncodingTests: XCTestCase {
             signature: "3rR2np1ZtgNa9QCnhGCybFXEiHKref7CAvpMA4DEh8yJ8gCF5oXKGzJZ8TEWTzUTQGZNm83CQyjyiSo2VHcQWXJd",
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)

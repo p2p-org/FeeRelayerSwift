@@ -23,7 +23,7 @@ extension FeeRelayer.Compensation {
         let blockhash: String
         let statsInfo: StatsInfo
         
-        public init(source: String, sourceMint: String, destination: String, destinationMint: String, authority: String, swapAccount: SwapTokensParamsSwapAccount, feeCompensationSwapAccount: SwapTokensParamsSwapAccount, feePayerWSOLAccountKeypair: String, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+        public init(source: String, sourceMint: String, destination: String, destinationMint: String, authority: String, swapAccount: SwapTokensParamsSwapAccount, feeCompensationSwapAccount: SwapTokensParamsSwapAccount, feePayerWSOLAccountKeypair: String, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
             self.source = source
             self.sourceMint = sourceMint
             self.destination = destination
@@ -38,7 +38,7 @@ extension FeeRelayer.Compensation {
                 operationType: .swap,
                 deviceType: deviceType,
                 currency: sourceMint,
-                build: "1.0.0(1234)"
+                build: buildNumber
             )
         }
         

@@ -82,7 +82,7 @@ extension FeeRelayer.Relay {
                             signatures: topUpSignatures,
                             blockhash: recentBlockhash,
                             deviceType: self.deviceType,
-                            deviceBuild: self.deviceBuild
+                            buildNumber: self.buildNumber
                         )
                     ),
                     decodedTo: [String].self

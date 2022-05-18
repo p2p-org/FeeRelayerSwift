@@ -99,7 +99,7 @@ extension FeeRelayer.Relay {
             case statsInfo = "info"
         }
         
-        init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+        init(userSourceTokenAccountPubkey: String, sourceTokenMintPubkey: String, userAuthorityPubkey: String, topUpSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String?) {
             self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
             self.sourceTokenMintPubkey = sourceTokenMintPubkey
             self.userAuthorityPubkey = userAuthorityPubkey
@@ -111,7 +111,7 @@ extension FeeRelayer.Relay {
                 operationType: .topUp,
                 deviceType: deviceType,
                 currency: sourceTokenMintPubkey,
-                build: deviceBuild
+                build: buildNumber
             )
         }
     }
@@ -144,7 +144,7 @@ extension FeeRelayer.Relay {
             case statsInfo = "info"
         }
         
-        init(userSourceTokenAccountPubkey: String, userDestinationPubkey: String, userDestinationAccountOwner: String?, sourceTokenMintPubkey: String, destinationTokenMintPubkey: String, userAuthorityPubkey: String, userSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+        init(userSourceTokenAccountPubkey: String, userDestinationPubkey: String, userDestinationAccountOwner: String?, sourceTokenMintPubkey: String, destinationTokenMintPubkey: String, userAuthorityPubkey: String, userSwap: FeeRelayer.Relay.SwapData, feeAmount: UInt64, signatures: FeeRelayer.Relay.SwapTransactionSignatures, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
             self.userSourceTokenAccountPubkey = userSourceTokenAccountPubkey
             self.userDestinationPubkey = userDestinationPubkey
             self.userDestinationAccountOwner = userDestinationAccountOwner
@@ -159,7 +159,7 @@ extension FeeRelayer.Relay {
                 operationType: .swap,
                 deviceType: deviceType,
                 currency: sourceTokenMintPubkey,
-                build: deviceBuild
+                build: buildNumber
             )
         }
     }
@@ -185,7 +185,7 @@ extension FeeRelayer.Relay {
             case statsInfo = "info"
         }
         
-        public init(senderTokenAccountPubkey: String, recipientPubkey: String, tokenMintPubkey: String, authorityPubkey: String, amount: UInt64, feeAmount: UInt64, decimals: UInt8, authoritySignature: String, blockhash: String, deviceType: StatsInfo.DeviceType, deviceBuild: String) {
+        public init(senderTokenAccountPubkey: String, recipientPubkey: String, tokenMintPubkey: String, authorityPubkey: String, amount: UInt64, feeAmount: UInt64, decimals: UInt8, authoritySignature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
             self.senderTokenAccountPubkey = senderTokenAccountPubkey
             self.recipientPubkey = recipientPubkey
             self.tokenMintPubkey = tokenMintPubkey
@@ -199,7 +199,7 @@ extension FeeRelayer.Relay {
                 operationType: .transfer,
                 deviceType: deviceType,
                 currency: tokenMintPubkey,
-                build: deviceBuild
+                build: buildNumber
             )
         }
     }

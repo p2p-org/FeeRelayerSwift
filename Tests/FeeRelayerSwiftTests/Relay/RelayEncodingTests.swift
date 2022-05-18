@@ -14,7 +14,7 @@ class RelayEncodingTests: XCTestCase {
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -38,7 +38,7 @@ class RelayEncodingTests: XCTestCase {
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -61,7 +61,7 @@ class RelayEncodingTests: XCTestCase {
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)
@@ -89,7 +89,7 @@ class RelayEncodingTests: XCTestCase {
             signatures: fakeSignature,
             blockhash: "FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S",
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         let data = try JSONEncoder().encode(params)

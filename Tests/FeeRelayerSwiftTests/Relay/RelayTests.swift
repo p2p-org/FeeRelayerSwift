@@ -38,7 +38,7 @@ class RelayTests: XCTestCase {
             accountStorage: accountStorage,
             orcaSwapClient: orcaSwap,
             deviceType: .iOS,
-            deviceBuild: "1.0.0(1234)"
+            buildNumber: "1.0.0(1234)"
         )
         
         _ = try orcaSwap.load().toBlocking().first()

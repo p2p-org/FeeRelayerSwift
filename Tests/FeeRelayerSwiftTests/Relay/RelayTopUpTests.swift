@@ -160,7 +160,7 @@ class RelayTopUpTests: RelayTests {
             accountStorage: FakeAccountStorage(seedPhrase: seedPhrase, network: endpoint.network),
             orcaSwapClient: orcaSwapClient,
             deviceType: .iOS,
-            deviceBuild: "1.0.1(1234)"
+            buildNumber: "1.0.1(1234)"
         )
         let _ = try relayService.load().toBlocking().first()
         let neededTopUpAmount = try relayService.calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: nil).toBlocking().first()!
