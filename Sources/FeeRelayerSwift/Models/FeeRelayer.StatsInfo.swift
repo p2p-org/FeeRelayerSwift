@@ -1,39 +1,11 @@
 import Foundation
 
 public struct StatsInfo: Codable {
-    public enum OperationType: RawRepresentable, Codable {
-        public init?(rawValue: String) {
-            switch rawValue {
-            case "TopUp":
-                self = .topUp
-            case "Transfer":
-                self = .transfer
-            case "Swap":
-                self = .swap
-            default:
-                self = .other(rawValue)
-            }
-        }
-        
-        public var rawValue: String {
-            switch self {
-            case .topUp:
-                return "TopUp"
-            case .transfer:
-                return "Transfer"
-            case .swap:
-                return "Swap"
-            case .other(let string):
-                return string
-            }
-        }
-        
-        public typealias RawValue = String
-        
-        case topUp
-        case transfer
-        case swap
-        case other(String)
+    public enum OperationType: String, Codable {
+        case topUp = "TopUp"
+        case transfer = "Transfer"
+        case swap = "Swap"
+        case other = "Other"
     }
     
     public enum DeviceType: String, Codable {
