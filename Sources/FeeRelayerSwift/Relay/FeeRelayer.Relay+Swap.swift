@@ -17,7 +17,7 @@ extension FeeRelayer.Relay {
         destinationTokenMint: String,
         destinationAddress: String?,
         payingFeeToken: TokenInfo?,
-        swapPools: OrcaSwap.PoolsPair,
+        swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
     ) -> Single<(transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)> {
@@ -87,7 +87,7 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     public func calculateSwappingNetworkFees(
-        swapPools: OrcaSwap.PoolsPair?,
+        swapPools: PoolsPair?,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
@@ -143,7 +143,7 @@ extension FeeRelayer.Relay {
         destinationToken: TokenInfo,
         userDestinationAccountOwnerAddress: String?,
         
-        pools: OrcaSwap.PoolsPair,
+        pools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double,
         
@@ -423,7 +423,7 @@ extension FeeRelayer.Relay {
         destinationTokenMint: String,
         destinationAddress: String?,
         payingFeeToken: TokenInfo?,
-        swapPools: OrcaSwap.PoolsPair,
+        swapPools: PoolsPair,
         reuseCache: Bool
     ) -> Single<TopUpAndActionPreparedParams> {
         guard let relayAccountStatus = cache.relayAccountStatus,
@@ -437,7 +437,7 @@ extension FeeRelayer.Relay {
         if reuseCache, let cachedPreparedParams = cache.preparedParams {
             request = .just(cachedPreparedParams)
         } else {
-            let tradablePoolsPairRequest: Single<[OrcaSwap.PoolsPair]>
+            let tradablePoolsPairRequest: Single<[PoolsPair]>
             if let payingFeeToken = payingFeeToken {
                 tradablePoolsPairRequest = orcaSwapClient
                     .getTradablePoolsPairs(
@@ -486,7 +486,7 @@ extension FeeRelayer.Relay {
                             )
                             
                             // Get pools
-                            let topUpPools: OrcaSwap.PoolsPair
+                            let topUpPools: PoolsPair
                             if let bestPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair)
                             {
                                 topUpPools = bestPools

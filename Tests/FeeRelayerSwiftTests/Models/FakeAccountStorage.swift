@@ -13,11 +13,11 @@ class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
         self.network = network
     }
     
-    func getAccount() -> OrcaSwap.Account? {
+    func getAccount() -> Account? {
         account
     }
     
-    func getNativeWalletAddress() -> OrcaSwap.PublicKey? {
+    func getNativeWalletAddress() -> PublicKey? {
         account?.publicKey
     }
     

@@ -16,7 +16,7 @@ extension FeeRelayer.Relay {
         needsCreateUserRelayAddress: Bool,
         sourceToken: TokenInfo,
         targetAmount: UInt64,
-        topUpPools: OrcaSwap.PoolsPair,
+        topUpPools: PoolsPair,
         expectedFee: UInt64
     ) -> Single<[String]> {
         let transitToken = try? getTransitToken(pools: topUpPools)
@@ -119,7 +119,7 @@ extension FeeRelayer.Relay {
                 let expectedFee = try self.calculateExpectedFeeForTopUp(relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
                 
                 // Get pools for topping up
-                let topUpPools: OrcaSwap.PoolsPair
+                let topUpPools: PoolsPair
                 
                 // force using transitive swap (for testing only)
                 if forceUsingTransitiveSwap {
@@ -274,7 +274,7 @@ extension FeeRelayer.Relay {
         sourceToken: TokenInfo,
         userAuthorityAddress: SolanaSDK.PublicKey,
         userRelayAddress: SolanaSDK.PublicKey,
-        topUpPools: OrcaSwap.PoolsPair,
+        topUpPools: PoolsPair,
         targetAmount: UInt64,
         expectedFee: UInt64,
         blockhash: String,

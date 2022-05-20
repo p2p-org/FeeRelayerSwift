@@ -15,7 +15,7 @@ extension FeeRelayer.Relay {
     /// Prepare swap data from swap pools
     func prepareSwapData(
         network: SolanaSDK.Network,
-        pools: OrcaSwap.PoolsPair,
+        pools: PoolsPair,
         inputAmount: UInt64?,
         minAmountOut: UInt64?,
         slippage: Double,
@@ -90,7 +90,7 @@ extension FeeRelayer.Relay {
         }
     }
     
-    func getTransitTokenMintPubkey(pools: OrcaSwap.PoolsPair) throws -> SolanaSDK.PublicKey? {
+    func getTransitTokenMintPubkey(pools: PoolsPair) throws -> SolanaSDK.PublicKey? {
         var transitTokenMintPubkey: SolanaSDK.PublicKey?
         if pools.count == 2 {
             let interTokenName = pools[0].tokenBName
@@ -100,7 +100,7 @@ extension FeeRelayer.Relay {
     }
     
     func getTransitToken(
-        pools: OrcaSwap.PoolsPair
+        pools: PoolsPair
     ) throws -> TokenInfo? {
         let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
         
@@ -197,7 +197,7 @@ extension Single where Element == [String] {
     }
 }
 
-private extension OrcaSwap.Pool {
+private extension Pool {
     func getSwapData(
         transferAuthorityPubkey: SolanaSDK.PublicKey,
         amountIn: UInt64,

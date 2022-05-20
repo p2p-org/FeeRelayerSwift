@@ -25,7 +25,7 @@ class RelayTests: XCTestCase {
         let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
         solanaClient = SolanaSDK(endpoint: endpoint, accountStorage: accountStorage)
         orcaSwap = OrcaSwap(
-            apiClient: OrcaSwap.APIClient(network: network.cluster),
+            apiClient: OrcaSwapSwift.APIClient(network: network.cluster),
             solanaClient: solanaClient,
             accountProvider: accountStorage,
             notificationHandler: FakeNotificationHandler()

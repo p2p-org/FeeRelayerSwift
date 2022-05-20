@@ -253,31 +253,31 @@ private class FakeOrcaSwap: OrcaSwapType {
         fatalError()
     }
     
-    func getTradablePoolsPairs(fromMint: String, toMint: String) -> Single<[OrcaSwap.PoolsPair]> {
+    func getTradablePoolsPairs(fromMint: String, toMint: String) -> Single<[PoolsPair]> {
         fatalError()
     }
     
-    func findBestPoolsPairForInputAmount(_ inputAmount: UInt64, from poolsPairs: [OrcaSwap.PoolsPair]) throws -> OrcaSwap.PoolsPair? {
+    func findBestPoolsPairForInputAmount(_ inputAmount: UInt64, from poolsPairs: [PoolsPair]) throws -> PoolsPair? {
         fatalError()
     }
     
-    func findBestPoolsPairForEstimatedAmount(_ estimatedAmount: UInt64, from poolsPairs: [OrcaSwap.PoolsPair]) throws -> OrcaSwap.PoolsPair? {
+    func findBestPoolsPairForEstimatedAmount(_ estimatedAmount: UInt64, from poolsPairs: [PoolsPair]) throws -> PoolsPair? {
         fatalError()
     }
     
-    func getLiquidityProviderFee(bestPoolsPair: OrcaSwap.PoolsPair?, inputAmount: Double?, slippage: Double) throws -> [UInt64] {
+    func getLiquidityProviderFee(bestPoolsPair: PoolsPair?, inputAmount: Double?, slippage: Double) throws -> [UInt64] {
         fatalError()
     }
     
-    func getNetworkFees(myWalletsMints: [String], fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: OrcaSwap.PoolsPair?, inputAmount: Double?, slippage: Double, lamportsPerSignature: UInt64, minRentExempt: UInt64) throws -> Single<SolanaSDK.FeeAmount> {
+    func getNetworkFees(myWalletsMints: [String], fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: PoolsPair?, inputAmount: Double?, slippage: Double, lamportsPerSignature: UInt64, minRentExempt: UInt64) throws -> Single<SolanaSDK.FeeAmount> {
         fatalError()
     }
     
-    func prepareForSwapping(fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: OrcaSwap.PoolsPair, amount: Double, feePayer: OrcaSwap.PublicKey?, slippage: Double) -> Single<([OrcaSwap.PreparedSwapTransaction], String?)> {
+    func prepareForSwapping(fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: PoolsPair, amount: Double, feePayer: PublicKey?, slippage: Double) -> Single<([PreparedSwapTransaction], String?)> {
         fatalError()
     }
     
-    func swap(fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: OrcaSwap.PoolsPair, amount: Double, slippage: Double, isSimulation: Bool) -> Single<OrcaSwap.SwapResponse> {
+    func swap(fromWalletPubkey: String, toWalletPubkey: String?, bestPoolsPair: PoolsPair, amount: Double, slippage: Double, isSimulation: Bool) -> Single<SwapResponse> {
         fatalError()
     }
 }
