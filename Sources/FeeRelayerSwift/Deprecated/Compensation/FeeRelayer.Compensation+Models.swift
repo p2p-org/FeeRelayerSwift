@@ -59,10 +59,10 @@ extension FeeRelayer.Compensation {
         let destination: String
         let poolTokenMint: String
         let poolFeeAccount: String
-        let amountIn: SolanaSDK.Lamports
-        let minimumAmountOut: SolanaSDK.Lamports
+        let amountIn: Lamports
+        let minimumAmountOut: Lamports
         
-        public init(pubkey: String, authority: String, transferAuthority: String, source: String, destination: String, poolTokenMint: String, poolFeeAccount: String, amountIn: SolanaSDK.Lamports, minimumAmountOut: SolanaSDK.Lamports) {
+        public init(pubkey: String, authority: String, transferAuthority: String, source: String, destination: String, poolTokenMint: String, poolFeeAccount: String, amountIn: Lamports, minimumAmountOut: Lamports) {
             self.pubkey = pubkey
             self.authority = authority
             self.transferAuthority = transferAuthority

@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "FeeRelayerSwift",
     platforms: [
-        .macOS(.v10_12),
-        .iOS(.v10),
+        .macOS(.v10_15),
+        .iOS(.v13),
         .tvOS(.v10),
         .watchOS(.v3)
     ],
@@ -25,8 +25,8 @@ let package = Package(
         .package(url: "https://github.com/RxSwiftCommunity/RxAlamofire.git",
                              from: "6.1.1"),
         .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"),
-        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "1.3.8"),
-        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "1.0.20")
+        .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "refactor/pwn-3297"),
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "swap-unit-tests")
     ],
     targets: [
         .target(

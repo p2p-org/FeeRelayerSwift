@@ -3,27 +3,27 @@ import RxSwift
 import SolanaSwift
 import OrcaSwapSwift
 
-class FakeAccountStorage: SolanaSDKAccountStorage, OrcaSwapAccountProvider {
+class FakeAccountStorage: AccountStorage, OrcaSwapAccountProvider {
     
     private let seedPhrase: String
-    private let network: SolanaSDK.Network
+    private let network: Network
     
-    init(seedPhrase: String, network: SolanaSDK.Network) {
+    init(seedPhrase: String, network: Network) {
         self.seedPhrase = seedPhrase
         self.network = network
     }
     
-    func getAccount() -> OrcaSwap.Account? {
+    func getAccount() -> Account? {
         account
     }
     
-    func getNativeWalletAddress() -> OrcaSwap.PublicKey? {
+    func getNativeWalletAddress() -> PublicKey? {
         account?.publicKey
     }
     
-    func save(_ account: SolanaSDK.Account) throws {}
+    func save(_ account: Account) throws {}
     
-    var account: SolanaSDK.Account? {
+    var account: Account? {
         try! .init(phrase: seedPhrase.components(separatedBy: " "), network: network, derivablePath: .default)
     }
 }

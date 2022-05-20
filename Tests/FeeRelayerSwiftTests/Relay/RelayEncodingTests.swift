@@ -91,11 +91,11 @@ class RelayEncodingTests: XCTestCase {
     func testEncodingRelayTransactionParams() throws {
         let phrase = "assume legend squirrel drastic immense ribbon reduce thrive page uncover vehicle cart right tank wheel whisper ride pet wall august link wheel moment enlist"
         
-        let signer = try SolanaSDK.Account(phrase: phrase.components(separatedBy: " "), network: .mainnetBeta)
+        let signer = try Account(phrase: phrase.components(separatedBy: " "), network: .mainnetBeta)
         
-        var transaction = SolanaSDK.Transaction()
+        var transaction = Transaction()
         transaction.instructions = [
-            SolanaSDK.SystemProgram.transferInstruction(
+            SystemProgram.transferInstruction(
                 from: signer.publicKey,
                 to: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D",
                 lamports: 50000
@@ -106,7 +106,7 @@ class RelayEncodingTests: XCTestCase {
         
         try transaction.sign(signers: [signer])
         
-        let preparedTransaction = SolanaSDK.PreparedTransaction(
+        let preparedTransaction = PreparedTransaction(
             transaction: transaction,
             signers: [signer],
             expectedFee: .init(transaction: 0, accountBalances: 0)

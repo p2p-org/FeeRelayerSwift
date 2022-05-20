@@ -39,26 +39,26 @@ public protocol FeeRelayerRelayType {
     
     /// Calculate needed top up amount for expected fee
     func calculateNeededTopUpAmount(
-        expectedFee: SolanaSDK.FeeAmount,
+        expectedFee: FeeAmount,
         payingTokenMint: String?
-    ) -> Single<SolanaSDK.FeeAmount>
+    ) -> Single<FeeAmount>
     
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
-        feeInSOL: SolanaSDK.FeeAmount,
+        feeInSOL: FeeAmount,
         payingFeeTokenMint: String
-    ) -> Single<SolanaSDK.FeeAmount?>
+    ) -> Single<FeeAmount?>
     
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
-        preparedTransaction: SolanaSDK.PreparedTransaction,
+        preparedTransaction: PreparedTransaction,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?,
         additionalPaybackFee: UInt64
     ) -> Single<[String]>
     
     /// Top up relay account (if needed) and relay mutiple transactions
     func topUpAndRelayTransactions(
-        preparedTransactions: [SolanaSDK.PreparedTransaction],
+        preparedTransactions: [PreparedTransaction],
         payingFeeToken: FeeRelayer.Relay.TokenInfo?,
         additionalPaybackFee: UInt64
     ) -> Single<[String]>
@@ -66,25 +66,25 @@ public protocol FeeRelayerRelayType {
     /// SPECIAL METHODS FOR SWAP NATIVELY
     /// Calculate needed top up amount, specially for swapping
     func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        swapTransactions: [PreparedSwapTransaction],
         payingTokenMint: String?
-    ) -> Single<SolanaSDK.FeeAmount>
+    ) -> Single  <FeeAmount>
     
     /// Top up relay account and swap natively
     func topUpAndSwap(
-        _ swapTransactions: [OrcaSwap.PreparedSwapTransaction],
-        feePayer: SolanaSDK.PublicKey?,
+        _ swapTransactions: [PreparedSwapTransaction],
+        feePayer: PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]>
     
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
     /// Calculate network fees for swapping
     func calculateSwappingNetworkFees(
-        swapPools: OrcaSwap.PoolsPair?,
+        swapPools: PoolsPair?,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
-    ) -> Single<SolanaSDK.FeeAmount>
+    ) -> Single  <FeeAmount>
     
     /// Prepare swap transaction for relay using RelayProgram
     func prepareSwapTransaction(
@@ -92,15 +92,15 @@ public protocol FeeRelayerRelayType {
         destinationTokenMint: String,
         destinationAddress: String?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?,
-        swapPools: OrcaSwap.PoolsPair,
+        swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<(transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)>
+    ) -> Single<(transactions: [PreparedTransaction], additionalPaybackFee: UInt64)>
 }
 
 public extension FeeRelayerRelayType {
     func topUpAndRelayTransaction(
-        preparedTransaction: SolanaSDK.PreparedTransaction,
+        preparedTransaction: PreparedTransaction,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         topUpAndRelayTransaction(
@@ -111,7 +111,7 @@ public extension FeeRelayerRelayType {
     }
     
     func topUpAndRelayTransactions(
-        preparedTransactions: [SolanaSDK.PreparedTransaction],
+        preparedTransactions: [PreparedTransaction],
         payingFeeToken: FeeRelayer.Relay.TokenInfo?,
         additionalPaybackFee: UInt64
     ) -> Single<[String]> {
@@ -126,25 +126,25 @@ public extension FeeRelayerRelayType {
 extension FeeRelayer {
     public class Relay: FeeRelayerRelayType {
         // MARK: - Dependencies
-        let apiClient: FeeRelayerAPIClientType
+        let apiClient: FeeRelayerAPIClient
         let solanaClient: FeeRelayerRelaySolanaClient
-        let accountStorage: SolanaSDKAccountStorage
+        let accountStorage: SolanaAccountStorage
         let orcaSwapClient: OrcaSwapType
         
         // MARK: - Properties
         let locker = NSLock()
         public internal(set) var cache: Cache
-        let owner: SolanaSDK.Account
-        let userRelayAddress: SolanaSDK.PublicKey
+        let owner: Account
+        let userRelayAddress: PublicKey
         
         // MARK: - Initializers
         public init(
-            apiClient: FeeRelayerAPIClientType,
+            apiClient: FeeRelayerAPIClient,
             solanaClient: FeeRelayerRelaySolanaClient,
-            accountStorage: SolanaSDKAccountStorage,
+            accountStorage: SolanaAccountStorage,
             orcaSwapClient: OrcaSwapType
         ) throws {
-            guard let owner = accountStorage.account else {throw Error.unauthorized}
+            guard let owner = try accountStorage.account else {throw Error.unauthorized}
             self.apiClient = apiClient
             self.solanaClient = solanaClient
             self.accountStorage = accountStorage
@@ -157,30 +157,31 @@ extension FeeRelayer {
         // MARK: - Methods
         /// Load all needed info for relay operations, need to be completed before any operation
         public func load() -> Completable {
-            Single.zip(
-                // get minimum token account balance
-                solanaClient.getMinimumBalanceForRentExemption(span: 165),
-                // get minimum relay account balance
-                solanaClient.getMinimumBalanceForRentExemption(span: 0),
-                // get fee payer address
-                apiClient.getFeePayerPubkey(),
-                // get lamportsPerSignature
-                solanaClient.getLamportsPerSignature(),
-                // get relayAccount status
-                updateRelayAccountStatus().andThen(.just(())),
-                // get free transaction fee limit
-                updateFreeTransactionFeeLimit().andThen(.just(()))
-            )
-                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _, _ in
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
-                    self.locker.lock()
-                    self.cache.minimumTokenAccountBalance = minimumTokenAccountBalance
-                    self.cache.minimumRelayAccountBalance = minimumRelayAccountBalance
-                    self.cache.feePayerAddress = feePayerAddress
-                    self.cache.lamportsPerSignature = lamportsPerSignature
-                    self.locker.unlock()
-                })
-                .asCompletable()
+            Single.just("").asCompletable()
+//            Single.zip(
+//                // get minimum token account balance
+//                solanaClient.getMinimumBalanceForRentExemption(span: 165),
+//                // get minimum relay account balance
+//                solanaClient.getMinimumBalanceForRentExemption(span: 0),
+//                // get fee payer address
+//                apiClient.getFeePayerPubkey(),
+//                // get lamportsPerSignature
+//                solanaClient.getLamportsPerSignature(),
+//                // get relayAccount status
+//                updateRelayAccountStatus().andThen(.just(())),
+//                // get free transaction fee limit
+//                updateFreeTransactionFeeLimit().andThen(.just(()))
+//            )
+//                .do(onSuccess: { [weak self] minimumTokenAccountBalance, minimumRelayAccountBalance, feePayerAddress, lamportsPerSignature, _, _ in
+//                    guard let self = self else {throw FeeRelayer.Error.unknown}
+//                    self.locker.lock()
+//                    self.cache.minimumTokenAccountBalance = minimumTokenAccountBalance
+//                    self.cache.minimumRelayAccountBalance = minimumRelayAccountBalance
+//                    self.cache.feePayerAddress = feePayerAddress
+//                    self.cache.lamportsPerSignature = lamportsPerSignature
+//                    self.locker.unlock()
+//                })
+//                .asCompletable()
         }
         
         /// Check if user has free transaction fee
@@ -203,9 +204,9 @@ extension FeeRelayer {
         
         /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(
-            expectedFee: SolanaSDK.FeeAmount,
+            expectedFee: FeeAmount,
             payingTokenMint: String?
-        ) -> Single<SolanaSDK.FeeAmount> {
+        ) -> Single<FeeAmount> {
             var neededAmount = expectedFee
             
             // expected fees
@@ -275,7 +276,7 @@ extension FeeRelayer {
                         }
                         
                         // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
-                        if neededAmount.total > 0, payingTokenMint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+                        if neededAmount.total > 0, payingTokenMint == PublicKey.wrappedSOLMint.base58EncodedString {
                             return neededAmountWithoutCheckingRelayAccount
                         }
                         
@@ -289,13 +290,13 @@ extension FeeRelayer {
         
         /// Calculate needed fee (count in payingToken)
         public func calculateFeeInPayingToken(
-            feeInSOL: SolanaSDK.FeeAmount,
+            feeInSOL: FeeAmount,
             payingFeeTokenMint: String
-        ) -> Single<SolanaSDK.FeeAmount?> {
+        ) -> Single<FeeAmount?> {
             orcaSwapClient
                 .getTradablePoolsPairs(
                     fromMint: payingFeeTokenMint,
-                    toMint: SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString
+                    toMint: PublicKey.wrappedSOLMint.base58EncodedString
                 )
                 .map { [weak self] tradableTopUpPoolsPair in
                     guard let self = self else { throw FeeRelayer.Error.unknown }
@@ -313,7 +314,7 @@ extension FeeRelayer {
         
         /// Generic function for sending transaction to fee relayer's relay
         public func topUpAndRelayTransaction(
-            preparedTransaction: SolanaSDK.PreparedTransaction,
+            preparedTransaction: PreparedTransaction,
             payingFeeToken: TokenInfo?,
             additionalPaybackFee: UInt64
         ) -> Single<[String]> {
@@ -325,7 +326,7 @@ extension FeeRelayer {
         }
         
         public func topUpAndRelayTransactions(
-            preparedTransactions: [SolanaSDK.PreparedTransaction],
+            preparedTransactions: [PreparedTransaction],
             payingFeeToken: TokenInfo?,
             additionalPaybackFee: UInt64
         ) -> Single<[String]> {
@@ -381,11 +382,11 @@ extension FeeRelayer {
         
         // MARK: - Helpers
         func checkAndTopUp(
-            expectedFee: SolanaSDK.FeeAmount,
+            expectedFee: FeeAmount,
             payingFeeToken: TokenInfo?
         ) -> Single<[String]?> {
             // if paying fee token is solana, skip the top up
-            if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString {
+            if payingFeeToken?.mint == PublicKey.wrappedSOLMint.base58EncodedString {
                 return .just(nil)
             }
             
@@ -437,75 +438,76 @@ extension FeeRelayer {
         }
         
         func relayTransaction(
-            preparedTransaction: SolanaSDK.PreparedTransaction,
+            preparedTransaction: PreparedTransaction,
             payingFeeToken: TokenInfo?,
             relayAccountStatus: RelayAccountStatus,
             additionalPaybackFee: UInt64
         ) throws -> Single<[String]> {
-            guard let feePayer = cache.feePayerAddress,
-                  let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
-            else { throw FeeRelayer.Error.unauthorized }
-            
-            // verify fee payer
-            guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
-            else {
-                throw FeeRelayer.Error.invalidFeePayer
-            }
-            
-            // Calculate the fee to send back to feePayer
-            // Account creation fee (accountBalances) is a must-pay-back fee
-            var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
-            
-            // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-            if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
-            {
-                paybackFee += preparedTransaction.expectedFee.transaction
-            }
-            
-            // transfer sol back to feerelayer's feePayer
-            var preparedTransaction = preparedTransaction
-            if paybackFee > 0 {
-                if payingFeeToken?.mint == SolanaSDK.PublicKey.wrappedSOLMint.base58EncodedString,
-                   (relayAccountStatus.balance ?? 0) < paybackFee
-                {
-                    preparedTransaction.transaction.instructions.append(
-                        SolanaSDK.SystemProgram.transferInstruction(
-                            from: owner.publicKey,
-                            to: try SolanaSDK.PublicKey(string: feePayer),
-                            lamports: paybackFee
-                        )
-                    )
-                } else {
-                    preparedTransaction.transaction.instructions.append(
-                        try Program.transferSolInstruction(
-                            userAuthorityAddress: owner.publicKey,
-                            recipient: try SolanaSDK.PublicKey(string: feePayer),
-                            lamports: paybackFee,
-                            network: self.solanaClient.endpoint.network
-                        )
-                    )
-                }
-            }
-            
-            #if DEBUG
-            if let decodedTransaction = preparedTransaction.transaction.jsonString {
-                Logger.log(message: decodedTransaction, event: .info)
-            }
-            #endif
-            
-            // resign transaction
-            try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
-            
-            return self.apiClient.sendTransaction(
-                .relayTransaction(
-                    try .init(preparedTransaction: preparedTransaction)
-                ),
-                decodedTo: [String].self
-            )
-                .do(onSuccess: {[weak self] _ in
-                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total + additionalPaybackFee - paybackFee)
-                })
-                .retryWhenNeeded()
+            Single.just([""])
+//            guard let feePayer = cache.feePayerAddress,
+//                  let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
+//            else { throw FeeRelayer.Error.unauthorized }
+//
+//            // verify fee payer
+//            guard feePayer == preparedTransaction.transaction.feePayer?.base58EncodedString
+//            else {
+//                throw FeeRelayer.Error.invalidFeePayer
+//            }
+//
+//            // Calculate the fee to send back to feePayer
+//            // Account creation fee (accountBalances) is a must-pay-back fee
+//            var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
+//
+//            // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
+//            if !freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction)
+//            {
+//                paybackFee += preparedTransaction.expectedFee.transaction
+//            }
+//
+//            // transfer sol back to feerelayer's feePayer
+//            var preparedTransaction = preparedTransaction
+//            if paybackFee > 0 {
+//                if payingFeeToken?.mint == PublicKey.wrappedSOLMint.base58EncodedString,
+//                   (relayAccountStatus.balance ?? 0) < paybackFee
+//                {
+//                    preparedTransaction.transaction.instructions.append(
+//                        SystemProgram.transferInstruction(
+//                            from: owner.publicKey,
+//                            to: try PublicKey(string: feePayer),
+//                            lamports: paybackFee
+//                        )
+//                    )
+//                } else {
+//                    preparedTransaction.transaction.instructions.append(
+//                        try Program.transferSolInstruction(
+//                            userAuthorityAddress: owner.publicKey,
+//                            recipient: try PublicKey(string: feePayer),
+//                            lamports: paybackFee,
+//                            network: self.solanaClient.endpoint.network
+//                        )
+//                    )
+//                }
+//            }
+//
+//            #if DEBUG
+//            if let decodedTransaction = preparedTransaction.transaction.jsonString {
+//                Logger.log(message: decodedTransaction, event: .info)
+//            }
+//            #endif
+//
+//            // resign transaction
+//            try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+//
+//            return self.apiClient.sendTransaction(
+//                .relayTransaction(
+//                    try .init(preparedTransaction: preparedTransaction)
+//                ),
+//                decodedTo: [String].self
+//            )
+//                .do(onSuccess: {[weak self] _ in
+//                    self?.markTransactionAsCompleted(freeFeeAmountUsed: preparedTransaction.expectedFee.total + additionalPaybackFee - paybackFee)
+//                })
+//                .retryWhenNeeded()
         }
     }
 }

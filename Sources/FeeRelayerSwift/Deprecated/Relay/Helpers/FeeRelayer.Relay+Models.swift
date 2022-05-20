@@ -152,7 +152,7 @@ extension FeeRelayer.Relay {
         let pubkeys: [String]
         let blockhash: String
         
-        public init(preparedTransaction: SolanaSDK.PreparedTransaction) throws {
+        public init(preparedTransaction: PreparedTransaction) throws {
             guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
             else {throw FeeRelayer.Error.unknown}
             
@@ -341,7 +341,7 @@ extension FeeRelayer.Relay {
     public struct TopUpPreparedParams {
         public let amount: UInt64
         public let expectedFee: UInt64
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let poolsPair: PoolsPair
     }
     
     public struct TopUpAndActionPreparedParams {
@@ -350,14 +350,14 @@ extension FeeRelayer.Relay {
     }
     
     public struct FeesAndPools {
-        public let fee: SolanaSDK.FeeAmount
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let fee: FeeAmount
+        public let poolsPair: PoolsPair
     }
     
     public struct FeesAndTopUpAmount {
-        public let feeInSOL: SolanaSDK.FeeAmount?
+        public let feeInSOL: FeeAmount?
         public let topUpAmountInSOL: UInt64?
-        public let feeInPayingToken: SolanaSDK.FeeAmount?
+        public let feeInPayingToken: FeeAmount?
         public let topUpAmountInPayingToen: UInt64?
     }
 }

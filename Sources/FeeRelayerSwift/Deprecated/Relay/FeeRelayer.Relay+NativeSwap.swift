@@ -13,9 +13,9 @@ import SolanaSwift
 extension FeeRelayer.Relay {
     /// Calculate needed top up amount for swap
     public func calculateNeededTopUpAmount(
-        swapTransactions: [OrcaSwap.PreparedSwapTransaction],
+        swapTransactions: [PreparedSwapTransaction],
         payingTokenMint: String?
-    ) -> Single<SolanaSDK.FeeAmount> {
+    ) -> Single  <FeeAmount> {
         guard let lamportsPerSignature = cache.lamportsPerSignature else {
             return .error(FeeRelayer.Error.relayInfoMissing)
         }
@@ -26,22 +26,22 @@ extension FeeRelayer.Relay {
         // account creation fee
         let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
         
-        let expectedFee = SolanaSDK.FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
+        let expectedFee = FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
         return calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: payingTokenMint)
     }
     
     public func topUpAndSwap(
-        _ swapTransactions: [OrcaSwap.PreparedSwapTransaction],
-        feePayer: SolanaSDK.PublicKey?,
+        _ swapTransactions: [PreparedSwapTransaction],
+        feePayer: PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         Single.zip(
             updateRelayAccountStatus().andThen(.just(())),
-            updateFreeTransactionFeeLimit().andThen(.just(())),
+//            updateFreeTransactionFeeLimit().andThen(.just(())),
             calculateNeededTopUpAmount(swapTransactions: swapTransactions, payingTokenMint: payingFeeToken?.mint)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] _, _, expectedFee -> Single<[String]?> in
+            .flatMap { [weak self] _, expectedFee -> Single<[String]?> in
                 guard let self = self else {throw FeeRelayer.Error.unknown}
                 return self.checkAndTopUp(
                     expectedFee: expectedFee,
@@ -70,7 +70,7 @@ extension FeeRelayer.Relay {
                             )
                                 .retry { errors in
                                     errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
-                                        if let error = error as? SolanaSDK.Error {
+                                        if let error = error as? SolanaError {
                                             switch error {
                                             case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
                                                 return .timer(.seconds(1), scheduler: MainScheduler.instance)
@@ -93,8 +93,8 @@ extension FeeRelayer.Relay {
     
     // MARK: - Helpers
     private func prepareAndSend(
-        _ swapTransaction: OrcaSwap.PreparedSwapTransaction,
-        feePayer: OrcaSwap.PublicKey,
+        _ swapTransaction: PreparedSwapTransaction,
+        feePayer: PublicKey,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
     ) -> Single<[String]> {
         solanaClient.prepareTransaction(

@@ -40,18 +40,18 @@ class RelaySwapTests: RelayTests {
     }
     
     // MARK: - Helpers
-    private func prepareTransaction(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws -> (transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64) {
+    private func prepareTransaction(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         try loadTest(testInfo)
         
         // get pools pair
-        let poolPairs = try orcaSwap.getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
+        let poolPairs = try getTradablePoolsPairs(fromMint: testInfo.fromMint, toMint: testInfo.toMint).toBlocking().first()!
         
         // get best pool pair
-        let pools: OrcaSwap.PoolsPair
+        let pools: PoolsPair
         if let isTransitiveSwap = isTransitiveSwap {
             pools = poolPairs.last(where: {$0.count == (isTransitiveSwap ? 2: 1)})!
         } else {
-            pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
+            pools = try findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         }
         
         return try relayService.prepareSwapTransaction(
