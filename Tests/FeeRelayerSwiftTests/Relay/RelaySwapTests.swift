@@ -72,7 +72,9 @@ class RelaySwapTests: RelayTests {
         let signatures = try relayService.topUpAndRelayTransactions(
             preparedTransactions: txs.transactions,
             payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
-            additionalPaybackFee: txs.additionalPaybackFee
+            additionalPaybackFee: txs.additionalPaybackFee,
+            operationType: .swap,
+            currency: nil
         ).toBlocking().first()!
         
         print(signatures)

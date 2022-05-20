@@ -111,7 +111,9 @@ extension FeeRelayer.Relay {
                     preparedTransaction: preparedTransaction,
                     payingFeeToken: payingFeeToken,
                     relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
-                    additionalPaybackFee: 0
+                    additionalPaybackFee: 0,
+                    operationType: .swap,
+                    currency: nil // TODO: - Which?
                 )
             }
     }

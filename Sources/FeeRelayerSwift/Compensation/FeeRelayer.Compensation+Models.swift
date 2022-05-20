@@ -21,8 +21,9 @@ extension FeeRelayer.Compensation {
         let feePayerWSOLAccountKeypair: String
         let signature: String
         let blockhash: String
+        let statsInfo: StatsInfo
         
-        public init(source: String, sourceMint: String, destination: String, destinationMint: String, authority: String, swapAccount: SwapTokensParamsSwapAccount, feeCompensationSwapAccount: SwapTokensParamsSwapAccount, feePayerWSOLAccountKeypair: String, signature: String, blockhash: String) {
+        public init(source: String, sourceMint: String, destination: String, destinationMint: String, authority: String, swapAccount: SwapTokensParamsSwapAccount, feeCompensationSwapAccount: SwapTokensParamsSwapAccount, feePayerWSOLAccountKeypair: String, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String) {
             self.source = source
             self.sourceMint = sourceMint
             self.destination = destination
@@ -33,6 +34,12 @@ extension FeeRelayer.Compensation {
             self.feePayerWSOLAccountKeypair = feePayerWSOLAccountKeypair
             self.signature = signature
             self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .swap,
+                deviceType: deviceType,
+                currency: sourceMint,
+                build: buildNumber
+            )
         }
         
         enum CodingKeys: String, CodingKey {
@@ -48,6 +55,7 @@ extension FeeRelayer.Compensation {
                                     =   "fee_payer_wsol_account_keypair"
             case signature
             case blockhash
+            case statsInfo          =   "info"
         }
     }
     
