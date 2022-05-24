@@ -49,10 +49,12 @@ extension FeeRelayer {
             .init(path: "/relay_top_up_with_swap", params: params)
         }
         
+        @available(*, deprecated, message: "Use relay transaction")
         public static func relaySwap(_ params: Relay.SwapParams) -> RequestType {
             .init(path: "/relay_swap", params: params)
         }
         
+        @available(*, deprecated, message: "Use relay transaction")
         public static func relayTransferSPLTokena(_ params: Relay.TransferParam) -> RequestType {
             .init(path: "/relay_transfer_spl_token", params: params)
         }
