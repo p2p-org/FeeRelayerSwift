@@ -28,6 +28,14 @@ class FeeRelayerImpl: FeeRelayer {
         fee _: Token?,
         config _: FeeRelayerConfiguration
     ) async throws -> [TransactionID] { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
+    
+    internal func getMinimumTokenAccountBalance() async -> UInt64 {
+        // Return from cache
+        // ...
+        
+        // Return from api client
+        return 0
+    }
 }
 
 enum CacheKey: String {
