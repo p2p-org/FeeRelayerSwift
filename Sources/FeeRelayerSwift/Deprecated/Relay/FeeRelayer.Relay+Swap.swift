@@ -20,32 +20,43 @@ extension FeeRelayer.Relay {
         swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<(transactions: [PreparedTransaction], additionalPaybackFee: UInt64)> {
+    ) async throws -> Single<(transactions: [PreparedTransaction], additionalPaybackFee: UInt64)> {
         let transitToken = try? getTransitToken(pools: swapPools)
         // get fresh data by ignoring cache
+        try await updateRelayAccountStatus()
+        try await updateFreeTransactionFeeLimit()
+        let preparedParams = try await prepareForTopUpAndSwap(
+            sourceToken: sourceToken,
+            destinationTokenMint: destinationTokenMint,
+            destinationAddress: destinationAddress,
+            payingFeeToken: payingFeeToken,
+            swapPools: swapPools,
+            reuseCache: false
+        )
+        
         return Single.zip(
-            Completable.zip(
-                updateRelayAccountStatus()/*,
-                updateFreeTransactionFeeLimit()*/
-            )
-                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .andThen(Single<TopUpAndActionPreparedParams>.deferred { [weak self] in
-                    guard let self = self else { throw FeeRelayer.Error.unknown }
-                    return self.prepareForTopUpAndSwap(
-                        sourceToken: sourceToken,
-                        destinationTokenMint: destinationTokenMint,
-                        destinationAddress: destinationAddress,
-                        payingFeeToken: payingFeeToken,
-                        swapPools: swapPools,
-                        reuseCache: false
-                    )
-                }),
+//            Completable.zip(
+//                updateRelayAccountStatus(),
+//                updateFreeTransactionFeeLimit()
+//            )
+//                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
+//                .andThen(Single<TopUpAndActionPreparedParams>.deferred { [weak self] in
+//                    guard let self = self else { throw FeeRelayer.Error.unknown }
+//                    return try await self.prepareForTopUpAndSwap(
+//                        sourceToken: sourceToken,
+//                        destinationTokenMint: destinationTokenMint,
+//                        destinationAddress: destinationAddress,
+//                        payingFeeToken: payingFeeToken,
+//                        swapPools: swapPools,
+//                        reuseCache: false
+//                    )
+//                }),
             getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress),
             solanaClient.getRecentBlockhash(commitment: nil),
             checkIfNeedsCreateTransitTokenAccount(transitToken: transitToken)
         )
             .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .map { [weak self] preparedParams, destination, recentBlockhash, needsCreateTransitTokenAccount in
+            .map { [weak self] destination, recentBlockhash, needsCreateTransitTokenAccount in
                 guard let self = self else { throw FeeRelayer.Error.unknown }
                 // get needed info
                 guard let minimumTokenAccountBalance = self.cache.minimumTokenAccountBalance,
@@ -58,7 +69,7 @@ extension FeeRelayer.Relay {
                 let destinationToken = destination.destinationToken
                 let userDestinationAccountOwnerAddress = destination.userDestinationAccountOwnerAddress
                 let needsCreateDestinationTokenAccount = destination.needsCreateDestinationTokenAccount
-                
+
                 let swapFeesAndPools = preparedParams.actionFeesAndPools
                 let swappingFee = swapFeesAndPools.fee.total
                 let swapPools = swapFeesAndPools.poolsPair
@@ -91,7 +102,7 @@ extension FeeRelayer.Relay {
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
-    ) -> Single  <FeeAmount> {
+    ) -> Single<FeeAmount> {
         getFixedDestination(destinationTokenMint: destinationTokenMint, destinationAddress: destinationAddress)
             .map { [weak self] destination in
                 guard let self = self,
@@ -181,11 +192,16 @@ extension FeeRelayer.Relay {
                     to: feePayerAddress,
                     lamports: inputAmount
                 ),
-                SystemProgram.createAccountInstruction(
-                    from: feePayerAddress,
-                    toNewPubkey: sourceWSOLNewAccount!.publicKey,
-                    lamports: minimumTokenAccountBalance + inputAmount
-                ),
+                SystemProgram.createAccountInstruction(from: feePayerAddress,
+                                                       toNewPubkey: sourceWSOLNewAccount!.publicKey,
+                                                       lamports: minimumTokenAccountBalance + inputAmount,
+                                                       space: AccountInfo.BUFFER_LENGTH,
+                                                       programId: TokenProgram.id),
+//                SystemProgram.createAccountInstruction(
+//                    from: feePayerAddress,
+//                    toNewPubkey: sourceWSOLNewAccount!.publicKey,
+//                    lamports: minimumTokenAccountBalance + inputAmount
+//                ),
                 TokenProgram.initializeAccountInstruction(
                     account: sourceWSOLNewAccount!.publicKey,
                     mint: .wrappedSOLMint,
@@ -204,11 +220,11 @@ extension FeeRelayer.Relay {
                 // For native solana, create and initialize WSOL
                 destinationNewAccount = try Account(network: network)
                 instructions.append(contentsOf: [
-                    SystemProgram.createAccountInstruction(
-                        from: feePayerAddress,
-                        toNewPubkey: destinationNewAccount!.publicKey,
-                        lamports: minimumTokenAccountBalance
-                    ),
+                    SystemProgram.createAccountInstruction(from: feePayerAddress,
+                                                           toNewPubkey: destinationNewAccount!.publicKey,
+                                                           lamports: minimumTokenAccountBalance,
+                                                           space: AccountInfo.BUFFER_LENGTH,
+                                                           programId: TokenProgram.id),
                     TokenProgram.initializeAccountInstruction(
                         account: destinationNewAccount!.publicKey,
                         mint: destinationTokenMintAddress,
@@ -224,9 +240,14 @@ extension FeeRelayer.Relay {
                     tokenMintAddress: destinationTokenMintAddress
                 )
                 
-                let instruction = AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+//                let instruction = AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+//                    mint: destinationTokenMintAddress,
+//                    associatedAccount: associatedAddress,
+//                    owner: userAuthorityAddress,
+//                    payer: feePayerAddress
+//                )
+                let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
                     mint: destinationTokenMintAddress,
-                    associatedAccount: associatedAddress,
                     owner: userAuthorityAddress,
                     payer: feePayerAddress
                 )
@@ -260,13 +281,11 @@ extension FeeRelayer.Relay {
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
-                    TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
-                        account: userSourceTokenAccountAddress,
-                        delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
-                        amount: swap.amountIn
-                    )
+                    TokenProgram.approveInstruction(account: userSourceTokenAccountAddress,
+                                                    delegate: userTransferAuthority,
+                                                    owner: userAuthorityAddress,
+                                                    multiSigners: [],
+                                                    amount: swap.amountIn)
                 )
             }
             
@@ -284,13 +303,11 @@ extension FeeRelayer.Relay {
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
-                    TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
-                        account: userSourceTokenAccountAddress,
-                        delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
-                        amount: swap.from.amountIn
-                    )
+                    TokenProgram.approveInstruction(account: userSourceTokenAccountAddress,
+                                                    delegate: userTransferAuthority,
+                                                    owner: userAuthorityAddress,
+                                                    multiSigners: [],
+                                                    amount: swap.from.amountIn)
                 )
             }
             
@@ -409,7 +426,7 @@ extension FeeRelayer.Relay {
         )
         
         if let decodedTransaction = transaction.jsonString {
-            Logger.log(message: decodedTransaction, event: .info)
+//            Logger.log(message: decodedTransaction, event: .info)
         }
         
         return .init(transaction: transaction, signers: signers, expectedFee: expectedFee)
@@ -422,39 +439,45 @@ extension FeeRelayer.Relay {
         payingFeeToken: TokenInfo?,
         swapPools: PoolsPair,
         reuseCache: Bool
-    ) -> Single<TopUpAndActionPreparedParams> {
+    ) async throws -> TopUpAndActionPreparedParams {
+        return .init(topUpPreparedParam: .none, actionFeesAndPools: .init(fee: .zero, poolsPair: .init()))
+        /*
         guard let relayAccountStatus = cache.relayAccountStatus,
               let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
         else {
-            return .error(FeeRelayer.Error.relayInfoMissing)
+            throw FeeRelayer.Error.relayInfoMissing
         }
         
         // form request
-        let request: Single<TopUpAndActionPreparedParams>
+        let request: TopUpAndActionPreparedParams
         if reuseCache, let cachedPreparedParams = cache.preparedParams {
-            request = .just(cachedPreparedParams)
+            request = cachedPreparedParams
         } else {
-            let tradablePoolsPairRequest: Single<[PoolsPair]>
-            if let payingFeeToken = payingFeeToken {
-                tradablePoolsPairRequest = orcaSwapClient
-                    .getTradablePoolsPairs(
-                        fromMint: payingFeeToken.mint,
-                        toMint: PublicKey.wrappedSOLMint.base58EncodedString
-                    )
-            } else {
-                tradablePoolsPairRequest = .just([])
-            }
+            let tradablePoolsPairRequest: [PoolsPair]
+//            if let payingFeeToken = payingFeeToken {
+//                tradablePoolsPairRequest = orcaSwapClient
+//                    .getTradablePoolsPairs(
+//                        fromMint: payingFeeToken.mint,
+//                        toMint: PublicKey.wrappedSOLMint.base58EncodedString
+//                    )
+//            } else {
+//                tradablePoolsPairRequest = .just([])
+//            }
             
-            request = Single.zip(
-                tradablePoolsPairRequest,
-                calculateSwappingNetworkFees(
+//            request = Single.zip(
+//                tradablePoolsPairRequest,
+            request = calculateSwappingNetworkFees(
                     swapPools: swapPools,
                     sourceTokenMint: sourceToken.mint,
                     destinationTokenMint: destinationTokenMint,
                     destinationAddress: destinationAddress
                 )
-            )
-                .map { [weak self] tradableTopUpPoolsPair, swappingFee in
+//            )
+                .map { [weak self] swappingFee in
+                    let tradablePoolsPairRequest: [PoolsPair] = try await orcaSwapClient.getTradablePoolsPairs(
+                        fromMint: payingFeeToken.mint,
+                        toMint: PublicKey.wrappedSOLMint.base58EncodedString
+                    )
                     guard let self = self else { throw FeeRelayer.Error.unknown }
                     
                     // TOP UP
@@ -499,11 +522,11 @@ extension FeeRelayer.Relay {
                     self?.locker.lock()
                     self?.cache.preparedParams = $0
                     self?.locker.unlock()
-                })
-        }
+                })*/
+//        }
         
         // get tradable poolspair for top up
-        return request
+//        return request
     }
     
     /// Get fixed destination

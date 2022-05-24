@@ -18,8 +18,8 @@ extension FeeRelayer.Relay {
         targetAmount: UInt64,
         topUpPools: PoolsPair,
         expectedFee: UInt64
-    ) -> Single<[String]> {
-        return .just([])
+    ) -> [String] {
+        return []
 //        let transitToken = try? getTransitToken(pools: topUpPools)
 //        return Single.zip(
 //            solanaClient.getRecentBlockhash(commitment: nil),
@@ -108,17 +108,20 @@ extension FeeRelayer.Relay {
         freeTransactionFeeLimit: FreeTransactionFeeLimit?,
         checkIfBalanceHaveEnoughAmount: Bool = true,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
-    ) -> Single<TopUpPreparedParams?> {
+    ) async throws -> TopUpPreparedParams? {
         // form request
-        orcaSwapClient
-            .getTradablePoolsPairs(
-                fromMint: payingFeeToken.mint,
-                toMint: PublicKey.wrappedSOLMint.base58EncodedString
-            )
-            .map { [weak self] tradableTopUpPoolsPair in
-                guard let self = self else { throw FeeRelayer.Error.unknown }
-                
-                
+        let tradableTopUpPoolsPair = try await orcaSwapClient.getTradablePoolsPairs(
+            fromMint: payingFeeToken.mint,
+            toMint: PublicKey.wrappedSOLMint.base58EncodedString
+        )
+        
+//        orcaSwapClient
+//            .getTradablePoolsPairs(
+//                fromMint: payingFeeToken.mint,
+//                toMint: PublicKey.wrappedSOLMint.base58EncodedString
+//            )
+//            .map { [weak self] tradableTopUpPoolsPair in
+//                guard let self = self else { throw FeeRelayer.Error.unknown }
                 // TOP UP
                 if checkIfBalanceHaveEnoughAmount,
                    let relayAccountBalance = relayAccountStatus.balance,
@@ -135,7 +138,11 @@ extension FeeRelayer.Relay {
                     }
                     
                     // Get real amounts needed for topping up
-                    let amounts = try self.calculateTopUpAmount(targetAmount: targetAmount, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
+                    let amounts = try self.calculateTopUpAmount(
+                        targetAmount: targetAmount,
+                        relayAccountStatus: relayAccountStatus,
+                        freeTransactionFeeLimit: freeTransactionFeeLimit
+                    )
                     let topUpAmount = amounts.topUpAmount
                     let expectedFee = amounts.expectedFee
                     
@@ -167,7 +174,7 @@ extension FeeRelayer.Relay {
                     // return needed amount and pools
                     return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
                 }
-            }
+//            }
     }
     
     /// Calculate needed fee for topup transaction by forming fake transaction
@@ -293,13 +300,18 @@ extension FeeRelayer.Relay {
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
-                    TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
-                        account: userSourceTokenAccountAddress,
-                        delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
-                        amount: swap.amountIn
-                    )
+                    TokenProgram.approveInstruction(account: userSourceTokenAccountAddress,
+                                                    delegate: userTransferAuthority,
+                                                    owner: userAuthorityAddress,
+                                                    multiSigners: [],
+                                                    amount: swap.amountIn)
+//                    TokenProgram.approveInstruction(
+//                        tokenProgramId: .tokenProgramId,
+//                        account: userSourceTokenAccountAddress,
+//                        delegate: userTransferAuthority,
+//                        owner: userAuthorityAddress,
+//                        amount: swap.amountIn
+//                    )
                 )
             }
             
@@ -317,13 +329,18 @@ extension FeeRelayer.Relay {
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
-                    TokenProgram.approveInstruction(
-                        tokenProgramId: .tokenProgramId,
-                        account: userSourceTokenAccountAddress,
-                        delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
-                        amount: swap.from.amountIn
-                    )
+                    TokenProgram.approveInstruction(account: userSourceTokenAccountAddress,
+                                                    delegate: userTransferAuthority,
+                                                    owner: userAuthorityAddress,
+                                                    multiSigners: [],
+                                                    amount: swap.from.amountIn)
+//                    TokenProgram.approveInstruction(
+//                        tokenProgramId: .tokenProgramId,
+//                        account: userSourceTokenAccountAddress,
+//                        delegate: userTransferAuthority,
+//                        owner: userAuthorityAddress,
+//                        amount: swap.from.amountIn
+//                    )
                 )
             }
             
@@ -386,7 +403,7 @@ extension FeeRelayer.Relay {
         try transaction.sign(signers: signers)
         
         if let decodedTransaction = transaction.jsonString {
-            Logger.log(message: decodedTransaction, event: .info)
+//            Logger.log(message: decodedTransaction, event: .info)
         }
         
         return (

@@ -18,8 +18,9 @@ class RelayTests: XCTestCase {
 //        relayService = nil
 //    }
     
-//    @discardableResult
-//    func loadTest(_ relayTest: RelayTestType) throws -> FeeRelayerAPIClient {
+    @discardableResult
+    func loadTest(_ relayTest: RelayTestType) throws -> FeeRelayerAPIClient {
+        fatalError()
 //        let network = Network.mainnetBeta
 //        let accountStorage = FakeAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
 //        let endpoint = SolanaSDK.APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
@@ -43,5 +44,5 @@ class RelayTests: XCTestCase {
 //        _ = try relayService.load().toBlocking().first()
 //
 //        return apiClient
-//    }
+    }
 }

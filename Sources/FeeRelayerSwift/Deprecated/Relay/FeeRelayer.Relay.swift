@@ -31,23 +31,23 @@ public protocol FeeRelayerRelayType {
     
     /// Check if user has free transaction fee
     func getFreeTransactionFeeLimit(
-    ) -> Single<FeeRelayer.Relay.FreeTransactionFeeLimit>
+    ) async throws -> FeeRelayer.Relay.FreeTransactionFeeLimit
     
     /// Get info of relay account
     func getRelayAccountStatus(
-    ) -> Single<FeeRelayer.Relay.RelayAccountStatus>
+    ) async throws -> FeeRelayer.Relay.RelayAccountStatus
     
     /// Calculate needed top up amount for expected fee
     func calculateNeededTopUpAmount(
         expectedFee: FeeAmount,
         payingTokenMint: String?
-    ) -> Single<FeeAmount>
+    ) async throws -> FeeAmount
     
     /// Calculate fee needed in paying token
     func calculateFeeInPayingToken(
         feeInSOL: FeeAmount,
         payingFeeTokenMint: String
-    ) -> Single<FeeAmount?>
+    ) async throws -> FeeAmount?
     
     /// Top up relay account (if needed) and relay transaction
     func topUpAndRelayTransaction(
@@ -68,14 +68,14 @@ public protocol FeeRelayerRelayType {
     func calculateNeededTopUpAmount(
         swapTransactions: [PreparedSwapTransaction],
         payingTokenMint: String?
-    ) -> Single  <FeeAmount>
+    ) async throws -> FeeAmount
     
     /// Top up relay account and swap natively
     func topUpAndSwap(
         _ swapTransactions: [PreparedSwapTransaction],
         feePayer: PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
-    ) -> Single<[String]>
+    ) async throws -> [String]
     
     /// SPECIAL METHODS FOR SWAP WITH RELAY PROGRAM
     /// Calculate network fees for swapping
@@ -84,7 +84,7 @@ public protocol FeeRelayerRelayType {
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
-    ) -> Single  <FeeAmount>
+    ) -> Single<FeeAmount>
     
     /// Prepare swap transaction for relay using RelayProgram
     func prepareSwapTransaction(
@@ -95,7 +95,7 @@ public protocol FeeRelayerRelayType {
         swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) -> Single<(transactions: [PreparedTransaction], additionalPaybackFee: UInt64)>
+    ) async throws  -> Single<(transactions: [PreparedTransaction], additionalPaybackFee: UInt64)>
 }
 
 public extension FeeRelayerRelayType {
@@ -125,6 +125,7 @@ public extension FeeRelayerRelayType {
 
 extension FeeRelayer {
     public class Relay: FeeRelayerRelayType {
+        
         // MARK: - Dependencies
         let apiClient: FeeRelayerAPIClient
         let solanaClient: FeeRelayerRelaySolanaClient
@@ -185,28 +186,32 @@ extension FeeRelayer {
         }
         
         /// Check if user has free transaction fee
-        public func getFreeTransactionFeeLimit() -> Single<FreeTransactionFeeLimit> {
-            updateFreeTransactionFeeLimit()
-                .andThen(.deferred { [weak self] in
-                    guard let self = self, let cached = self.cache.freeTransactionFeeLimit else {throw Error.unknown}
-                    return .just(cached)
-                })
+        public func getFreeTransactionFeeLimit() async throws -> FreeTransactionFeeLimit {
+            _ = try await updateFreeTransactionFeeLimit()
+            guard let cached = self.cache.freeTransactionFeeLimit else { throw Error.unknown }
+            return cached
         }
         
         /// Get info of relay account
-        public func getRelayAccountStatus() -> Single<RelayAccountStatus> {
-            updateRelayAccountStatus()
-                .andThen(.deferred { [weak self] in
-                    guard let self = self, let cached = self.cache.relayAccountStatus else {throw Error.unknown}
-                    return .just(cached)
-                })
+//        public func getRelayAccountStatus() -> Single<RelayAccountStatus> {
+//            updateRelayAccountStatus()
+//                .andThen(.deferred { [weak self] in
+//                    guard let self = self, let cached = self.cache.relayAccountStatus else {throw Error.unknown}
+//                    return .just(cached)
+//                })
+//        }
+
+        public func getRelayAccountStatus() async throws -> RelayAccountStatus {
+            let _ = try await updateRelayAccountStatus()
+            guard let ret = cache.relayAccountStatus else { throw Error.unknown }
+            return ret
         }
         
         /// Calculate needed top up amount for expected fee
         public func calculateNeededTopUpAmount(
             expectedFee: FeeAmount,
             payingTokenMint: String?
-        ) -> Single<FeeAmount> {
+        ) async throws -> FeeAmount {
             var neededAmount = expectedFee
             
             // expected fees
@@ -237,79 +242,72 @@ extension FeeRelayer {
                 let neededAmountWithoutCheckingRelayAccount = neededAmount
                  
                 // for another token, check relay account status first
-                return getRelayAccountStatus()
-                    .map { [weak self] relayAccountStatus in
-                        guard let self = self else { return expectedFee }
-                        // TODO: - Unknown fee when first time using fee relayer
-                        if relayAccountStatus == .notYetCreated {
-                            if neededAmount.accountBalances > 0 {
-                                neededAmount.accountBalances += self.getRelayAccountCreationCost()
-                            } else {
-                                neededAmount.transaction += self.getRelayAccountCreationCost()
-                            }
-                        }
-                        
-                        // Check account balance
-                        if var relayAccountBalance = relayAccountStatus.balance,
-                           relayAccountBalance > 0
-                        {
-                            // if relayAccountBalance has enough balance to cover transaction fee
-                            if relayAccountBalance >= neededAmount.transaction {
-                                
-                                relayAccountBalance -= neededAmount.transaction
-                                neededAmount.transaction = 0
-                                
-                                // if relayAccountBlance has enough balance to cover accountBalances fee too
-                                if relayAccountBalance >= neededAmount.accountBalances {
-                                    neededAmount.accountBalances = 0
-                                }
-                                
-                                // Relay account balance can cover part of account creation fee
-                                else {
-                                    neededAmount.accountBalances -= relayAccountBalance
-                                }
-                            }
-                            // if not, relayAccountBalance can cover part of transaction fee
-                            else {
-                                neededAmount.transaction -= relayAccountBalance
-                            }
-                        }
-                        
-                        // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
-                        if neededAmount.total > 0, payingTokenMint == PublicKey.wrappedSOLMint.base58EncodedString {
-                            return neededAmountWithoutCheckingRelayAccount
-                        }
-                        
-                        return neededAmount
+                let relayAccountStatus = try await getRelayAccountStatus()
+                // TODO: - Unknown fee when first time using fee relayer
+                if relayAccountStatus == .notYetCreated {
+                    if neededAmount.accountBalances > 0 {
+                        neededAmount.accountBalances += self.getRelayAccountCreationCost()
+                    } else {
+                        neededAmount.transaction += self.getRelayAccountCreationCost()
                     }
-                    .catchAndReturn(expectedFee)
+                }
+                
+                // Check account balance
+                if var relayAccountBalance = relayAccountStatus.balance,
+                   relayAccountBalance > 0
+                {
+                    // if relayAccountBalance has enough balance to cover transaction fee
+                    if relayAccountBalance >= neededAmount.transaction {
+                        
+                        relayAccountBalance -= neededAmount.transaction
+                        neededAmount.transaction = 0
+                        
+                        // if relayAccountBlance has enough balance to cover accountBalances fee too
+                        if relayAccountBalance >= neededAmount.accountBalances {
+                            neededAmount.accountBalances = 0
+                        }
+                        
+                        // Relay account balance can cover part of account creation fee
+                        else {
+                            neededAmount.accountBalances -= relayAccountBalance
+                        }
+                    }
+                    // if not, relayAccountBalance can cover part of transaction fee
+                    else {
+                        neededAmount.transaction -= relayAccountBalance
+                    }
+                }
+                
+                // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
+                if neededAmount.total > 0, payingTokenMint == PublicKey.wrappedSOLMint.base58EncodedString {
+                    return neededAmountWithoutCheckingRelayAccount
+                }
             }
             
-            return .just(neededAmount)
+            return neededAmount
         }
         
         /// Calculate needed fee (count in payingToken)
         public func calculateFeeInPayingToken(
             feeInSOL: FeeAmount,
             payingFeeTokenMint: String
-        ) -> Single<FeeAmount?> {
-            orcaSwapClient
-                .getTradablePoolsPairs(
-                    fromMint: payingFeeTokenMint,
-                    toMint: PublicKey.wrappedSOLMint.base58EncodedString
-                )
-                .map { [weak self] tradableTopUpPoolsPair in
-                    guard let self = self else { throw FeeRelayer.Error.unknown }
-                    guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL.total, from: tradableTopUpPoolsPair) else {
-                        throw FeeRelayer.Error.swapPoolsNotFound
-                    }
-                    
-                    let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: 0.01)
-                    let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: 0.01)
-                    
-                    return .init(transaction: transactionFee ?? 0, accountBalances: accountCreationFee ?? 0)
-                }
-                .debug()
+        ) async throws -> FeeAmount? {
+            let tradableTopUpPoolsPair = try await orcaSwapClient.getTradablePoolsPairs(
+                fromMint: payingFeeTokenMint,
+                toMint: PublicKey.wrappedSOLMint.base58EncodedString
+            )
+//                .map { [weak self] tradableTopUpPoolsPair in
+//            guard let self = self else { throw FeeRelayer.Error.unknown }
+            guard let topUpPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(feeInSOL.total, from: tradableTopUpPoolsPair) else {
+                throw FeeRelayer.Error.swapPoolsNotFound
+            }
+            
+            let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: 0.01)
+            let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: 0.01)
+            
+            return .init(transaction: transactionFee ?? 0, accountBalances: accountCreationFee ?? 0)
+//                }
+//                .debug()
         }
         
         /// Generic function for sending transaction to fee relayer's relay
@@ -329,71 +327,79 @@ extension FeeRelayer {
             preparedTransactions: [PreparedTransaction],
             payingFeeToken: TokenInfo?,
             additionalPaybackFee: UInt64
-        ) -> Single<[String]> {
-            Completable.zip(
-                updateRelayAccountStatus(),
-                updateFreeTransactionFeeLimit()
-            )
-                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-                .andThen(Single<[String]?>.deferred { [weak self] in
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
-                    let expectedFees = preparedTransactions.map {$0.expectedFee}
-                    return self.checkAndTopUp(
-                        expectedFee: .init(
-                            transaction: expectedFees.map {$0.transaction}.reduce(UInt64(0), +),
-                            accountBalances: expectedFees.map {$0.accountBalances}.reduce(UInt64(0), +)
-                        ),
-                        payingFeeToken: payingFeeToken
-                    )
-                })
-                .flatMap { [weak self] topUpTxIds in
-                    // assertion
-                    guard let self = self, preparedTransactions.count > 0 else {throw FeeRelayer.Error.unknown}
-                    var request: Single<[String]> = try self.relayTransaction(
-                        preparedTransaction: preparedTransactions[0],
-                        payingFeeToken: payingFeeToken,
-                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
-                        additionalPaybackFee: preparedTransactions.count == 1 ? additionalPaybackFee : 0
-                    )
-                    
-                    if preparedTransactions.count == 2 {
-                        request = request
-                            .flatMap { [weak self] _ in
-                                guard let self = self else {throw FeeRelayer.Error.unknown}
-                                return try self.relayTransaction(
-                                    preparedTransaction: preparedTransactions[1],
-                                    payingFeeToken: payingFeeToken,
-                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
-                                    additionalPaybackFee: additionalPaybackFee
-                                )
-                            }
-                    }
-                    
-                    return request
-                        .catch { error in
-                            if topUpTxIds != nil {
-                                throw FeeRelayer.Error.topUpSuccessButTransactionThrows
-                            }
-                            throw error
-                        }
-                }
-                .observe(on: MainScheduler.instance)
+        ) async throws -> Single<[String]> {
+            async let _ = try await updateRelayAccountStatus()
+            async let _ = try await updateFreeTransactionFeeLimit()
+            return .just([])
+//            Completable.zip(
+//                updateRelayAccountStatus(),
+//                updateFreeTransactionFeeLimit()
+//            )
+//                .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
+//                .andThen(Single<[String]?>.deferred { [weak self] in
+//                    guard let self = self else {throw FeeRelayer.Error.unknown}
+//                    let expectedFees = preparedTransactions.map {$0.expectedFee}
+//                    do {
+//                        let ret = try await self.checkAndTopUp(
+//                            expectedFee: .init(
+//                                transaction: expectedFees.map {$0.transaction}.reduce(UInt64(0), +),
+//                                accountBalances: expectedFees.map {$0.accountBalances}.reduce(UInt64(0), +)
+//                            ),
+//                            payingFeeToken: payingFeeToken
+//                        )
+//                        return Single<[String]?>(ret)
+//                    } catch {
+//                        return .error(FeeRelayer.Error.unknown)
+//                    }
+//                })
+//                .flatMap { [weak self] topUpTxIds in
+//                    // assertion
+//                    guard let self = self, preparedTransactions.count > 0 else {throw FeeRelayer.Error.unknown}
+//                    var request: Single<[String]> = try self.relayTransaction(
+//                        preparedTransaction: preparedTransactions[0],
+//                        payingFeeToken: payingFeeToken,
+//                        relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+//                        additionalPaybackFee: preparedTransactions.count == 1 ? additionalPaybackFee : 0
+//                    )
+//
+//                    if preparedTransactions.count == 2 {
+//                        request = request
+//                            .flatMap { [weak self] _ in
+//                                guard let self = self else {throw FeeRelayer.Error.unknown}
+//                                return try self.relayTransaction(
+//                                    preparedTransaction: preparedTransactions[1],
+//                                    payingFeeToken: payingFeeToken,
+//                                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+//                                    additionalPaybackFee: additionalPaybackFee
+//                                )
+//                            }
+//                    }
+//
+//                    return request
+//                        .catch { error in
+//                            if topUpTxIds != nil {
+//                                throw FeeRelayer.Error.topUpSuccessButTransactionThrows
+//                            }
+//                            throw error
+//                        }
+//                }
+//                .observe(on: MainScheduler.instance)
         }
         
         // MARK: - Helpers
         func checkAndTopUp(
             expectedFee: FeeAmount,
             payingFeeToken: TokenInfo?
-        ) -> Single<[String]?> {
+        ) async throws -> [String]? {
             // if paying fee token is solana, skip the top up
             if payingFeeToken?.mint == PublicKey.wrappedSOLMint.base58EncodedString {
-                return .just(nil)
+                return nil
             }
             
             guard let freeTransactionFeeLimit = cache.freeTransactionFeeLimit,
                   let relayAccountStatus = cache.relayAccountStatus
             else {
-                return .error(Error.relayInfoMissing)
+                throw Error.relayInfoMissing
             }
             
             // Check fee
@@ -401,40 +407,39 @@ extension FeeRelayer {
             if freeTransactionFeeLimit.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) {
                 expectedFee.transaction = 0
             }
-                    
-            let request: Single<TopUpPreparedParams?>
+
+            let request: TopUpPreparedParams?
             
             // if payingFeeToken is provided
             if let payingFeeToken = payingFeeToken, expectedFee.total > 0 {
-                request = self.prepareForTopUp(targetAmount: expectedFee.total, payingFeeToken: payingFeeToken, relayAccountStatus: relayAccountStatus, freeTransactionFeeLimit: freeTransactionFeeLimit)
+                request = try await self.prepareForTopUp(
+                    targetAmount: expectedFee.total,
+                    payingFeeToken: payingFeeToken,
+                    relayAccountStatus: relayAccountStatus,
+                    freeTransactionFeeLimit: freeTransactionFeeLimit
+                )
             }
             
             // if not, make sure that relayAccountBalance is greater or equal to expected fee
             else if (relayAccountStatus.balance ?? 0) >= expectedFee.total {
                 // skip topup
-                request = .just(nil)
+                return nil
             }
             
             // fee paying token is required but missing
             else {
-                request = .error(FeeRelayer.Error.feePayingTokenMissing)
+                throw FeeRelayer.Error.feePayingTokenMissing
             }
-            
-            return request
-                .flatMap { [weak self] params in
-                    guard let self = self else {throw FeeRelayer.Error.unknown}
-                    if let topUpParams = params, let payingFeeToken = payingFeeToken {
-                        return self.topUp(
-                            needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
-                            sourceToken: payingFeeToken,
-                            targetAmount: topUpParams.amount,
-                            topUpPools: topUpParams.poolsPair,
-                            expectedFee: topUpParams.expectedFee
-                        )
-                            .map(Optional.init)
-                    }
-                    return .just(nil)
-                }
+            if let topUpParams = request, let payingFeeToken = payingFeeToken {
+                return self.topUp(
+                    needsCreateUserRelayAddress: relayAccountStatus == .notYetCreated,
+                    sourceToken: payingFeeToken,
+                    targetAmount: topUpParams.amount,
+                    topUpPools: topUpParams.poolsPair,
+                    expectedFee: topUpParams.expectedFee
+                )
+            }
+            return nil
         }
         
         func relayTransaction(
@@ -442,8 +447,8 @@ extension FeeRelayer {
             payingFeeToken: TokenInfo?,
             relayAccountStatus: RelayAccountStatus,
             additionalPaybackFee: UInt64
-        ) throws -> Single<[String]> {
-            Single.just([""])
+        ) throws -> [String] {
+            []
 //            guard let feePayer = cache.feePayerAddress,
 //                  let freeTransactionFeeLimit = cache.freeTransactionFeeLimit
 //            else { throw FeeRelayer.Error.unauthorized }

@@ -15,9 +15,9 @@ extension FeeRelayer.Relay {
     public func calculateNeededTopUpAmount(
         swapTransactions: [PreparedSwapTransaction],
         payingTokenMint: String?
-    ) -> Single  <FeeAmount> {
+    ) async throws -> FeeAmount {
         guard let lamportsPerSignature = cache.lamportsPerSignature else {
-            return .error(FeeRelayer.Error.relayInfoMissing)
+            throw FeeRelayer.Error.relayInfoMissing
         }
 
         // transaction fee
@@ -27,68 +27,63 @@ extension FeeRelayer.Relay {
         let accountCreationFee = swapTransactions.reduce(0, {$0+$1.accountCreationFee})
         
         let expectedFee = FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
-        return calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: payingTokenMint)
+        return try await calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: payingTokenMint)
     }
     
     public func topUpAndSwap(
         _ swapTransactions: [PreparedSwapTransaction],
         feePayer: PublicKey?,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
-    ) -> Single<[String]> {
-        Single.zip(
-            updateRelayAccountStatus().andThen(.just(())),
-//            updateFreeTransactionFeeLimit().andThen(.just(())),
-            calculateNeededTopUpAmount(swapTransactions: swapTransactions, payingTokenMint: payingFeeToken?.mint)
+    ) async throws -> [String] {
+        try await updateRelayAccountStatus()
+        try await updateFreeTransactionFeeLimit()
+        let expectedFee = try await calculateNeededTopUpAmount(
+            swapTransactions: swapTransactions,
+            payingTokenMint: payingFeeToken?.mint
         )
-            .observe(on: ConcurrentDispatchQueueScheduler(qos: .default))
-            .flatMap { [weak self] _, expectedFee -> Single<[String]?> in
-                guard let self = self else {throw FeeRelayer.Error.unknown}
-                return self.checkAndTopUp(
-                    expectedFee: expectedFee,
-                    payingFeeToken: payingFeeToken
-                )
-            }
-            .flatMap { [weak self] _ in
-                guard let self = self else {throw FeeRelayer.Error.unknown}
-                guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
-                    throw OrcaSwapError.invalidNumberOfTransactions
-                }
-                var request = self.prepareAndSend(
-                    swapTransactions[0],
-                    feePayer: feePayer ?? self.owner.publicKey,
-                    payingFeeToken: payingFeeToken
-                )
-                
-                if swapTransactions.count == 2 {
-                    request = request
-                        .flatMap {[weak self] _ in
-                            guard let self = self else {throw OrcaSwapError.unknown}
-                            return self.prepareAndSend(
-                                swapTransactions[1],
-                                feePayer: feePayer ?? self.owner.publicKey,
-                                payingFeeToken: payingFeeToken
-                            )
-                                .retry { errors in
-                                    errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
-                                        if let error = error as? SolanaError {
-                                            switch error {
-                                            case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
-                                                return .timer(.seconds(1), scheduler: MainScheduler.instance)
-                                            case .transactionError(_, logs: let logs) where logs.contains("Program log: Error: InvalidAccountData"):
-                                                return .timer(.seconds(1), scheduler: MainScheduler.instance)
-                                            default:
-                                                break
-                                            }
-                                        }
-                                        
-                                        return .error(error)
-                                    }
-                                }
-                                .timeout(.seconds(60), scheduler: MainScheduler.instance)
-                        }
-                }
-                return request
-            }
+        let checkAndTopUp = try await checkAndTopUp(
+            expectedFee: expectedFee,
+            payingFeeToken: payingFeeToken
+        )
+        guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
+            throw OrcaSwapError.invalidNumberOfTransactions
+        }
+        return []
+//        var request = self.prepareAndSend(
+//            swapTransactions[0],
+//            feePayer: feePayer ?? self.owner.publicKey,
+//            payingFeeToken: payingFeeToken
+//        )
+//
+//        if swapTransactions.count == 2 {
+//            request = request
+//                .flatMap {[weak self] _ in
+//                    guard let self = self else {throw OrcaSwapError.unknown}
+//                    return self.prepareAndSend(
+//                        swapTransactions[1],
+//                        feePayer: feePayer ?? self.owner.publicKey,
+//                        payingFeeToken: payingFeeToken
+//                    )
+//                        .retry { errors in
+//                            errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
+//                                if let error = error as? SolanaError {
+//                                    switch error {
+//                                    case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
+//                                        return .timer(.seconds(1), scheduler: MainScheduler.instance)
+//                                    case .transactionError(_, logs: let logs) where logs.contains("Program log: Error: InvalidAccountData"):
+//                                        return .timer(.seconds(1), scheduler: MainScheduler.instance)
+//                                    default:
+//                                        break
+//                                    }
+//                                }
+//
+//                                return .error(error)
+//                            }
+//                        }
+//                        .timeout(.seconds(60), scheduler: MainScheduler.instance)
+//                }
+//        }
+//        return request
     }
     
     // MARK: - Helpers
@@ -96,8 +91,8 @@ extension FeeRelayer.Relay {
         _ swapTransaction: PreparedSwapTransaction,
         feePayer: PublicKey,
         payingFeeToken: FeeRelayer.Relay.TokenInfo?
-    ) -> Single<[String]> {
-        solanaClient.prepareTransaction(
+    ) throws -> [String] {
+        let preparedTransaction = solanaClient.prepareTransaction(
             instructions: swapTransaction.instructions,
             signers: swapTransaction.signers,
             feePayer: feePayer,
@@ -105,14 +100,11 @@ extension FeeRelayer.Relay {
             recentBlockhash: nil,
             lamportsPerSignature: nil
         )
-            .flatMap { [weak self] preparedTransaction in
-                guard let self = self else {throw OrcaSwapError.unknown}
-                return try self.relayTransaction(
-                    preparedTransaction: preparedTransaction,
-                    payingFeeToken: payingFeeToken,
-                    relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
-                    additionalPaybackFee: 0
-                )
-            }
+        return try self.relayTransaction(
+            preparedTransaction: preparedTransaction,
+            payingFeeToken: payingFeeToken,
+            relayAccountStatus: self.cache.relayAccountStatus ?? .notYetCreated,
+            additionalPaybackFee: 0
+        )
     }
 }

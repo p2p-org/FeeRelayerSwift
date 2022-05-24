@@ -147,8 +147,7 @@ extension FeeRelayer.Relay {
     }
     
     /// Update free transaction fee limit
-    func updateFreeTransactionFeeLimit() -> Completable {
-        Single.just("").asCompletable()
+//    func updateFreeTransactionFeeLimit() -> Completable {
 //        apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
 //            .do(onSuccess: { [weak self] info in
 //                let info = FreeTransactionFeeLimit(
@@ -162,16 +161,36 @@ extension FeeRelayer.Relay {
 //                self?.locker.unlock()
 //            })
 //            .asCompletable()
+//    }
+    
+    func updateFreeTransactionFeeLimit() async throws {
+        let apiInfo = try await apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
+        let info = FreeTransactionFeeLimit(
+            maxUsage: apiInfo.limits.maxCount,
+            currentUsage: apiInfo.processedFee.count,
+            maxAmount: apiInfo.limits.maxAmount,
+            amountUsed: apiInfo.processedFee.totalAmount
+        )
+        locker.lock()
+        cache.freeTransactionFeeLimit = info
+        locker.unlock()
     }
     
-    func updateRelayAccountStatus() -> Completable {
-        solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
-            .do(onSuccess: { [weak self] info in
-                self?.locker.lock()
-                self?.cache.relayAccountStatus = info
-                self?.locker.unlock()
-            })
-            .asCompletable()
+//    func updateRelayAccountStatus() -> Completable {
+//        solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+//            .do(onSuccess: { [weak self] info in
+//                self?.locker.lock()
+//                self?.cache.relayAccountStatus = info
+//                self?.locker.unlock()
+//            })
+//            .asCompletable()
+//    }
+    
+    func updateRelayAccountStatus() async throws {
+        let info = try await solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+        locker.lock()
+        cache.relayAccountStatus = info
+        locker.unlock()
     }
     
     func markTransactionAsCompleted(freeFeeAmountUsed: UInt64) {
@@ -183,24 +202,34 @@ extension FeeRelayer.Relay {
     
     // MARK: - TODO: Investigate where to put it
     
-    func getSwapData(
-        transferAuthorityPubkey: PublicKey,
-        amountIn: UInt64,
-        minAmountOut: UInt64
-    ) -> FeeRelayer.Relay.DirectSwapData {
-        .init(
-            programId: Pool.swapProgramId.base58EncodedString,
-            accountPubkey: Pool.account,
-            authorityPubkey: Pool.authority,
-            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
-            sourcePubkey: Pool.tokenAccountA,
-            destinationPubkey: Pool.tokenAccountB,
-            poolTokenMintPubkey: Pool.poolTokenMint,
-            poolFeeAccountPubkey: Pool.feeAccount,
-            amountIn: amountIn,
-            minimumAmountOut: minAmountOut
-        )
-    }
+//    func getSwapData(
+//        transferAuthorityPubkey: PublicKey,
+//        amountIn: UInt64,
+//        minAmountOut: UInt64
+//    ) -> FeeRelayer.Relay.DirectSwapData {
+////        .init(programId: <#T##String#>,
+////              accountPubkey: <#T##String#>,
+////              authorityPubkey: <#T##String#>,
+////              transferAuthorityPubkey: <#T##String#>,
+////              sourcePubkey: <#T##String#>,
+////              destinationPubkey: <#T##String#>,
+////              poolTokenMintPubkey: <#T##String#>,
+////              poolFeeAccountPubkey: <#T##String#>,
+////              amountIn: amountIn,
+////              minimumAmountOut: minAmountOut)
+//        .init(
+//            programId: Pool.swapProgramId.base58EncodedString,
+//            accountPubkey: Pool.account,
+//            authorityPubkey: Pool.authority,
+//            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
+//            sourcePubkey: Pool.tokenAccountA,
+//            destinationPubkey: Pool.tokenAccountB,
+//            poolTokenMintPubkey: Pool.poolTokenMint,
+//            poolFeeAccountPubkey: Pool.feeAccount,
+//            amountIn: amountIn,
+//            minimumAmountOut: minAmountOut
+//        )
+//    }
 }
 
 extension Single where Element == [String] {
@@ -223,26 +252,26 @@ extension Single where Element == [String] {
     }
 }
 
-//private extension Pool {
-//    func getSwapData(
-//        transferAuthorityPubkey: PublicKey,
-//        amountIn: UInt64,
-//        minAmountOut: UInt64
-//    ) -> FeeRelayer.Relay.DirectSwapData {
-//        .init(
-//            programId: swapProgramId.base58EncodedString,
-//            accountPubkey: account,
-//            authorityPubkey: authority,
-//            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
-//            sourcePubkey: tokenAccountA,
-//            destinationPubkey: tokenAccountB,
-//            poolTokenMintPubkey: poolTokenMint,
-//            poolFeeAccountPubkey: feeAccount,
-//            amountIn: amountIn,
-//            minimumAmountOut: minAmountOut
-//        )
-//    }
-//}
+private extension OrcaSwapSwift.Pool {
+    func getSwapData(
+        transferAuthorityPubkey: PublicKey,
+        amountIn: UInt64,
+        minAmountOut: UInt64
+    ) -> FeeRelayer.Relay.DirectSwapData {
+        .init(
+            programId: swapProgramId.base58EncodedString,
+            accountPubkey: account,
+            authorityPubkey: authority,
+            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
+            sourcePubkey: tokenAccountA,
+            destinationPubkey: tokenAccountB,
+            poolTokenMintPubkey: poolTokenMint,
+            poolFeeAccountPubkey: feeAccount,
+            amountIn: amountIn,
+            minimumAmountOut: minAmountOut
+        )
+    }
+}
 
 extension Encodable {
     var jsonString: String? {

@@ -10,7 +10,7 @@ import SolanaSwift
 import RxSwift
 
 public protocol FeeRelayerRelaySolanaClient {
-    func getRelayAccountStatus(_ relayAccountAddress: String) -> Single<FeeRelayer.Relay.RelayAccountStatus>
+    func getRelayAccountStatus(_ relayAccountAddress: String) async throws -> FeeRelayer.Relay.RelayAccountStatus
     func getMinimumBalanceForRentExemption(span: UInt64) -> Single<UInt64>
     func getRecentBlockhash(commitment: Commitment?) -> Single<String>
     func getLamportsPerSignature() -> Single<UInt64>
@@ -22,7 +22,7 @@ public protocol FeeRelayerRelaySolanaClient {
         accountsCreationFee: Lamports,
         recentBlockhash: String?,
         lamportsPerSignature: Lamports?
-    ) -> Single<PreparedTransaction>
+    ) -> PreparedTransaction
     func findSPLTokenDestinationAddress(
         mintAddress: String,
         destinationAddress: String

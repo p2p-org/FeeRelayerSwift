@@ -56,16 +56,13 @@ public class APIClient: FeeRelayerAPIClient {
             url += "/v\(version)"
         }
         url += "/free_fee_limits/\(authority)"
-        
-//        let req = urlRequest(.)
+        guard let url = URL(string: url) else { throw APIClientError.unknown }
 
-        let urlRequest: URLRequest
+        var urlRequest: URLRequest
         do {
-            urlRequest = try URLRequest(
-                url: url,
-                method: .get,
-                headers: ["Content-Type": "application/json"]
-            )
+            urlRequest = URLRequest(url: url)
+            urlRequest.httpMethod = "GET"
+            urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
             #if DEBUG
             print(NSString(string: urlRequest.cURL()))
             #endif
