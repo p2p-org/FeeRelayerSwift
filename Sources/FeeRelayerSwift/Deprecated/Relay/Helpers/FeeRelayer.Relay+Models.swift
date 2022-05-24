@@ -51,6 +51,7 @@ extension FeeRelayer.Relay {
         }
     }
     
+    @available(*, deprecated, message: "Rename to UsageStatus")
     public struct FreeTransactionFeeLimit {
         public let maxUsage: Int
         public var currentUsage: Int

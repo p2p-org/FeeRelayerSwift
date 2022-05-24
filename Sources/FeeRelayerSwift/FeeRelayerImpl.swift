@@ -5,31 +5,20 @@
 import Foundation
 import SolanaSwift
 
-/// A fee relayer configuration.
-struct FeeRelayerConfiguration {
-    let additionalPaybackFee: UInt64
-
-    init(additionalPaybackFee: UInt64 = 0) {
-        self.additionalPaybackFee = additionalPaybackFee
-    }
-}
-
-/// The service that allows users to do gas-less transactions.
-protocol FeeRelayer {
-    var cache: Cache? { get }
+class FeeRelayerImpl: FeeRelayer {
+    private(set) var cache: Cache<Key, Value>? = nil
     
-    /// Fetch current usage status
-    func getUsageStatus() async throws -> UsageStatus
-
+    func getUsageStatus() async throws -> UsageStatus { fatalError("getUsageStatus() has not been implemented") }
+    
     func topUpAndRelayTransaction(
         _ preparedTransaction: PreparedTransaction,
         fee payingFeeToken: Token?,
         config configuration: FeeRelayerConfiguration
-    ) async throws -> TransactionID
-
+    ) async throws -> TransactionID { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
+    
     func topUpAndRelayTransaction(
         _ preparedTransaction: [PreparedTransaction],
         fee payingFeeToken: Token?,
         config configuration: FeeRelayerConfiguration
-    ) async throws -> [TransactionID]
+    ) async throws -> [TransactionID] { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
 }
