@@ -16,8 +16,12 @@ struct FeeRelayerConfiguration {
 
 /// The service that allows users to do gas-less transactions.
 protocol FeeRelayer {
+    var apiClient: SolanaAPIClient { get }
+    
     var cache: Cache<String, Any>? { get }
     
+    var account: Account { get throws }
+
     /// Fetch current usage status
     func getUsageStatus() async throws -> UsageStatus
 
@@ -33,4 +37,3 @@ protocol FeeRelayer {
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
 }
-

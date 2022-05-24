@@ -9,7 +9,7 @@ import OrcaSwapSwift
 /// The service that allows users to create gas-less swap transactions.
 protocol SwapFeeRelayer {
     func calculateSwappingNetworkFees(
-        swapPools: OrcaSwap.PoolsPair?,
+        swapPools: PoolsPair?,
         sourceTokenMint: String,
         destinationTokenMint: String,
         destinationAddress: String?
@@ -23,5 +23,5 @@ protocol SwapFeeRelayer {
         swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
-    ) async throws -> (transactions: [SolanaSDK.PreparedTransaction], additionalPaybackFee: UInt64)
+    ) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64)
 }

@@ -25,7 +25,7 @@ protocol FeeRelayerCalculator {
     ///   - payingFeeTokenMint: a mint address of spl token, that user will use to play fee.
     /// - Returns:
     /// - Throws:
-    func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: String) async throws -> SolanaSDK.FeeAmount?
+    func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: String) async throws -> FeeAmount?
     
     
 }

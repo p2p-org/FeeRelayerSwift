@@ -3,17 +3,18 @@
 // found in the LICENSE file.
 
 import Foundation
+import SolanaSwift
 
 /// A basic class that represents SPL Token.
 public struct Token {
-    public init(address: String, mint: String) {
+    public init(address: PublicKey, mint: PublicKey) {
         self.address = address
         self.mint = mint
     }
 
     /// A address of spl token.
-    public let address: String
-    
+    public let address: PublicKey
+
     /// A mint address for spl token.
-    public let mint: String
+    public let mint: PublicKey
 }
