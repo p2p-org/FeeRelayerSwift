@@ -1,5 +1,5 @@
 import XCTest
-import FeeRelayerSwift
+@testable import FeeRelayerSwift
 import RxBlocking
 import SolanaSwift
 
@@ -27,13 +27,14 @@ class APIClientTests: XCTestCase {
     }
     
     func testGetFreeTransactionFeeLimit() async throws {
-        let feeRelayer = APIClient(httpClient: MockHTTPClient(), version: 1)
+        let feeRelayer = APIClientMock(version: 1)
         let result = try await feeRelayer.requestFreeFeeLimits(for: "GZpacnxxvtFDMg16KWSH8q2g8tM7fwJvNMkb2Df34h9N")
         XCTAssertNotNil(result)
+        XCTAssertEqual(result.authority.first, 231)
     }
     
     func testSendTransaction() async throws {
-        let feeRelayer = APIClient(httpClient: MockHTTPClient(), version: 1)
+        let feeRelayer = APIClientMock(version: 1)
 
         let toPublicKey = "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm"
         let apiClient = SolanaAPIClientMock(endpoint: endpoint)
@@ -57,64 +58,58 @@ class APIClientTests: XCTestCase {
         let txs = try await feeRelayer.sendTransaction(.relayTransaction(
             .init(preparedTransaction: preparedTransaction)
         ))
-        print(txs)
-        XCTAssertNil(txs)
+        XCTAssertNotNil(txs)
+        XCTAssertEqual(txs, "123")
     }
     
 }
 
-class APIClientMock: FeeRelayerAPIClient {
-    var version: Int = 1
-    
-    init(version: Int) {
-        self.version = version
-    }
-    
-    func getFeePayerPubkey() async throws -> String {
-        "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
-    }
-    
-    func requestFreeFeeLimits(for authority: String) throws -> FeeRelayer.Relay.FeeLimitForAuthorityResponse {
-        fatalError()
-    }
-    
-    func sendTransaction(_ requestType: FeeRelayer.RequestType) throws -> String {
-        fatalError()
-    }
-    
-    func sendTransaction<T>(_ requestType: FeeRelayer.RequestType) throws -> T where T : Decodable {
-        fatalError()
+class APIClientMock: FeeRelayerSwift.APIClient {
+
+    // MARK: - Initializers
+
+    public override init(httpClient: HTTPClient = FeeRelayerHTTPClient(networkManager: MockNetworkManager()), version: Int) {
+        super.init(httpClient: httpClient, version: version)
     }
 }
 
 // MARK: - Mocks
 
+class MockNetworkManager: FeeRelayerSwift.NetworkManager {
+    func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
+        let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+        if request.url?.absoluteString.contains("relay_transaction") ?? false {
+            return (
+                "123".data(using: .utf8)!,
+                response
+            )
+        } else if request.url?.absoluteString.contains("free_fee_limits") ?? false {
+            return (
+                NetworkManagerMockJSON["fee"]!.data(using: .utf8)!,
+                response
+            )
+        } else {
+            return (
+                "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT".data(using: .utf8)!,
+                response
+            )
+        }
+        fatalError()
+    }
+    
+    private let NetworkManagerMockJSON = [
+        "fee": "{\"authority\":[231],\"limits\":{\"use_free_fee\":true,\"max_amount\":10000000,\"max_count\":100,\"period\":{\"secs\":86400,\"nanos\":0}},\"processed_fee\":{\"total_amount\":0,\"count\":0}}"
+    ]
+}
+
 class MockHTTPClient: HTTPClient {
+    var networkManager: FeeRelayerSwift.NetworkManager = MockNetworkManager()
     func sendRequest<T>(request: URLRequest, decoder: JSONDecoder) async throws -> T where T : Decodable {
         if request.url?.absoluteString.contains("relay_transaction") ?? false {
         let json = "123".data(using: .utf8)!
             return try decoder.decode(T.self, from: json)
         }
         fatalError()
-    }
-}
-
-class NetworkManagerMock: NetworkManager {
-    private let json: String
-    init(_ json: String) {
-        self.json = json
-    }
-
-    func requestData(request _: URLRequest) async throws -> Data {
-        let str = json.data(using: .utf8)!
-        return str
-    }
-}
-
-extension NetworkManagerMock {
-    func requestData(request _: URLRequest, res: String) async throws -> Data {
-        let str = res.data(using: .utf8)!
-        return str
     }
 }
 

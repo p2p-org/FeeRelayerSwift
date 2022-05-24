@@ -1,4 +1,5 @@
 import Foundation
+import SolanaSwift
 
 public enum HTTPClientError: Error {
     case noResponse
@@ -8,17 +9,24 @@ public enum HTTPClientError: Error {
     case unknown(error: Error)
 }
 
+public protocol NetworkManager {
+    func requestData(request: URLRequest) async throws -> (Data, URLResponse)
+}
+
 public protocol HTTPClient {
+    var networkManager: NetworkManager { get set }
     func sendRequest<T: Decodable>(request: URLRequest, decoder: JSONDecoder) async throws -> T
 }
 
 public final class FeeRelayerHTTPClient: HTTPClient {
-    
-    public init() {}
+    public var networkManager: NetworkManager
+    public init(networkManager: NetworkManager = URLSession.shared) {
+        self.networkManager = networkManager
+    }
     
     public func sendRequest<T: Decodable>(request: URLRequest, decoder: JSONDecoder = JSONDecoder()) async throws -> T {
 //        do {
-            let (data, response) = try await URLSession.shared.data(from: request)
+            let (data, response) = try await networkManager.requestData(request: request)
             guard let response = response as? HTTPURLResponse else { throw HTTPClientError.noResponse }
             switch response.statusCode {
             case 200 ... 299:
@@ -70,4 +78,12 @@ extension URLSession {
         }
     }
 
+}
+
+@available(iOS 15, *)
+extension URLSession: NetworkManager {
+    public func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
+//        let (data, response): (Data, URLResponse)
+        return try await self.data(for: request)
+    }
 }

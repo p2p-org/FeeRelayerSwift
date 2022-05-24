@@ -84,8 +84,16 @@ public class APIClient: FeeRelayerAPIClient {
     ///   - params: request's parameters
     /// - Returns: transaction id
     public func sendTransaction(_ requestType: FeeRelayer.RequestType) async throws -> String {
-        let tx: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
-        return tx
+        do {
+            let tx: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
+            return tx
+        } catch HTTPClientError.cantDecode(let data) {
+            guard let ret = String(data: data, encoding: .utf8) else { throw APIClientError.unknown }
+            return ret
+        } catch let error {
+            print(error)
+            fatalError()
+        }
 //        var res: String?
 //        do {
 //            res = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
