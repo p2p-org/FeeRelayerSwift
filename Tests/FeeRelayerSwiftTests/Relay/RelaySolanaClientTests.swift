@@ -21,3 +21,4 @@ class RelaySolanaClientTests: XCTestCase {
         XCTAssertNotEqual(result.balance, nil)
     }
 }
+
