@@ -16,7 +16,7 @@ struct FeeRelayerConfiguration {
 
 /// The service that allows users to do gas-less transactions.
 protocol FeeRelayer {
-    var cache: Cache? { get }
+    var cache: Cache<String, Any>? { get }
     
     /// Fetch current usage status
     func getUsageStatus() async throws -> UsageStatus
@@ -33,3 +33,4 @@ protocol FeeRelayer {
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
 }
+

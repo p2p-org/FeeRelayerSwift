@@ -6,19 +6,36 @@ import Foundation
 import SolanaSwift
 
 class FeeRelayerImpl: FeeRelayer {
-    private(set) var cache: Cache<Key, Value>? = nil
-    
+    /// TODO: Use enum keys
+    private(set) var cache: Cache<String, Any>?
+    private let feeCalculator: FeeRelayerCalculator
+
+    init(feeCalculator: FeeRelayerCalculator, cache: Cache<Key, Value>? = nil) {
+        self.cache = cache
+        self.feeCalculator = feeCalculator
+    }
+
     func getUsageStatus() async throws -> UsageStatus { fatalError("getUsageStatus() has not been implemented") }
-    
+
     func topUpAndRelayTransaction(
-        _ preparedTransaction: PreparedTransaction,
-        fee payingFeeToken: Token?,
-        config configuration: FeeRelayerConfiguration
+        _: PreparedTransaction,
+        fee _: Token?,
+        config _: FeeRelayerConfiguration
     ) async throws -> TransactionID { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
-    
+
     func topUpAndRelayTransaction(
-        _ preparedTransaction: [PreparedTransaction],
-        fee payingFeeToken: Token?,
-        config configuration: FeeRelayerConfiguration
+        _: [PreparedTransaction],
+        fee _: Token?,
+        config _: FeeRelayerConfiguration
     ) async throws -> [TransactionID] { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
+}
+
+enum CacheKey: String {
+    case minimumTokenAccountBalance
+    case minimumRelayAccountBalance
+    case minimumRelayAccountBalance
+    case lamportsPerSignature
+    case relayAccountStatus
+    case preparedParams
+    case freeTransactionFeeLimit
 }
