@@ -18,21 +18,21 @@ extension FeeRelayer.Relay {
     // MARK: - Top up
     /// Prepare swap data from swap pools
     func prepareSwapData(
-        network: SolanaSDK.Network,
-        pools: OrcaSwap.PoolsPair,
+        network: Network,
+        pools: PoolsPair,
         inputAmount: UInt64?,
         minAmountOut: UInt64?,
         slippage: Double,
-        transitTokenMintPubkey: SolanaSDK.PublicKey? = nil,
+        transitTokenMintPubkey: PublicKey? = nil,
         newTransferAuthority: Bool = false,
         needsCreateTransitTokenAccount: Bool
-    ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: SolanaSDK.Account?) {
+    ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayer.Error.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayer.Error.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try SolanaSDK.Account(network: network)
+        let transferAuthority = try Account(network: network)
         
         // form topUp params
         if pools.count == 1 {
@@ -94,21 +94,21 @@ extension FeeRelayer.Relay {
         }
     }
     
-    func getTransitTokenMintPubkey(pools: OrcaSwap.PoolsPair) throws -> SolanaSDK.PublicKey? {
-        var transitTokenMintPubkey: SolanaSDK.PublicKey?
+    func getTransitTokenMintPubkey(pools: PoolsPair) throws -> PublicKey? {
+        var transitTokenMintPubkey: PublicKey?
         if pools.count == 2 {
             let interTokenName = pools[0].tokenBName
-            transitTokenMintPubkey = try SolanaSDK.PublicKey(string: orcaSwapClient.getMint(tokenName: interTokenName))
+            transitTokenMintPubkey = try PublicKey(string: orcaSwapClient.getMint(tokenName: interTokenName))
         }
         return transitTokenMintPubkey
     }
     
     func getTransitToken(
-        pools: OrcaSwap.PoolsPair
+        pools: PoolsPair
     ) throws -> TokenInfo? {
         let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools)
         
-        var transitTokenAccountAddress: SolanaSDK.PublicKey?
+        var transitTokenAccountAddress: PublicKey?
         if let transitTokenMintPubkey = transitTokenMintPubkey {
             transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
                 user: owner.publicKey,
@@ -134,7 +134,7 @@ extension FeeRelayer.Relay {
 
         return solanaClient.getAccountInfo(
             account: transitToken.address,
-            decodedTo: SolanaSDK.AccountInfo.self
+            decodedTo: AccountInfo.self
         )
             .map {info -> Bool in
                 // detect if destination address is already a SPLToken address
@@ -147,30 +147,50 @@ extension FeeRelayer.Relay {
     }
     
     /// Update free transaction fee limit
-    func updateFreeTransactionFeeLimit() -> Completable {
-        apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
-            .do(onSuccess: { [weak self] info in
-                let info = FreeTransactionFeeLimit(
-                    maxUsage: info.limits.maxCount,
-                    currentUsage: info.processedFee.count,
-                    maxAmount: info.limits.maxAmount,
-                    amountUsed: info.processedFee.totalAmount
-                )
-                self?.locker.lock()
-                self?.cache.freeTransactionFeeLimit = info
-                self?.locker.unlock()
-            })
-            .asCompletable()
+//    func updateFreeTransactionFeeLimit() -> Completable {
+//        apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
+//            .do(onSuccess: { [weak self] info in
+//                let info = FreeTransactionFeeLimit(
+//                    maxUsage: info.limits.maxCount,
+//                    currentUsage: info.processedFee.count,
+//                    maxAmount: info.limits.maxAmount,
+//                    amountUsed: info.processedFee.totalAmount
+//                )
+//                self?.locker.lock()
+//                self?.cache.freeTransactionFeeLimit = info
+//                self?.locker.unlock()
+//            })
+//            .asCompletable()
+//    }
+    
+    func updateFreeTransactionFeeLimit() async throws {
+        let apiInfo = try await apiClient.requestFreeFeeLimits(for: owner.publicKey.base58EncodedString)
+        let info = FreeTransactionFeeLimit(
+            maxUsage: apiInfo.limits.maxCount,
+            currentUsage: apiInfo.processedFee.count,
+            maxAmount: apiInfo.limits.maxAmount,
+            amountUsed: apiInfo.processedFee.totalAmount
+        )
+        locker.lock()
+        cache.freeTransactionFeeLimit = info
+        locker.unlock()
     }
     
-    func updateRelayAccountStatus() -> Completable {
-        solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
-            .do(onSuccess: { [weak self] info in
-                self?.locker.lock()
-                self?.cache.relayAccountStatus = info
-                self?.locker.unlock()
-            })
-            .asCompletable()
+//    func updateRelayAccountStatus() -> Completable {
+//        solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+//            .do(onSuccess: { [weak self] info in
+//                self?.locker.lock()
+//                self?.cache.relayAccountStatus = info
+//                self?.locker.unlock()
+//            })
+//            .asCompletable()
+//    }
+    
+    func updateRelayAccountStatus() async throws {
+        let info = try await solanaClient.getRelayAccountStatus(userRelayAddress.base58EncodedString)
+        locker.lock()
+        cache.relayAccountStatus = info
+        locker.unlock()
     }
     
     func markTransactionAsCompleted(freeFeeAmountUsed: UInt64) {
@@ -179,6 +199,37 @@ extension FeeRelayer.Relay {
         cache.freeTransactionFeeLimit?.amountUsed = freeFeeAmountUsed
         locker.unlock()
     }
+    
+    // MARK: - TODO: Investigate where to put it
+    
+//    func getSwapData(
+//        transferAuthorityPubkey: PublicKey,
+//        amountIn: UInt64,
+//        minAmountOut: UInt64
+//    ) -> FeeRelayer.Relay.DirectSwapData {
+////        .init(programId: <#T##String#>,
+////              accountPubkey: <#T##String#>,
+////              authorityPubkey: <#T##String#>,
+////              transferAuthorityPubkey: <#T##String#>,
+////              sourcePubkey: <#T##String#>,
+////              destinationPubkey: <#T##String#>,
+////              poolTokenMintPubkey: <#T##String#>,
+////              poolFeeAccountPubkey: <#T##String#>,
+////              amountIn: amountIn,
+////              minimumAmountOut: minAmountOut)
+//        .init(
+//            programId: Pool.swapProgramId.base58EncodedString,
+//            accountPubkey: Pool.account,
+//            authorityPubkey: Pool.authority,
+//            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
+//            sourcePubkey: Pool.tokenAccountA,
+//            destinationPubkey: Pool.tokenAccountB,
+//            poolTokenMintPubkey: Pool.poolTokenMint,
+//            poolFeeAccountPubkey: Pool.feeAccount,
+//            amountIn: amountIn,
+//            minimumAmountOut: minAmountOut
+//        )
+//    }
 }
 
 extension Single where Element == [String] {
@@ -201,9 +252,9 @@ extension Single where Element == [String] {
     }
 }
 
-private extension OrcaSwap.Pool {
+private extension OrcaSwapSwift.Pool {
     func getSwapData(
-        transferAuthorityPubkey: SolanaSDK.PublicKey,
+        transferAuthorityPubkey: PublicKey,
         amountIn: UInt64,
         minAmountOut: UInt64
     ) -> FeeRelayer.Relay.DirectSwapData {

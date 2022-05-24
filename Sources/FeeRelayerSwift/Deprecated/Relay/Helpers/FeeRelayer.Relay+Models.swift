@@ -152,19 +152,22 @@ extension FeeRelayer.Relay {
         let pubkeys: [String]
         let blockhash: String
         
-        public init(preparedTransaction: SolanaSDK.PreparedTransaction) throws {
+        public init(preparedTransaction: PreparedTransaction) throws {
             guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
             else {throw FeeRelayer.Error.unknown}
             
             let message = try preparedTransaction.transaction.compileMessage()
             pubkeys = message.accountKeys.map {$0.base58EncodedString}
             blockhash = recentBlockhash
-            instructions = message.instructions.map {compiledInstruction -> RequestInstruction in
+            instructions = message.instructions.enumerated().map {index, compiledInstruction -> RequestInstruction in
                 let accounts: [RequestAccountMeta] = compiledInstruction.accounts.map { account in
-                    .init(
+                    let pubkey = message.accountKeys[account]
+                    let meta = preparedTransaction.transaction.instructions[index].keys
+                        .first(where: {$0.publicKey == pubkey})
+                    return .init(
                         pubkeyIndex: UInt8(account),
-                        isSigner: message.isAccountSigner(index: account),
-                        isWritable: message.isAccountWritable(index: account)
+                        isSigner: meta?.isSigner ?? message.isAccountSigner(index: account),
+                        isWritable: meta?.isWritable ?? message.isAccountWritable(index: account)
                     )
                 }
                 
@@ -338,7 +341,7 @@ extension FeeRelayer.Relay {
     public struct TopUpPreparedParams {
         public let amount: UInt64
         public let expectedFee: UInt64
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let poolsPair: PoolsPair
     }
     
     public struct TopUpAndActionPreparedParams {
@@ -347,14 +350,14 @@ extension FeeRelayer.Relay {
     }
     
     public struct FeesAndPools {
-        public let fee: SolanaSDK.FeeAmount
-        public let poolsPair: OrcaSwap.PoolsPair
+        public let fee: FeeAmount
+        public let poolsPair: PoolsPair
     }
     
     public struct FeesAndTopUpAmount {
-        public let feeInSOL: SolanaSDK.FeeAmount?
+        public let feeInSOL: FeeAmount?
         public let topUpAmountInSOL: UInt64?
-        public let feeInPayingToken: SolanaSDK.FeeAmount?
+        public let feeInPayingToken: FeeAmount?
         public let topUpAmountInPayingToen: UInt64?
     }
 }

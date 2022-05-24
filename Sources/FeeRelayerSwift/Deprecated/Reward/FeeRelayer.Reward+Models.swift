@@ -13,11 +13,11 @@ extension FeeRelayer.Reward {
     public struct TransferSolParams: Encodable {
         let sender: String
         let recipient: String
-        let amount: SolanaSDK.Lamports
+        let amount: Lamports
         var signature: String
         var blockhash: String
         
-        public init(sender: String, recipient: String, amount: SolanaSDK.Lamports, signature: String, blockhash: String) {
+        public init(sender: String, recipient: String, amount: Lamports, signature: String, blockhash: String) {
             self.sender = sender
             self.recipient = recipient
             self.amount = amount
@@ -40,12 +40,12 @@ extension FeeRelayer.Reward {
         let recipient: String
         let mintAddress: String
         let authority: String
-        let amount: SolanaSDK.Lamports
-        let decimals: SolanaSDK.Decimals
+        let amount: Lamports
+        let decimals: Decimals
         var signature: String
         var blockhash: String
         
-        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: SolanaSDK.Lamports, decimals: SolanaSDK.Decimals, signature: String, blockhash: String) {
+        public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: Lamports, decimals: Decimals, signature: String, blockhash: String) {
             self.sender = sender
             self.recipient = recipient
             self.mintAddress = mintAddress

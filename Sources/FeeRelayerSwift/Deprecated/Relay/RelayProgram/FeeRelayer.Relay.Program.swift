@@ -10,7 +10,7 @@ import SolanaSwift
 
 extension FeeRelayer.Relay {
     public enum Program {
-        static func id(network: SolanaSDK.Network) -> SolanaSDK.PublicKey {
+        static func id(network: Network) -> PublicKey {
             switch network {
             case .mainnetBeta:
                 return "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9"
@@ -22,34 +22,34 @@ extension FeeRelayer.Relay {
         }
         
         static func getUserRelayAddress(
-            user: SolanaSDK.PublicKey,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.PublicKey {
+            user: PublicKey,
+            network: Network
+        ) throws -> PublicKey {
             try .findProgramAddress(seeds: [user.data, "relay".data(using: .utf8)!], programId: id(network: network)).0
         }
         
         static func getUserTemporaryWSOLAddress(
-            user: SolanaSDK.PublicKey,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.PublicKey {
+            user: PublicKey,
+            network: Network
+        ) throws -> PublicKey {
             try .findProgramAddress(seeds: [user.data, "temporary_wsol".data(using: .utf8)!], programId: id(network: network)).0
         }
         
         static func getTransitTokenAccountAddress(
-            user: SolanaSDK.PublicKey,
-            transitTokenMint: SolanaSDK.PublicKey,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.PublicKey {
+            user: PublicKey,
+            transitTokenMint: PublicKey,
+            network: Network
+        ) throws -> PublicKey {
             try .findProgramAddress(seeds: [user.data, transitTokenMint.data, "transit".data(using: .utf8)!], programId: id(network: network)).0
         }
         
         static func topUpSwapInstruction(
-            network: SolanaSDK.Network,
+            network: Network,
             topUpSwap: FeeRelayerRelaySwapType,
-            userAuthorityAddress: SolanaSDK.PublicKey,
-            userSourceTokenAccountAddress: SolanaSDK.PublicKey,
-            feePayerAddress: SolanaSDK.PublicKey
-        ) throws -> SolanaSDK.TransactionInstruction {
+            userAuthorityAddress: PublicKey,
+            userSourceTokenAccountAddress: PublicKey,
+            feePayerAddress: PublicKey
+        ) throws -> TransactionInstruction {
             let userRelayAddress = try getUserRelayAddress(user: userAuthorityAddress, network: network)
             let userTemporarilyWSOLAddress = try getUserTemporaryWSOLAddress(user: userAuthorityAddress, network: network)
             
@@ -59,16 +59,16 @@ extension FeeRelayer.Relay {
                     feePayer: feePayerAddress,
                     userAuthority: userAuthorityAddress,
                     userRelayAccount: userRelayAddress,
-                    userTransferAuthority: try SolanaSDK.PublicKey(string: swap.transferAuthorityPubkey),
+                    userTransferAuthority: try PublicKey(string: swap.transferAuthorityPubkey),
                     userSourceTokenAccount: userSourceTokenAccountAddress,
                     userTemporaryWsolAccount: userTemporarilyWSOLAddress,
-                    swapProgramId: try SolanaSDK.PublicKey(string: swap.programId),
-                    swapAccount: try SolanaSDK.PublicKey(string: swap.accountPubkey),
-                    swapAuthority: try SolanaSDK.PublicKey(string: swap.authorityPubkey),
-                    swapSource: try SolanaSDK.PublicKey(string: swap.sourcePubkey),
-                    swapDestination: try SolanaSDK.PublicKey(string: swap.destinationPubkey),
-                    poolTokenMint: try SolanaSDK.PublicKey(string: swap.poolTokenMintPubkey),
-                    poolFeeAccount: try SolanaSDK.PublicKey(string: swap.poolFeeAccountPubkey),
+                    swapProgramId: try PublicKey(string: swap.programId),
+                    swapAccount: try PublicKey(string: swap.accountPubkey),
+                    swapAuthority: try PublicKey(string: swap.authorityPubkey),
+                    swapSource: try PublicKey(string: swap.sourcePubkey),
+                    swapDestination: try PublicKey(string: swap.destinationPubkey),
+                    poolTokenMint: try PublicKey(string: swap.poolTokenMintPubkey),
+                    poolFeeAccount: try PublicKey(string: swap.poolFeeAccountPubkey),
                     amountIn: swap.amountIn,
                     minimumAmountOut: swap.minimumAmountOut,
                     network: network
@@ -78,24 +78,24 @@ extension FeeRelayer.Relay {
                     feePayer: feePayerAddress,
                     userAuthority: userAuthorityAddress,
                     userRelayAccount: userRelayAddress,
-                    userTransferAuthority: try SolanaSDK.PublicKey(string: swap.from.transferAuthorityPubkey),
+                    userTransferAuthority: try PublicKey(string: swap.from.transferAuthorityPubkey),
                     userSourceTokenAccount: userSourceTokenAccountAddress,
                     userDestinationTokenAccount: userTemporarilyWSOLAddress,
-                    transitTokenMint: try SolanaSDK.PublicKey(string: swap.transitTokenMintPubkey),
-                    swapFromProgramId: try SolanaSDK.PublicKey(string: swap.from.programId),
-                    swapFromAccount: try SolanaSDK.PublicKey(string: swap.from.accountPubkey),
-                    swapFromAuthority: try SolanaSDK.PublicKey(string: swap.from.authorityPubkey),
-                    swapFromSource: try SolanaSDK.PublicKey(string: swap.from.sourcePubkey),
-                    swapFromDestination: try SolanaSDK.PublicKey(string: swap.from.destinationPubkey),
-                    swapFromPoolTokenMint: try SolanaSDK.PublicKey(string: swap.from.poolTokenMintPubkey),
-                    swapFromPoolFeeAccount: try SolanaSDK.PublicKey(string: swap.from.poolFeeAccountPubkey),
-                    swapToProgramId: try SolanaSDK.PublicKey(string: swap.to.programId),
-                    swapToAccount: try SolanaSDK.PublicKey(string: swap.to.accountPubkey),
-                    swapToAuthority: try SolanaSDK.PublicKey(string: swap.to.authorityPubkey),
-                    swapToSource: try SolanaSDK.PublicKey(string: swap.to.sourcePubkey),
-                    swapToDestination: try SolanaSDK.PublicKey(string: swap.to.destinationPubkey),
-                    swapToPoolTokenMint: try SolanaSDK.PublicKey(string: swap.to.poolTokenMintPubkey),
-                    swapToPoolFeeAccount: try SolanaSDK.PublicKey(string: swap.to.poolFeeAccountPubkey),
+                    transitTokenMint: try PublicKey(string: swap.transitTokenMintPubkey),
+                    swapFromProgramId: try PublicKey(string: swap.from.programId),
+                    swapFromAccount: try PublicKey(string: swap.from.accountPubkey),
+                    swapFromAuthority: try PublicKey(string: swap.from.authorityPubkey),
+                    swapFromSource: try PublicKey(string: swap.from.sourcePubkey),
+                    swapFromDestination: try PublicKey(string: swap.from.destinationPubkey),
+                    swapFromPoolTokenMint: try PublicKey(string: swap.from.poolTokenMintPubkey),
+                    swapFromPoolFeeAccount: try PublicKey(string: swap.from.poolFeeAccountPubkey),
+                    swapToProgramId: try PublicKey(string: swap.to.programId),
+                    swapToAccount: try PublicKey(string: swap.to.accountPubkey),
+                    swapToAuthority: try PublicKey(string: swap.to.authorityPubkey),
+                    swapToSource: try PublicKey(string: swap.to.sourcePubkey),
+                    swapToDestination: try PublicKey(string: swap.to.destinationPubkey),
+                    swapToPoolTokenMint: try PublicKey(string: swap.to.poolTokenMintPubkey),
+                    swapToPoolFeeAccount: try PublicKey(string: swap.to.poolFeeAccountPubkey),
                     amountIn: swap.from.amountIn,
                     transitMinimumAmount: swap.from.minimumAmountOut,
                     minimumAmountOut: swap.to.minimumAmountOut,
@@ -107,11 +107,11 @@ extension FeeRelayer.Relay {
         }
         
         public static func transferSolInstruction(
-            userAuthorityAddress: SolanaSDK.PublicKey,
-            recipient: SolanaSDK.PublicKey,
+            userAuthorityAddress: PublicKey,
+            recipient: PublicKey,
             lamports: UInt64,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.TransactionInstruction {
+            network: Network
+        ) throws -> TransactionInstruction {
             .init(
                 keys: [
                     .readonly(publicKey: userAuthorityAddress, isSigner: true),
@@ -128,12 +128,12 @@ extension FeeRelayer.Relay {
         }
         
         static func createTransitTokenAccountInstruction(
-            feePayer: SolanaSDK.PublicKey,
-            userAuthority: SolanaSDK.PublicKey,
-            transitTokenAccount: SolanaSDK.PublicKey,
-            transitTokenMint: SolanaSDK.PublicKey,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.TransactionInstruction {
+            feePayer: PublicKey,
+            userAuthority: PublicKey,
+            transitTokenAccount: PublicKey,
+            transitTokenMint: PublicKey,
+            network: Network
+        ) throws -> TransactionInstruction {
             .init(
                 keys: [
                     .writable(publicKey: transitTokenAccount, isSigner: false),
@@ -153,29 +153,29 @@ extension FeeRelayer.Relay {
         
         static func createRelaySwapInstruction(
             transitiveSwap: TransitiveSwapData,
-            userAuthorityAddressPubkey: SolanaSDK.PublicKey,
-            sourceAddressPubkey: SolanaSDK.PublicKey,
-            transitTokenAccount: SolanaSDK.PublicKey,
-            destinationAddressPubkey: SolanaSDK.PublicKey,
-            feePayerPubkey: SolanaSDK.PublicKey,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.TransactionInstruction {
-            let transferAuthorityPubkey = try SolanaSDK.PublicKey(string: transitiveSwap.from.transferAuthorityPubkey)
-            let transitTokenMintPubkey = try SolanaSDK.PublicKey(string: transitiveSwap.transitTokenMintPubkey)
-            let swapFromProgramId = try SolanaSDK.PublicKey(string: transitiveSwap.from.programId)
-            let swapFromAccount = try SolanaSDK.PublicKey(string: transitiveSwap.from.accountPubkey)
-            let swapFromAuthority = try SolanaSDK.PublicKey(string: transitiveSwap.from.authorityPubkey)
-            let swapFromSource = try SolanaSDK.PublicKey(string: transitiveSwap.from.sourcePubkey)
-            let swapFromDestination = try SolanaSDK.PublicKey(string: transitiveSwap.from.destinationPubkey)
-            let swapFromTokenMint = try SolanaSDK.PublicKey(string: transitiveSwap.from.poolTokenMintPubkey)
-            let swapFromPoolFeeAccount = try SolanaSDK.PublicKey(string: transitiveSwap.from.poolFeeAccountPubkey)
-            let swapToProgramId = try SolanaSDK.PublicKey(string: transitiveSwap.to.programId)
-            let swapToAccount = try SolanaSDK.PublicKey(string: transitiveSwap.to.accountPubkey)
-            let swapToAuthority = try SolanaSDK.PublicKey(string: transitiveSwap.to.authorityPubkey)
-            let swapToSource = try SolanaSDK.PublicKey(string: transitiveSwap.to.sourcePubkey)
-            let swapToDestination = try SolanaSDK.PublicKey(string: transitiveSwap.to.destinationPubkey)
-            let swapToPoolTokenMint = try SolanaSDK.PublicKey(string: transitiveSwap.to.poolTokenMintPubkey)
-            let swapToPoolFeeAccount = try SolanaSDK.PublicKey(string: transitiveSwap.to.poolFeeAccountPubkey)
+            userAuthorityAddressPubkey: PublicKey,
+            sourceAddressPubkey: PublicKey,
+            transitTokenAccount: PublicKey,
+            destinationAddressPubkey: PublicKey,
+            feePayerPubkey: PublicKey,
+            network: Network
+        ) throws -> TransactionInstruction {
+            let transferAuthorityPubkey = try PublicKey(string: transitiveSwap.from.transferAuthorityPubkey)
+            let transitTokenMintPubkey = try PublicKey(string: transitiveSwap.transitTokenMintPubkey)
+            let swapFromProgramId = try PublicKey(string: transitiveSwap.from.programId)
+            let swapFromAccount = try PublicKey(string: transitiveSwap.from.accountPubkey)
+            let swapFromAuthority = try PublicKey(string: transitiveSwap.from.authorityPubkey)
+            let swapFromSource = try PublicKey(string: transitiveSwap.from.sourcePubkey)
+            let swapFromDestination = try PublicKey(string: transitiveSwap.from.destinationPubkey)
+            let swapFromTokenMint = try PublicKey(string: transitiveSwap.from.poolTokenMintPubkey)
+            let swapFromPoolFeeAccount = try PublicKey(string: transitiveSwap.from.poolFeeAccountPubkey)
+            let swapToProgramId = try PublicKey(string: transitiveSwap.to.programId)
+            let swapToAccount = try PublicKey(string: transitiveSwap.to.accountPubkey)
+            let swapToAuthority = try PublicKey(string: transitiveSwap.to.authorityPubkey)
+            let swapToSource = try PublicKey(string: transitiveSwap.to.sourcePubkey)
+            let swapToDestination = try PublicKey(string: transitiveSwap.to.destinationPubkey)
+            let swapToPoolTokenMint = try PublicKey(string: transitiveSwap.to.poolTokenMintPubkey)
+            let swapToPoolFeeAccount = try PublicKey(string: transitiveSwap.to.poolFeeAccountPubkey)
             let amountIn = transitiveSwap.from.amountIn
             let transitMinimumAmount = transitiveSwap.from.minimumAmountOut
             let minimumAmountOut = transitiveSwap.to.minimumAmountOut
@@ -212,23 +212,23 @@ extension FeeRelayer.Relay {
         
         // MARK: - Helpers
         private static func topUpWithSPLSwapDirectInstruction(
-            feePayer: SolanaSDK.PublicKey,
-            userAuthority: SolanaSDK.PublicKey,
-            userRelayAccount: SolanaSDK.PublicKey,
-            userTransferAuthority: SolanaSDK.PublicKey,
-            userSourceTokenAccount: SolanaSDK.PublicKey,
-            userTemporaryWsolAccount: SolanaSDK.PublicKey,
-            swapProgramId: SolanaSDK.PublicKey,
-            swapAccount: SolanaSDK.PublicKey,
-            swapAuthority: SolanaSDK.PublicKey,
-            swapSource: SolanaSDK.PublicKey,
-            swapDestination: SolanaSDK.PublicKey,
-            poolTokenMint: SolanaSDK.PublicKey,
-            poolFeeAccount: SolanaSDK.PublicKey,
+            feePayer: PublicKey,
+            userAuthority: PublicKey,
+            userRelayAccount: PublicKey,
+            userTransferAuthority: PublicKey,
+            userSourceTokenAccount: PublicKey,
+            userTemporaryWsolAccount: PublicKey,
+            swapProgramId: PublicKey,
+            swapAccount: PublicKey,
+            swapAuthority: PublicKey,
+            swapSource: PublicKey,
+            swapDestination: PublicKey,
+            poolTokenMint: PublicKey,
+            poolFeeAccount: PublicKey,
             amountIn: UInt64,
             minimumAmountOut: UInt64,
-            network: SolanaSDK.Network
-        ) -> SolanaSDK.TransactionInstruction {
+            network: Network
+        ) -> TransactionInstruction {
             .init(
                 keys: [
                     .readonly(publicKey: .wrappedSOLMint, isSigner: false),
@@ -259,32 +259,32 @@ extension FeeRelayer.Relay {
         }
         
         private static func topUpWithSPLSwapTransitiveInstruction(
-            feePayer: SolanaSDK.PublicKey,
-            userAuthority: SolanaSDK.PublicKey,
-            userRelayAccount: SolanaSDK.PublicKey,
-            userTransferAuthority: SolanaSDK.PublicKey,
-            userSourceTokenAccount: SolanaSDK.PublicKey,
-            userDestinationTokenAccount: SolanaSDK.PublicKey,
-            transitTokenMint: SolanaSDK.PublicKey,
-            swapFromProgramId: SolanaSDK.PublicKey,
-            swapFromAccount: SolanaSDK.PublicKey,
-            swapFromAuthority: SolanaSDK.PublicKey,
-            swapFromSource: SolanaSDK.PublicKey,
-            swapFromDestination: SolanaSDK.PublicKey,
-            swapFromPoolTokenMint: SolanaSDK.PublicKey,
-            swapFromPoolFeeAccount: SolanaSDK.PublicKey,
-            swapToProgramId: SolanaSDK.PublicKey,
-            swapToAccount: SolanaSDK.PublicKey,
-            swapToAuthority: SolanaSDK.PublicKey,
-            swapToSource: SolanaSDK.PublicKey,
-            swapToDestination: SolanaSDK.PublicKey,
-            swapToPoolTokenMint: SolanaSDK.PublicKey,
-            swapToPoolFeeAccount: SolanaSDK.PublicKey,
+            feePayer: PublicKey,
+            userAuthority: PublicKey,
+            userRelayAccount: PublicKey,
+            userTransferAuthority: PublicKey,
+            userSourceTokenAccount: PublicKey,
+            userDestinationTokenAccount: PublicKey,
+            transitTokenMint: PublicKey,
+            swapFromProgramId: PublicKey,
+            swapFromAccount: PublicKey,
+            swapFromAuthority: PublicKey,
+            swapFromSource: PublicKey,
+            swapFromDestination: PublicKey,
+            swapFromPoolTokenMint: PublicKey,
+            swapFromPoolFeeAccount: PublicKey,
+            swapToProgramId: PublicKey,
+            swapToAccount: PublicKey,
+            swapToAuthority: PublicKey,
+            swapToSource: PublicKey,
+            swapToDestination: PublicKey,
+            swapToPoolTokenMint: PublicKey,
+            swapToPoolFeeAccount: PublicKey,
             amountIn: UInt64,
             transitMinimumAmount: UInt64,
             minimumAmountOut: UInt64,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.TransactionInstruction {
+            network: Network
+        ) throws -> TransactionInstruction {
             .init(
                 keys: [
                     .readonly(publicKey: .wrappedSOLMint, isSigner: false),
@@ -324,32 +324,32 @@ extension FeeRelayer.Relay {
         }
         
         private static func splSwapTransitiveInstruction(
-            feePayer: SolanaSDK.PublicKey,
-            userAuthority: SolanaSDK.PublicKey,
-            userTransferAuthority: SolanaSDK.PublicKey,
-            userSourceTokenAccount: SolanaSDK.PublicKey,
-            userTransitTokenAccount: SolanaSDK.PublicKey,
-            userDestinationTokenAccount: SolanaSDK.PublicKey,
-            transitTokenMint: SolanaSDK.PublicKey,
-            swapFromProgramId: SolanaSDK.PublicKey,
-            swapFromAccount: SolanaSDK.PublicKey,
-            swapFromAuthority: SolanaSDK.PublicKey,
-            swapFromSource: SolanaSDK.PublicKey,
-            swapFromDestination: SolanaSDK.PublicKey,
-            swapFromPoolTokenMint: SolanaSDK.PublicKey,
-            swapFromPoolFeeAccount: SolanaSDK.PublicKey,
-            swapToProgramId: SolanaSDK.PublicKey,
-            swapToAccount: SolanaSDK.PublicKey,
-            swapToAuthority: SolanaSDK.PublicKey,
-            swapToSource: SolanaSDK.PublicKey,
-            swapToDestination: SolanaSDK.PublicKey,
-            swapToPoolTokenMint: SolanaSDK.PublicKey,
-            swapToPoolFeeAccount: SolanaSDK.PublicKey,
+            feePayer: PublicKey,
+            userAuthority: PublicKey,
+            userTransferAuthority: PublicKey,
+            userSourceTokenAccount: PublicKey,
+            userTransitTokenAccount: PublicKey,
+            userDestinationTokenAccount: PublicKey,
+            transitTokenMint: PublicKey,
+            swapFromProgramId: PublicKey,
+            swapFromAccount: PublicKey,
+            swapFromAuthority: PublicKey,
+            swapFromSource: PublicKey,
+            swapFromDestination: PublicKey,
+            swapFromPoolTokenMint: PublicKey,
+            swapFromPoolFeeAccount: PublicKey,
+            swapToProgramId: PublicKey,
+            swapToAccount: PublicKey,
+            swapToAuthority: PublicKey,
+            swapToSource: PublicKey,
+            swapToDestination: PublicKey,
+            swapToPoolTokenMint: PublicKey,
+            swapToPoolFeeAccount: PublicKey,
             amountIn: UInt64,
             transitMinimumAmount: UInt64,
             minimumAmountOut: UInt64,
-            network: SolanaSDK.Network
-        ) throws -> SolanaSDK.TransactionInstruction {
+            network: Network
+        ) throws -> TransactionInstruction {
             .init(
                 keys: [
                     .writable(publicKey: feePayer, isSigner: true),
