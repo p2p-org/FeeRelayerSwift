@@ -164,7 +164,7 @@ public struct ErrorDetail: Decodable, Equatable {
     public let type: ErrorType?
     public let data: ErrorData?
 
-    init(type: ErrorType?, data: FeeRelayer.ErrorData?) {
+    init(type: ErrorType?, data: ErrorData?) {
         self.type = type
         self.data = data
     }

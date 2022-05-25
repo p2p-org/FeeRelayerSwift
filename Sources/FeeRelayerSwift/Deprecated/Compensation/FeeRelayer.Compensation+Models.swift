@@ -8,7 +8,7 @@
 import Foundation
 import SolanaSwift
 
-extension FeeRelayer.Compensation {
+//extension FeeRelayer.Compensation {
     // MARK: - Swap Tokens
     public struct SwapTokensParams: Encodable {
         let source: String
@@ -86,4 +86,4 @@ extension FeeRelayer.Compensation {
             case minimumAmountOut   =   "minimum_amount_out"
         }
     }
-}
+//}

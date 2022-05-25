@@ -7,9 +7,9 @@ import Foundation
 public protocol FeeRelayerAPIClient {
     var version: Int { get }
     func getFeePayerPubkey() async throws -> String
-    func requestFreeFeeLimits(for authority: String) async throws -> FeeRelayer.Relay.FeeLimitForAuthorityResponse
-    func sendTransaction(_ requestType: FeeRelayer.RequestType) async throws -> String
-    func sendTransaction<T: Decodable>(_ requestType: FeeRelayer.RequestType) async throws -> T
+    func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse
+    func sendTransaction(_ requestType: RequestType) async throws -> String
+//    func sendTransaction<T: Decodable>(_ requestType: RequestType) async throws -> T
 }
 
 enum APIClientError: Error {
@@ -38,7 +38,7 @@ public class APIClient: FeeRelayerAPIClient {
     /// Get fee payer for free transaction
     /// - Returns: Account's public key that is responsible for paying fee
     public func getFeePayerPubkey() async throws -> String {
-        var urlString = FeeRelayer.feeRelayerUrl
+        var urlString = FeeRelayerConstants.p2pEndpoint
         if version > 1 {
             urlString += "/v\(version)"
         }
@@ -56,8 +56,8 @@ public class APIClient: FeeRelayerAPIClient {
             .replacingOccurrences(of: "]", with: "")
     }
     
-    public func requestFreeFeeLimits(for authority: String) async throws -> FeeRelayer.Relay.FeeLimitForAuthorityResponse {
-        var url = FeeRelayer.feeRelayerUrl
+    public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
+        var url = FeeRelayerConstants.p2pEndpoint
         if version > 1 {
             url += "/v\(version)"
         }
@@ -77,7 +77,7 @@ public class APIClient: FeeRelayerAPIClient {
         }
 
         do {
-            return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeRelayer.Relay.FeeLimitForAuthorityResponse
+            return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeLimitForAuthorityResponse
         } catch HTTPClientError.unexpectedStatusCode(_, let data) {
             let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
             throw decodedError
@@ -89,7 +89,7 @@ public class APIClient: FeeRelayerAPIClient {
     ///   - path: additional path for request
     ///   - params: request's parameters
     /// - Returns: transaction id
-    public func sendTransaction(_ requestType: FeeRelayer.RequestType) async throws -> String {
+    public func sendTransaction(_ requestType: RequestType) async throws -> String {
         do {
             let tx: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
             return tx
@@ -99,21 +99,21 @@ public class APIClient: FeeRelayerAPIClient {
         }
     }
     
-    public func sendTransaction<T: Decodable>(_ requestType: FeeRelayer.RequestType) async throws -> T {
-        do {
-            return try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder()) as T
-        } catch HTTPClientError.cantDecode(let data) {
-            do {
-                let error = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
-                throw APIClientError.custom(error: error)
-            } catch {
-                throw APIClientError.cantDecodeError
-            }
-        }
-    }
+//    public func sendTransaction<T: Decodable>(_ requestType: FeeRelayer.RequestType) async throws -> T {
+//        do {
+//            return try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder()) as T
+//        } catch HTTPClientError.cantDecode(let data) {
+//            do {
+//                let error = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
+//                throw APIClientError.custom(error: error)
+//            } catch {
+//                throw APIClientError.cantDecodeError
+//            }
+//        }
+//    }
     
-    private func urlRequest(_ requestType: FeeRelayer.RequestType) throws -> URLRequest {
-        var url = FeeRelayer.feeRelayerUrl
+    private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
+        var url = FeeRelayerConstants.p2pEndpoint
         if version > 1 {
             url += "/v\(version)"
         }

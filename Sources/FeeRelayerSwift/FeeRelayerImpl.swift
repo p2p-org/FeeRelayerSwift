@@ -10,7 +10,7 @@ class FeeRelayerImpl: FeeRelayer {
     private(set) var cache: Cache<String, Any>?
     private let feeCalculator: FeeRelayerCalculator
 
-    init(feeCalculator: FeeRelayerCalculator, cache: Cache<Key, Value>? = nil) {
+    init(feeCalculator: FeeRelayerCalculator, cache: Cache<String, Any>? = nil) {
         self.cache = cache
         self.feeCalculator = feeCalculator
     }
@@ -40,7 +40,6 @@ class FeeRelayerImpl: FeeRelayer {
 
 enum CacheKey: String {
     case minimumTokenAccountBalance
-    case minimumRelayAccountBalance
     case minimumRelayAccountBalance
     case lamportsPerSignature
     case relayAccountStatus

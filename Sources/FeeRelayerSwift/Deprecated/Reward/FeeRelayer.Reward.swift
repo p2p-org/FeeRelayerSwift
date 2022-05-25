@@ -7,12 +7,12 @@
 
 import Foundation
 
-public protocol FeeRelayerRewardType {}
+//public protocol FeeRelayerRewardType {}
 
-extension FeeRelayer {
-    public struct Reward {
-        
-    }
-}
+//extension FeeRelayer {
+//    public struct Reward {
+//
+//    }
+//}
 
-extension FeeRelayer.Reward: FeeRelayerRewardType {}
+//extension FeeRelayer.Reward: FeeRelayerRewardType {}

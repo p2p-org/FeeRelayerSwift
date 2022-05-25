@@ -8,7 +8,7 @@
 import Foundation
 import SolanaSwift
 
-extension FeeRelayer.Reward {
+//extension FeeRelayer.Reward {
     // MARK: - Transfer SOL
     public struct TransferSolParams: Encodable {
         let sender: String
@@ -67,4 +67,4 @@ extension FeeRelayer.Reward {
             case blockhash
         }
     }
-}
+//}

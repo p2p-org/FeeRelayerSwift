@@ -34,8 +34,8 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     }
 
     private func getDestination(
-        destinationAddress: String?,
-        destinationTokenMint: String
+        destinationAddress: PublicKey?,
+        destination: PublicKey
     ) async throws
         -> (destinationToken: Token, userDestinationAccountOwnerAddress: PublicKey?,
             needsCreateDestinationTokenAccount: Bool)
@@ -70,6 +70,62 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     }
     
     private func getAssociatedTokenAddress(for address: PublicKey, with mintAddress: PublicKey) {
-        let accountInfo = feeRelayer.apiClient.getAccountInfo()
+//        let accountInfo = feeRelayer.apiClient.getAccountInfo(account: <#T##String#>)
     }
 }
+
+//public func topUpAndSwap(
+//    _ swapTransactions: [PreparedSwapTransaction],
+//    feePayer: PublicKey?,
+//    payingFeeToken: TokenInfo?
+//) async throws -> [String] {
+//    try await updateRelayAccountStatus()
+//    try await updateFreeTransactionFeeLimit()
+//    let expectedFee = try await calculateNeededTopUpAmount(
+//        swapTransactions: swapTransactions,
+//        payingTokenMint: payingFeeToken?.mint
+//    )
+//    let checkAndTopUp = try await checkAndTopUp(
+//        expectedFee: expectedFee,
+//        payingFeeToken: payingFeeToken
+//    )
+//    guard swapTransactions.count > 0 && swapTransactions.count <= 2 else {
+//        throw OrcaSwapError.invalidNumberOfTransactions
+//    }
+//    return []
+////        var request = self.prepareAndSend(
+////            swapTransactions[0],
+////            feePayer: feePayer ?? self.owner.publicKey,
+////            payingFeeToken: payingFeeToken
+////        )
+////
+////        if swapTransactions.count == 2 {
+////            request = request
+////                .flatMap {[weak self] _ in
+////                    guard let self = self else {throw OrcaSwapError.unknown}
+////                    return self.prepareAndSend(
+////                        swapTransactions[1],
+////                        feePayer: feePayer ?? self.owner.publicKey,
+////                        payingFeeToken: payingFeeToken
+////                    )
+////                        .retry { errors in
+////                            errors.enumerated().flatMap{ (index, error) -> Observable<Int64> in
+////                                if let error = error as? SolanaError {
+////                                    switch error {
+////                                    case .invalidResponse(let error) where error.data?.logs?.contains("Program log: Error: InvalidAccountData") == true:
+////                                        return .timer(.seconds(1), scheduler: MainScheduler.instance)
+////                                    case .transactionError(_, logs: let logs) where logs.contains("Program log: Error: InvalidAccountData"):
+////                                        return .timer(.seconds(1), scheduler: MainScheduler.instance)
+////                                    default:
+////                                        break
+////                                    }
+////                                }
+////
+////                                return .error(error)
+////                            }
+////                        }
+////                        .timeout(.seconds(60), scheduler: MainScheduler.instance)
+////                }
+////        }
+////        return request
+//}
