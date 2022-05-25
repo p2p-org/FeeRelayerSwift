@@ -79,7 +79,7 @@ public class APIClient: FeeRelayerAPIClient {
         do {
             return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeLimitForAuthorityResponse
         } catch HTTPClientError.unexpectedStatusCode(_, let data) {
-            let decodedError = try JSONDecoder().decode(FeeRelayer.Error.self, from: data)
+            let decodedError = try JSONDecoder().decode(FeeRelayerError.self, from: data)
             throw decodedError
         }
     }

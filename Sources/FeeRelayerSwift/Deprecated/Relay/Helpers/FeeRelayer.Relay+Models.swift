@@ -154,7 +154,7 @@ public struct RelayTransactionParam: Codable {
     
     public init(preparedTransaction: PreparedTransaction) throws {
         guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
-        else {throw FeeRelayer.Error.unknown}
+        else {throw FeeRelayerError.unknown}
         
         let message = try preparedTransaction.transaction.compileMessage()
         pubkeys = message.accountKeys.map {$0.base58EncodedString}
@@ -184,7 +184,7 @@ public struct RelayTransactionParam: Codable {
                 let signature = try preparedTransaction.findSignature(publicKey: signer.publicKey)
                 signatures[idxString] = signature
             } else {
-                throw FeeRelayer.Error.invalidSignature
+                throw FeeRelayerError.invalidSignature
             }
         }
         self.signatures = signatures

@@ -10,9 +10,9 @@ import Foundation
 //public protocol FeeRelayerRewardType {}
 
 //extension FeeRelayer {
-//    public struct Reward {
-//
-//    }
+    public struct Reward {
+
+    }
 //}
 
 //extension FeeRelayer.Reward: FeeRelayerRewardType {}

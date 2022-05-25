@@ -8,15 +8,23 @@ import SolanaSwift
 
 class SwapFeeRelayerImpl: SwapFeeRelayer {
     let feeRelayer: FeeRelayer
+    private(set) var solanaApiClient: SolanaAPIClient
 
-    init(feeRelayer: FeeRelayer) { self.feeRelayer = feeRelayer }
+    init(feeRelayer: FeeRelayer, solanaApiClient: SolanaAPIClient) {
+        self.feeRelayer = feeRelayer
+        self.solanaApiClient = solanaApiClient
+    }
 
     func calculateSwappingNetworkFees(
         swapPools _: PoolsPair?,
         sourceTokenMint _: String,
         destinationTokenMint _: String,
         destinationAddress _: String?
-    ) async throws -> FeeAmount {}
+    ) async throws -> FeeAmount {
+        fatalError(
+            "prepareSwapTransaction(sourceToken:destinationTokenMint:destinationAddress:fee:swapPools:inputAmount:slippage:) has not been implemented"
+        )
+    }
 
     func prepareSwapTransaction(
         sourceToken _: Token,
@@ -33,52 +41,54 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
         )
     }
 
-    private func getDestination(
-        destinationAddress: PublicKey?,
-        destination: PublicKey
-    ) async throws
-        -> (destinationToken: Token, userDestinationAccountOwnerAddress: PublicKey?,
-            needsCreateDestinationTokenAccount: Bool)
-    {
+    private func analyseDestination(
+        _ destination: PublicKey?,
+        mint: PublicKey
+    ) async throws -> (destination: Token, destinationOwner: PublicKey?, needCreateDestination: Bool) {
         let account = try feeRelayer.account
 
-        if PublicKey.wrappedSOLMint == destinationTokenMint {
+        if PublicKey.wrappedSOLMint == mint {
             // Target is SOL Token
             return (
-                destinationToken: Token(address: account.publicKey, mint: destinationTokenMint),
-                userDestinationAccountOwnerAddress: account.publicKey,
-                needsCreateDestinationTokenAccount: true
+                destination: Token(address: account.publicKey, mint: mint),
+                destinationOwner: account.publicKey,
+                needCreateDestination: true
             )
         } else {
             // Target is SPL Token
-            if let destinationAddress = try? PublicKey(string: destinationAddress) {
+            if let destination = destination {
                 // User already has SPL account
                 return (
-                    destinationToken: Token(address: destinationAddress, mint: destinationTokenMint),
-                    userDestinationAccountOwnerAddress: account.publicKey,
-                    needsCreateDestinationTokenAccount: false
+                    destination: Token(address: destination, mint: mint),
+                    destinationOwner: account.publicKey,
+                    needCreateDestination: false
                 )
             } else {
                 // User doesn't have SPL account
+
+                // Try to get associated account
+                let address = try await solanaApiClient.getAssociatedSPLTokenAddress(for: account.publicKey, mint: mint)
+
+                // Check destination address is exist.
+                var info: BufferInfo<AccountInfo>? = try await solanaApiClient
+                    .getAccountInfo(account: address.base58EncodedString)
+                let needsCreateDestinationTokenAccount = info?.owner == PublicKey.tokenProgramId.base58EncodedString
+
                 return (
-                    destinationToken: Token(address: account.publicKey, mint: destinationTokenMint),
-                    userDestinationAccountOwnerAddress: account.publicKey,
-                    needsCreateDestinationTokenAccount: true
+                    destination: Token(address: account.publicKey, mint: mint),
+                    destinationOwner: nil,
+                    needCreateDestination: needsCreateDestinationTokenAccount
                 )
             }
         }
     }
-    
-    private func getAssociatedTokenAddress(for address: PublicKey, with mintAddress: PublicKey) {
-//        let accountInfo = feeRelayer.apiClient.getAccountInfo(account: <#T##String#>)
-    }
 }
 
-//public func topUpAndSwap(
+// public func topUpAndSwap(
 //    _ swapTransactions: [PreparedSwapTransaction],
 //    feePayer: PublicKey?,
 //    payingFeeToken: TokenInfo?
-//) async throws -> [String] {
+// ) async throws -> [String] {
 //    try await updateRelayAccountStatus()
 //    try await updateFreeTransactionFeeLimit()
 //    let expectedFee = try await calculateNeededTopUpAmount(
@@ -128,4 +138,4 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
 ////                }
 ////        }
 ////        return request
-//}
+// }

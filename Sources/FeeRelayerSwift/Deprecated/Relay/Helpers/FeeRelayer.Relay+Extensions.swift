@@ -1,6 +1,6 @@
 //
 //  File.swift
-//  
+//
 //
 //  Created by Chung Tran on 10/01/2022.
 //
@@ -9,7 +9,7 @@ import Foundation
 import RxSwift
 import SolanaSwift
 import OrcaSwapSwift
-
+/*
 extension FeeRelayer.Relay {
     func getRelayAccountCreationCost() -> UInt64 {
         cache.lamportsPerSignature ?? 0 // TODO: Check again
@@ -257,7 +257,7 @@ private extension OrcaSwapSwift.Pool {
         transferAuthorityPubkey: PublicKey,
         amountIn: UInt64,
         minAmountOut: UInt64
-    ) -> FeeRelayer.Relay.DirectSwapData {
+    ) -> DirectSwapData {
         .init(
             programId: swapProgramId.base58EncodedString,
             accountPubkey: account,
@@ -279,3 +279,4 @@ extension Encodable {
         return String(data: data, encoding: .utf8)
     }
 }
+*/
