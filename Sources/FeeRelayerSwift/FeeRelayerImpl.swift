@@ -34,7 +34,7 @@ class FeeRelayerService: FeeRelayer {
 
     func topUpAndRelayTransaction(
         _: PreparedTransaction,
-        fee _: Token?,
+        fee _: TokenAccount?,
         config _: FeeRelayerConfiguration
     ) async throws -> TransactionID {
         fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented")
@@ -42,7 +42,7 @@ class FeeRelayerService: FeeRelayer {
 
     func topUpAndRelayTransaction(
         _: [PreparedTransaction],
-        fee _: Token?,
+        fee _: TokenAccount?,
         config _: FeeRelayerConfiguration
     ) async throws -> [TransactionID] { fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented") }
 
@@ -454,5 +454,6 @@ enum CacheKey: String {
     case lamportsPerSignature
     case relayAccountStatus
     case preparedParams
-    case freeTransactionFeeLimit
+    case usageStatus
+    case feePayerAddress
 }

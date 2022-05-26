@@ -328,6 +328,7 @@ public enum RelayAccountStatus: Equatable {
     }
 }
 
+@available(*, deprecated, message: "Use TokenAccount")
 public struct TokenInfo {
     public init(address: String, mint: String) {
         self.address = address

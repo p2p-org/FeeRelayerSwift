@@ -12,9 +12,28 @@ protocol FeeRelayerCalculator {
     /// - Parameters:
     ///   - expectedFee: an amount of fee, that blockchain need to process if user's send directly.
     ///   - payingTokenMint: a mint address of spl token, that user will use to play fee.
+    ///   - usageStatus: current usage status of fee relayer
+    ///   - relayAccountStatus: current status of relay account
     /// - Returns: Fee amount in SOL
     /// - Throws:
-    func calculateNeededTopUpAmount(expectedFee: FeeAmount, payingTokenMint: String?) async throws -> FeeAmount
+    func calculateNeededTopUpAmount(
+        expectedFee: FeeAmount,
+        payingTokenMint: String?,
+        usageStatus: UsageStatus,
+        relayAccountStatus: RelayAccountStatus
+    ) async throws -> FeeAmount
+//        var amount = calculateMinTopUpAmount(
+//            expectedFee: expectedFee,
+//            payingTokenMint: payingTokenMint,
+//            freeTransactionFeeLimit: freeTransactionFeeLimit,
+//            relayAccountStatus: relayAccountStatus
+//        )
+//        if amount.total > 0, amount.total < 1000 {
+//            amount.transaction += 1000 - amount.total
+//        }
+//        print("needed topup amount: \(amount)")
+//        return amount
+//    }
 
     /// TODO: is return value optional?
     /// TODO: Add this function to OrcaSwap. We use this function at many places.
@@ -26,16 +45,13 @@ protocol FeeRelayerCalculator {
     /// - Returns:
     /// - Throws:
     func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: String) async throws -> FeeAmount?
-    
-    
 }
 
-
 ///// Calculate needed top up amount for swap
-//public func calculateNeededTopUpAmount(
+// public func calculateNeededTopUpAmount(
 //    swapTransactions: [PreparedSwapTransaction],
 //    payingTokenMint: String?
-//) async throws -> FeeAmount {
+// ) async throws -> FeeAmount {
 //    guard let lamportsPerSignature = cache.lamportsPerSignature else {
 //        throw FeeRelayerError.relayInfoMissing
 //    }
@@ -48,57 +64,56 @@ protocol FeeRelayerCalculator {
 //
 //    let expectedFee = FeeAmount(transaction: transactionFee, accountBalances: accountCreationFee)
 //    return try await calculateNeededTopUpAmount(expectedFee: expectedFee, payingTokenMint: payingTokenMint)
-//}
-
+// }
 
 // MARK: - Helpers
 
 ///// Calculate needed fee for topup transaction by forming fake transaction
-//func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> FeeAmount {
+// func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> FeeAmount {
 //    guard let lamportsPerSignature = cache.lamportsPerSignature,
 //          let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
 //          let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
 //    else {throw FeeRelayer.Error.relayInfoMissing}
 //    var topUpFee = FeeAmount.zero
-//    
+//
 //    // transaction fee
 //    let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
 ////        numberOfSignatures += 1 // transferAuthority
 //    topUpFee.transaction = numberOfSignatures * lamportsPerSignature
-//    
+//
 //    // account creation fee
 //    if relayAccountStatus == .notYetCreated {
 //        topUpFee.accountBalances += minimumRelayAccountBalance
 //    }
-//    
+//
 //    // swap fee
 //    topUpFee.accountBalances += minimumTokenAccountBalance
-//    
-//    return topUpFee
-//}
 //
-//func calculateTopUpAmount(
+//    return topUpFee
+// }
+//
+// func calculateTopUpAmount(
 //    targetAmount: UInt64,
 //    relayAccountStatus: RelayAccountStatus,
 //    freeTransactionFeeLimit: FreeTransactionFeeLimit?
-//) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
+// ) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
 //    // get cache
 //    guard let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
 //          let lamportsPerSignature = cache.lamportsPerSignature,
 //          let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
 //    else {throw FeeRelayer.Error.relayInfoMissing}
-//    
+//
 //    // current_fee
 //    var currentFee: UInt64 = 0
 //    if relayAccountStatus == .notYetCreated {
 //        currentFee += minimumRelayAccountBalance
 //    }
-//    
+//
 //    let transactionNetworkFee = 2 * lamportsPerSignature // feePayer, owner
 //    if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
 //        currentFee += transactionNetworkFee
 //    }
-//    
+//
 //    // swap_amount_out
 ////        let swapAmountOut = targetAmount + currentFee
 //    var swapAmountOut = targetAmount
@@ -107,9 +122,9 @@ protocol FeeRelayerCalculator {
 //    } else {
 //        swapAmountOut += currentFee
 //    }
-//    
+//
 //    // expected_fee
 //    let expectedFee = currentFee + minimumTokenAccountBalance
-//    
+//
 //    return (topUpAmount: swapAmountOut, expectedFee: expectedFee)
-//}
+// }

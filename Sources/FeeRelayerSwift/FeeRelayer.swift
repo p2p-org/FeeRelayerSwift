@@ -23,13 +23,13 @@ protocol FeeRelayer {
 
     func topUpAndRelayTransaction(
         _ preparedTransaction: PreparedTransaction,
-        fee payingFeeToken: Token?,
+        fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> TransactionID
 
     func topUpAndRelayTransaction(
         _ preparedTransaction: [PreparedTransaction],
-        fee payingFeeToken: Token?,
+        fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
 }

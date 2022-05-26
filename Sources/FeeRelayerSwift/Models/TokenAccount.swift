@@ -6,9 +6,7 @@ import Foundation
 import SolanaSwift
 
 /// A basic class that represents SPL Token.
-///
-/// - Todo: Rename to ``TokenAccount``
-public struct Token {
+public struct TokenAccount {
     public init(address: PublicKey, mint: PublicKey) {
         self.address = address
         self.mint = mint

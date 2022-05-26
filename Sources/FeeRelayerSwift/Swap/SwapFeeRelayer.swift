@@ -8,18 +8,11 @@ import OrcaSwapSwift
 
 /// The service that allows users to create gas-less swap transactions.
 protocol SwapFeeRelayer {
-    func calculateSwappingNetworkFees(
-        swapPools: PoolsPair?,
-        sourceTokenMint: String,
-        destinationTokenMint: String,
-        destinationAddress: String?
-    ) async throws -> FeeAmount
-
     func prepareSwapTransaction(
-        sourceToken: Token,
-        destinationTokenMint: String,
-        destinationAddress: String?,
-        fee payingFeeToken: Token,
+        sourceToken: TokenAccount,
+        destinationTokenMint: PublicKey,
+        destinationAddress: PublicKey?,
+        fee payingFeeToken: TokenAccount,
         swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double
