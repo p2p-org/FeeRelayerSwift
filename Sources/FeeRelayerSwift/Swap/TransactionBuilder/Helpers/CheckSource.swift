@@ -9,31 +9,31 @@ import OrcaSwapSwift
 extension SwapTransactionBuilder {
     internal static func checkSource(_ context: inout BuildContext) async throws {
         var sourceWSOLNewAccount: Account?
-        if context.sourceToken.mint == PublicKey.wrappedSOLMint {
-            sourceWSOLNewAccount = try await Account(network: context.network)
-            context.instructions.append(contentsOf: [
+        if context.config.sourceAccount.mint == PublicKey.wrappedSOLMint {
+            sourceWSOLNewAccount = try await Account(network: context.config.network)
+            context.env.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
-                    from: try context.accountStorage.pubkey,
+                    from: try context.config.accountStorage.pubkey,
                     to: context.feeRelayerContext.feePayerAddress,
-                    lamports: context.inputAmount
+                    lamports: context.config.inputAmount
                 ),
                 SystemProgram.createAccountInstruction(
                     from: context.feeRelayerContext.feePayerAddress,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
-                    lamports: context.feeRelayerContext.minimumTokenAccountBalance + context.inputAmount,
+                    lamports: context.feeRelayerContext.minimumTokenAccountBalance + context.config.inputAmount,
                     space: AccountInfo.BUFFER_LENGTH,
                     programId: TokenProgram.id
                 ),
                 TokenProgram.initializeAccountInstruction(
                     account: sourceWSOLNewAccount!.publicKey,
                     mint: .wrappedSOLMint,
-                    owner: try context.userAuthorityAddress
+                    owner: try context.config.userAuthorityAddress
                 ),
             ])
-            context.userSource = sourceWSOLNewAccount!.publicKey
-            context.additionalPaybackFee += context.feeRelayerContext.minimumTokenAccountBalance
+            context.env.userSource = sourceWSOLNewAccount!.publicKey
+            context.env.additionalPaybackFee += context.feeRelayerContext.minimumTokenAccountBalance
         }
         
-        context.sourceWSOLNewAccount = sourceWSOLNewAccount
+        context.env.sourceWSOLNewAccount = sourceWSOLNewAccount
     }
 }

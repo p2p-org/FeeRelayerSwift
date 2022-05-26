@@ -9,13 +9,13 @@ import OrcaSwapSwift
 extension  SwapTransactionBuilder {
     internal static func checkDestination(context: inout BuildContext) async throws {
         var destinationNewAccount: Account?
-        var userDestinationTokenAccountAddress = context.destinationToken.address
+        var userDestinationTokenAccountAddress = context.config.destinationAccount.address
         
-        if context.needsCreateDestinationTokenAccount {
-            if context.destinationToken.mint == .wrappedSOLMint {
+        if context.config.needsCreateDestinationTokenAccount {
+            if context.config.destinationAccount.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
-                destinationNewAccount = try await Account(network: context.network)
-                context.instructions.append(contentsOf: [
+                destinationNewAccount = try await Account(network: context.config.network)
+                context.env.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
                         from: context.feeRelayerContext.feePayerAddress,
                         toNewPubkey: destinationNewAccount!.publicKey,
@@ -25,43 +25,43 @@ extension  SwapTransactionBuilder {
                     ),
                     TokenProgram.initializeAccountInstruction(
                         account: destinationNewAccount!.publicKey,
-                        mint: context.destinationToken.mint,
-                        owner: try context.userAuthorityAddress
+                        mint: context.config.destinationAccount.mint,
+                        owner: try context.config.userAuthorityAddress
                     ),
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey
-                context.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
+                context.env.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
-                    walletAddress: try context.accountStorage.pubkey,
-                    tokenMintAddress: context.destinationToken.mint
+                    walletAddress: try context.config.accountStorage.pubkey,
+                    tokenMintAddress: context.config.destinationAccount.mint
                 )
 
                 let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-                    mint: context.destinationToken.mint,
-                    owner: try context.accountStorage.pubkey,
+                    mint: context.config.destinationAccount.mint,
+                    owner: try context.config.accountStorage.pubkey,
                     payer: context.feeRelayerContext.feePayerAddress
                 )
 
                 // SPECIAL CASE WHEN WE SWAP FROM SOL TO NON-CREATED SPL TOKEN, THEN WE NEEDS ADDITIONAL TRANSACTION BECAUSE TRANSACTION IS TOO LARGE
-                if context.sourceWSOLNewAccount != nil {
-                    context.additionalTransaction = try makeTransaction(
+                if context.env.sourceWSOLNewAccount != nil {
+                    context.env.additionalTransaction = try makeTransaction(
                         context.feeRelayerContext,
                         instructions: [instruction],
-                        signers: [try context.accountStorage.signer],
-                        blockhash: context.blockhash,
+                        signers: [try context.config.accountStorage.signer],
+                        blockhash: context.config.blockhash,
                         accountCreationFee: context.feeRelayerContext.minimumTokenAccountBalance
                     )
                 } else {
-                    context.instructions.append(instruction)
-                    context.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
+                    context.env.instructions.append(instruction)
+                    context.env.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
                 }
                 userDestinationTokenAccountAddress = associatedAddress
             }
         }
         
-        context.destinationNewAccount = destinationNewAccount
-        context.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
+        context.env.destinationNewAccount = destinationNewAccount
+        context.env.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
     }
 }

@@ -10,52 +10,57 @@ internal enum SwapTransactionBuilder {
     struct BuildContext {
         let feeRelayerContext: FeeRelayerContext
         
-        // Configuration
-        let network: Network
-        let accountStorage: SolanaAccountStorage
+        struct Configuration {
+            let network: Network
+            let accountStorage: SolanaAccountStorage
         
-        let pools: PoolsPair
-        let inputAmount: UInt64
-        let slippage: Double
+            let pools: PoolsPair
+            let inputAmount: UInt64
+            let slippage: Double
         
-        let sourceToken: TokenAccount
-        let destinationToken: TokenAccount
-        let transitTokenMintPubkey: PublicKey
-        let transitTokenAccountAddress: PublicKey
+            let sourceAccount: TokenAccount
+            let destinationAccount: TokenAccount
+            let transitTokenMintPubkey: PublicKey
+            let transitTokenAccountAddress: PublicKey
+            
+            let needsCreateDestinationTokenAccount: Bool
+            let needsCreateTransitTokenAccount: Bool?
+            
+            let blockhash: String
+            
+            // Quicky access
+            var userAuthorityAddress: PublicKey { get throws { try accountStorage.pubkey } }
+        }
         
-        let needsCreateDestinationTokenAccount: Bool
-        let needsCreateTransitTokenAccount: Bool?
+        struct Environment {
+            var userSource: PublicKey? = nil
+            var sourceWSOLNewAccount: Account? = nil
         
-        let blockhash: String
+            var destinationNewAccount: Account? = nil
+            var userDestinationTokenAccountAddress: PublicKey? = nil
         
-        // Building vars
-        var userSource: PublicKey? = nil
-        var sourceWSOLNewAccount: Account? = nil
+            var instructions = [TransactionInstruction]()
+            var additionalTransaction: PreparedTransaction? = nil
         
-        var destinationNewAccount: Account? = nil
-        var userDestinationTokenAccountAddress: PublicKey? = nil
+            var signers: [Account] = []
         
-        var instructions = [TransactionInstruction]()
-        var additionalTransaction: PreparedTransaction? = nil
-        
-        var signers: [Account] = []
-        
-        // Building fee
-        var accountCreationFee: Lamports = 0
-        var additionalPaybackFee: UInt64 = 0
-        
-        // Quicky access
-        var userAuthorityAddress: PublicKey { get throws { try accountStorage.pubkey } }
+            // Building fee
+            var accountCreationFee: Lamports = 0
+            var additionalPaybackFee: UInt64 = 0
+        }
+
+        let config: Configuration
+        var env: Environment
     }
     
     internal static func prepareSwapTransaction(_ context: inout BuildContext) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
-        context.userSource = context.sourceToken.address
+        context.env.userSource = context.config.sourceAccount.address
         
         let associatedToken = try PublicKey.associatedTokenAddress(
             walletAddress: context.feeRelayerContext.feePayerAddress,
-            tokenMintAddress: context.sourceToken.mint
+            tokenMintAddress: context.config.sourceAccount.mint
         )
-        guard context.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
+        guard context.env.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
 
         // check source
         try await checkSource(&context)
@@ -65,16 +70,16 @@ internal enum SwapTransactionBuilder {
     
         // build swap data
         try checkSwapData(
-                context: &context,
-                swapData: try buildSwapData(
-                accountStorage: context.accountStorage,
-                network: context.network,
-                pools: context.pools,
-                inputAmount: context.inputAmount,
+            context: &context,
+            swapData: try buildSwapData(
+                accountStorage: context.config.accountStorage,
+                network: context.config.network,
+                pools: context.config.pools,
+                inputAmount: context.config.inputAmount,
                 minAmountOut: nil,
-                slippage: context.slippage,
-                transitTokenMintPubkey: context.transitTokenMintPubkey,
-                needsCreateTransitTokenAccount: context.needsCreateTransitTokenAccount == true
+                slippage: context.config.slippage,
+                transitTokenMintPubkey: context.config.transitTokenMintPubkey,
+                needsCreateTransitTokenAccount: context.config.needsCreateTransitTokenAccount == true
             )
         )
     
@@ -86,21 +91,21 @@ internal enum SwapTransactionBuilder {
     
         var transactions: [PreparedTransaction] = []
         
-        if let additionalTransaction = context.additionalTransaction {
-            transactions.append(additionalTransaction)
-        }
+        // include additional transaciton
+        if let additionalTransaction = context.env.additionalTransaction { transactions.append(additionalTransaction) }
         
+        // make primary transaction
         transactions.append(
             try makeTransaction(
                 context.feeRelayerContext,
-                instructions: context.instructions,
-                signers: context.signers,
-                blockhash: context.blockhash,
-                accountCreationFee: context.accountCreationFee
+                instructions: context.env.instructions,
+                signers: context.env.signers,
+                blockhash: context.config.blockhash,
+                accountCreationFee: context.env.accountCreationFee
             )
         )
         
-        return (transactions: transactions, additionalPaybackFee: context.additionalPaybackFee)
+        return (transactions: transactions, additionalPaybackFee: context.env.additionalPaybackFee)
     }
     
     internal static func makeTransaction(

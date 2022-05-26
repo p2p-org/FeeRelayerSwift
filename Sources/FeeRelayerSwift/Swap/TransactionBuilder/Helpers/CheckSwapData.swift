@@ -11,15 +11,15 @@ extension SwapTransactionBuilder {
         let userTransferAuthority = swapData.transferAuthorityAccount?.publicKey
         switch swapData.swapData {
         case let swap as DirectSwapData:
-            guard let pool = context.pools.first else {throw FeeRelayerError.swapPoolsNotFound}
+            guard let pool = context.config.pools.first else {throw FeeRelayerError.swapPoolsNotFound}
             
             // approve
             if let userTransferAuthority = userTransferAuthority {
-                context.instructions.append(
+                context.env.instructions.append(
                     TokenProgram.approveInstruction(
-                        account: context.sourceToken.address,
+                        account: context.config.sourceAccount.address,
                         delegate: userTransferAuthority,
-                        owner: try context.userAuthorityAddress,
+                        owner: try context.config.userAuthorityAddress,
                         multiSigners: [],
                         amount: swap.amountIn
                     )
@@ -27,11 +27,11 @@ extension SwapTransactionBuilder {
             }
             
             // swap
-            context.instructions.append(
+            context.env.instructions.append(
                 try pool.createSwapInstruction(
-                    userTransferAuthorityPubkey: userTransferAuthority ?? (try context.userAuthorityAddress),
-                    sourceTokenAddress: context.sourceToken.address,
-                    destinationTokenAddress: context.userDestinationTokenAccountAddress!,
+                    userTransferAuthorityPubkey: userTransferAuthority ?? (try context.config.userAuthorityAddress),
+                    sourceTokenAddress: context.config.sourceAccount.address,
+                    destinationTokenAddress: context.env.userDestinationTokenAccountAddress!,
                     amountIn: swap.amountIn,
                     minAmountOut: swap.minimumAmountOut
                 )
@@ -39,11 +39,11 @@ extension SwapTransactionBuilder {
         case let swap as TransitiveSwapData:
             // approve
             if let userTransferAuthority = userTransferAuthority {
-                context.instructions.append(
+                context.env.instructions.append(
                     TokenProgram.approveInstruction(
-                        account: context.sourceToken.address,
+                        account: context.config.sourceAccount.address,
                         delegate: userTransferAuthority,
-                        owner: try context.userAuthorityAddress,
+                        owner: try context.config.userAuthorityAddress,
                         multiSigners: [],
                         amount: swap.from.amountIn
                     )
@@ -53,33 +53,33 @@ extension SwapTransactionBuilder {
             // create transit token account
             let transitTokenMint = try PublicKey(string: swap.transitTokenMintPubkey)
             let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-                user: try context.userAuthorityAddress,
+                user: try context.config.userAuthorityAddress,
                 transitTokenMint: transitTokenMint,
-                network: context.network
+                network: context.config.network
             )
             
-            if context.needsCreateTransitTokenAccount == true {
-                context.instructions.append(
+            if context.config.needsCreateTransitTokenAccount == true {
+                context.env.instructions.append(
                     try Program.createTransitTokenAccountInstruction(
                         feePayer: context.feeRelayerContext.feePayerAddress,
-                        userAuthority: try context.userAuthorityAddress,
+                        userAuthority: try context.config.userAuthorityAddress,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: transitTokenMint,
-                        network: context.network
+                        network: context.config.network
                     )
                 )
             }
             
             // relay swap
-            context.instructions.append(
+            context.env.instructions.append(
                 try Program.createRelaySwapInstruction(
                     transitiveSwap: swap,
-                    userAuthorityAddressPubkey: context.userAuthorityAddress,
-                    sourceAddressPubkey: context.sourceToken.address,
+                    userAuthorityAddressPubkey: context.config.userAuthorityAddress,
+                    sourceAddressPubkey: context.config.sourceAccount.address,
                     transitTokenAccount: transitTokenAccountAddress,
-                    destinationAddressPubkey: context.userDestinationTokenAccountAddress!,
+                    destinationAddressPubkey: context.env.userDestinationTokenAccountAddress!,
                     feePayerPubkey: context.feeRelayerContext.feePayerAddress,
-                    network: context.network
+                    network: context.config.network
                 )
             )
         default:
