@@ -8,10 +8,7 @@ import SolanaSwift
 extension SolanaAccountStorage {
     var pubkey: PublicKey {
         get throws {
-            guard let pubicKey = account?.publicKey else {
-                throw FeeRelayerError.unauthorized
-            }
-            return pubicKey
+            try account?.publicKey ?! FeeRelayerError.unauthorized
         }
     }
 }

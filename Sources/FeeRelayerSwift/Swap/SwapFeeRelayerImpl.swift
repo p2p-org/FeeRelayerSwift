@@ -47,7 +47,7 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     }
 
     func prepareSwapTransaction(
-        source _: TokenAccount,
+        sourceToken _: TokenAccount,
         destinationTokenMint _: PublicKey,
         destinationAddress _: PublicKey?,
         fee _: TokenAccount,
