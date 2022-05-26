@@ -189,11 +189,11 @@ class SolanaAPIClientMock: SolanaAPIClient {
         fatalError()
     }
     
-    func getTokenAccountsByDelegate(pubkey: String, mint: String?, programId: String?, configs: RequestConfiguration?) async throws -> [TokenAccount<AccountInfo>] {
+    func getTokenAccountsByDelegate(pubkey: String, mint: String?, programId: String?, configs: RequestConfiguration?) async throws -> [SolanaSwift.TokenAccount<AccountInfo>] {
         fatalError()
     }
     
-    func getTokenAccountsByOwner(pubkey: String, params: OwnerInfoParams?, configs: RequestConfiguration?) async throws -> [TokenAccount<AccountInfo>] {
+    func getTokenAccountsByOwner(pubkey: String, params: OwnerInfoParams?, configs: RequestConfiguration?) async throws -> [SolanaSwift.TokenAccount<AccountInfo>] {
         fatalError()
     }
     

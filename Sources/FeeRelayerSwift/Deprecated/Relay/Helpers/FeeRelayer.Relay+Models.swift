@@ -74,7 +74,7 @@ public struct RelayCache {
     public var lamportsPerSignature: UInt64?
     public var relayAccountStatus: RelayAccountStatus?
     public var preparedParams: TopUpAndActionPreparedParams?
-    public var freeTransactionFeeLimit: FreeTransactionFeeLimit?
+    public var freeTransactionFeeLimit: UsageStatus?
 }
 
 // MARK: - Top up

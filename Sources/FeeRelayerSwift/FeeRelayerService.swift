@@ -56,71 +56,67 @@ class FeeRelayerService: FeeRelayer {
 
     func prepareForTopUp(
         targetAmount _: Lamports,
-        payingFeeToken _: TokenInfo,
+        payingFeeToken _: TokenAccount,
         relayAccountStatus _: RelayAccountStatus,
-//        freeTransactionFeeLimit: FreeTransactionFeeLimit?,
+        freeTransactionFeeLimit: UsageStatus?,
         checkIfBalanceHaveEnoughAmount _: Bool = true,
         forceUsingTransitiveSwap _: Bool = false // true for testing purpose only
     ) async throws -> TopUpPreparedParams? {
-        fatalError("topUpAndRelayTransaction(_:fee:config:) has not been implemented")
-
-        /*
          // form request
-         let tradableTopUpPoolsPair = try await orcaSwapAPIClient.getTradablePoolsPairs(
-             fromMint: payingFeeToken.mint,
-             toMint: PublicKey.wrappedSOLMint.base58EncodedString
-         )
-         // TOP UP
-         if checkIfBalanceHaveEnoughAmount,
-            let relayAccountBalance = relayAccountStatus.balance,
-            relayAccountBalance >= targetAmount  {
-             return nil
-         }
-         // STEP 2.2: Else
-         else {
-             // Get target amount for topping up
-             var targetAmount = targetAmount
-             if checkIfBalanceHaveEnoughAmount {
-                 targetAmount -= (relayAccountStatus.balance ?? 0)
-             }
-
-             // Get real amounts needed for topping up
-             let amounts = try self.calculateTopUpAmount(
-                 targetAmount: targetAmount,
-                 relayAccountStatus: relayAccountStatus,
-                 freeTransactionFeeLimit: freeTransactionFeeLimit
-             )
-             let topUpAmount = amounts.topUpAmount
-             let expectedFee = amounts.expectedFee
-
-             // Get pools for topping up
-             let topUpPools: PoolsPair
-
-             // force using transitive swap (for testing only)
-             if forceUsingTransitiveSwap {
-                 let pools = tradableTopUpPoolsPair.first(where: { $0.count == 2 })!
-                 topUpPools = pools
-             }
-
-             // prefer direct swap to transitive swap
-             else if let directSwapPools = tradableTopUpPoolsPair.first(where: { $0.count == 1 }) {
-                 topUpPools = directSwapPools
-             }
-
-             // if direct swap is not available, use transitive swap
-             else if let transitiveSwapPools = try self.orcaSwapClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair) {
-                 topUpPools = transitiveSwapPools
-             }
-
-             // no swap is available
-             else {
-                 throw FeeRelayer.Error.swapPoolsNotFound
-             }
-
-             // return needed amount and pools
-             return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
-
-          */
+//         let tradableTopUpPoolsPair = try await orcaSwapAPIClient.getTradablePoolsPairs(
+//            fromMint: payingFeeToken.mint,
+//            toMint: PublicKey.wrappedSOLMint.base58EncodedString
+//         )
+        fatalError()
+//         // TOP UP
+//         if checkIfBalanceHaveEnoughAmount,
+//            let relayAccountBalance = relayAccountStatus.balance,
+//            relayAccountBalance >= targetAmount  {
+//             return nil
+//         }
+//         // STEP 2.2: Else
+//         else {
+//             // Get target amount for topping up
+//             var targetAmount = targetAmount
+//             if checkIfBalanceHaveEnoughAmount {
+//                 targetAmount -= (relayAccountStatus.balance ?? 0)
+//             }
+//
+//             // Get real amounts needed for topping up
+//             let amounts = try self.calculateTopUpAmount(
+//                 targetAmount: targetAmount,
+//                 relayAccountStatus: relayAccountStatus,
+//                 freeTransactionFeeLimit: freeTransactionFeeLimit
+//             )
+//             let topUpAmount = amounts.topUpAmount
+//             let expectedFee = amounts.expectedFee
+//
+//             // Get pools for topping up
+//             let topUpPools: PoolsPair
+//
+//             // force using transitive swap (for testing only)
+//             if forceUsingTransitiveSwap {
+//                 let pools = tradableTopUpPoolsPair.first(where: { $0.count == 2 })!
+//                 topUpPools = pools
+//             }
+//
+//             // prefer direct swap to transitive swap
+//             else if let directSwapPools = tradableTopUpPoolsPair.first(where: { $0.count == 1 }) {
+//                 topUpPools = directSwapPools
+//             }
+//
+//             // if direct swap is not available, use transitive swap
+//             else if let transitiveSwapPools = try orcaSwapAPIClient.findBestPoolsPairForEstimatedAmount(topUpAmount, from: tradableTopUpPoolsPair) {
+//                 topUpPools = transitiveSwapPools
+//             }
+//
+//             // no swap is available
+//             else {
+//                 throw FeeRelayerError.swapPoolsNotFound
+//             }
+//
+//             // return needed amount and pools
+//             return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
     }
 }
 
