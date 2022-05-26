@@ -8,7 +8,7 @@ import SolanaSwift
 struct FeeRelayerContext {
     public var minimumTokenAccountBalance: UInt64
     public var minimumRelayAccountBalance: UInt64
-    public var feePayerAddress: String
+    public var feePayerAddress: PublicKey
     public var lamportsPerSignature: UInt64
     public var relayAccountStatus: RelayAccountStatus
     public var usageStatus: UsageStatus
@@ -40,7 +40,7 @@ struct FeeRelayerContext {
         return .init(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: feePayerAddress,
+            feePayerAddress: try PublicKey(string: feePayerAddress),
             lamportsPerSignature: lamportsPerSignature,
             relayAccountStatus: relayAccountStatus,
             usageStatus: usageStatus
