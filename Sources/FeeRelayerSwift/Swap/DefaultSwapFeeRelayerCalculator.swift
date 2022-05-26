@@ -9,23 +9,22 @@ import SolanaSwift
 class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     let solanaApiClient: SolanaAPIClient
     let accountStorage: SolanaAccountStorage
-    let helper: FeeRelayHelper
 
-    init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage, helper: FeeRelayHelper) {
+    init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage) {
         self.solanaApiClient = solanaApiClient
         self.accountStorage = accountStorage
-        self.helper = helper
     }
 
     func calculateSwappingNetworkFees(
+        _ context: FeeRelayerContext,
         swapPools: PoolsPair?,
         sourceTokenMint: PublicKey,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
         let destinationInfo = try await analyseDestination(destinationAddress, mint: destinationTokenMint)
-        let lamportsPerSignature = try await helper.getLamportsPerSignature()
-        let minimumTokenAccountBalance = try await helper.getMinimumBalanceForRentExemption()
+        let lamportsPerSignature = context.lamportsPerSignature
+        let minimumTokenAccountBalance = context.minimumTokenAccountBalance
 
         var expectedFee = FeeAmount.zero
 

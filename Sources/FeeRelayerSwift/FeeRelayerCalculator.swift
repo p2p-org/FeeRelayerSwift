@@ -10,17 +10,15 @@ protocol FeeRelayerCalculator {
     ///
     /// The user's relayer account will be used as fee payer address.
     /// - Parameters:
+    ///   - context: Processing context
     ///   - expectedFee: an amount of fee, that blockchain need to process if user's send directly.
     ///   - payingTokenMint: a mint address of spl token, that user will use to play fee.
-    ///   - usageStatus: current usage status of fee relayer
-    ///   - relayAccountStatus: current status of relay account
     /// - Returns: Fee amount in SOL
     /// - Throws:
     func calculateNeededTopUpAmount(
+        _ context: FeeRelayerContext,
         expectedFee: FeeAmount,
-        payingTokenMint: String?,
-        usageStatus: UsageStatus,
-        relayAccountStatus: RelayAccountStatus
+        payingTokenMint: PublicKey?
     ) async throws -> FeeAmount
 //        var amount = calculateMinTopUpAmount(
 //            expectedFee: expectedFee,
@@ -35,6 +33,8 @@ protocol FeeRelayerCalculator {
 //        return amount
 //    }
 
+    func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64
+
     /// TODO: is return value optional?
     /// TODO: Add this function to OrcaSwap. We use this function at many places.
     /// Convert fee amount into spl value.
@@ -44,7 +44,7 @@ protocol FeeRelayerCalculator {
     ///   - payingFeeTokenMint: a mint address of spl token, that user will use to play fee.
     /// - Returns:
     /// - Throws:
-    func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: String) async throws -> FeeAmount?
+    func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount?
 }
 
 ///// Calculate needed top up amount for swap
