@@ -2,24 +2,6 @@
   "object": {
     "pins": [
       {
-        "package": "BufferLayoutSwift",
-        "repositoryURL": "https://github.com/bigearsenal/BufferLayoutSwift.git",
-        "state": {
-          "branch": null,
-          "revision": "26894ef3ad991b4be8766776e4465326bfb6273f",
-          "version": "0.9.0"
-        }
-      },
-      {
-        "package": "CryptoSwift",
-        "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
-        "state": {
-          "branch": null,
-          "revision": "4b0565384d3c4c588af09e660535b2c7c9bf5b39",
-          "version": "1.4.2"
-        }
-      },
-      {
         "package": "LoggerSwift",
         "repositoryURL": "https://github.com/bigearsenal/loggerswift.git",
         "state": {
@@ -38,15 +20,6 @@
         }
       },
       {
-        "package": "Runtime",
-        "repositoryURL": "https://github.com/wickwirew/Runtime.git",
-        "state": {
-          "branch": null,
-          "revision": "dad03135d7701a4e7b3a4051e75d6b37bd8e178e",
-          "version": "2.2.4"
-        }
-      },
-      {
         "package": "secp256k1",
         "repositoryURL": "https://github.com/Boilertalk/secp256k1.swift.git",
         "state": {
@@ -62,15 +35,6 @@
           "branch": "refactor/pwn-3297",
           "revision": "2420bd469244a612d13147f795835a19cb7e6724",
           "version": null
-        }
-      },
-      {
-        "package": "Starscream",
-        "repositoryURL": "https://github.com/daltoniam/Starscream.git",
-        "state": {
-          "branch": null,
-          "revision": "df8d82047f6654d8e4b655d1b1525c64e1059d21",
-          "version": "4.0.4"
         }
       },
       {

@@ -9,10 +9,12 @@ extension SolanaAccountStorage {
     var pubkey: PublicKey {
         get throws {
             try account?.publicKey ?! FeeRelayerError.unauthorized
-            guard let pubicKey = try account?.publicKey else {
-                throw FeeRelayerError.unauthorized
-            }
-            return pubicKey
+        }
+    }
+    
+    var signer: Account {
+        get throws {
+            try account ?! FeeRelayerError.unauthorized
         }
     }
 }

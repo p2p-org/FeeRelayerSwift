@@ -22,7 +22,12 @@ class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
-        let destinationInfo = try await analyseDestination(destinationAddress, mint: destinationTokenMint)
+        let destinationInfo = try await DestinationAnalysator.analyseDestination(
+            solanaApiClient,
+            destination: destinationAddress,
+            mint: destinationTokenMint,
+            accountStorage: accountStorage
+        )
         let lamportsPerSignature = context.lamportsPerSignature
         let minimumTokenAccountBalance = context.minimumTokenAccountBalance
 
@@ -54,47 +59,5 @@ class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         }
 
         return expectedFee
-    }
-
-    internal func analyseDestination(
-        _ destination: PublicKey?,
-        mint: PublicKey
-    ) async throws -> (destination: TokenAccount, destinationOwner: PublicKey?, needCreateDestination: Bool) {
-        let owner = try accountStorage.pubkey
-
-        if PublicKey.wrappedSOLMint == mint {
-            // Target is SOL Token
-            return (
-                destination: TokenAccount(address: owner, mint: mint),
-                destinationOwner: owner,
-                needCreateDestination: true
-            )
-        } else {
-            // Target is SPL Token
-            if let destination = destination {
-                // User already has SPL account
-                return (
-                    destination: TokenAccount(address: destination, mint: mint),
-                    destinationOwner: owner,
-                    needCreateDestination: false
-                )
-            } else {
-                // User doesn't have SPL account
-
-                // Try to get associated account
-                let address = try await solanaApiClient.getAssociatedSPLTokenAddress(for: owner, mint: mint)
-
-                // Check destination address is exist.
-                let info: BufferInfo<AccountInfo>? = try await solanaApiClient
-                    .getAccountInfo(account: address.base58EncodedString)
-                let needsCreateDestinationTokenAccount = info?.owner == TokenProgram.id.base58EncodedString
-
-                return (
-                    destination: TokenAccount(address: owner, mint: mint),
-                    destinationOwner: nil,
-                    needCreateDestination: needsCreateDestinationTokenAccount
-                )
-            }
-        }
     }
 }

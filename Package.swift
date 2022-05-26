@@ -17,11 +17,6 @@ let package = Package(
             targets: ["FeeRelayerSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMajor(from: "1.4.1")),
-        .package(url: "https://github.com/bigearsenal/BufferLayoutSwift.git", .upToNextMajor(from: "0.9.0")),
-        .package(name: "secp256k1", url: "https://github.com/Boilertalk/secp256k1.swift.git", from: "0.1.0"),
-        .package(name: "TweetNacl", url: "https://github.com/bitmark-inc/tweetnacl-swiftwrap.git", from: "1.0.2"),
-        .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"),
         .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "refactor/pwn-3297"),
         .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "swap-unit-tests")
     ],
