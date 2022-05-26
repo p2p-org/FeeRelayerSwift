@@ -7,12 +7,20 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension  SwapTransactionBuilder {
-    internal static func checkDestination(context: inout BuildContext) async throws {
+    internal static func checkDestination(_ context: inout BuildContext) async throws {
         var destinationNewAccount: Account?
-        var userDestinationTokenAccountAddress = context.config.destinationAccount.address
         
-        if context.config.needsCreateDestinationTokenAccount {
-            if context.config.destinationAccount.mint == .wrappedSOLMint {
+        let destinationInfo = try await DestinationAnalysator.analyseDestination(
+            context.config.solanaApiClient,
+            destination: context.config.destinationAddress,
+            mint: context.config.destinationTokenMint,
+            accountStorage: context.config.accountStorage
+        )
+        
+        var userDestinationTokenAccountAddress = destinationInfo.destination.address
+        
+        if destinationInfo.needCreateDestination {
+            if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
                 destinationNewAccount = try await Account(network: context.config.network)
                 context.env.instructions.append(contentsOf: [
@@ -25,7 +33,7 @@ extension  SwapTransactionBuilder {
                     ),
                     TokenProgram.initializeAccountInstruction(
                         account: destinationNewAccount!.publicKey,
-                        mint: context.config.destinationAccount.mint,
+                        mint:  destinationInfo.destination.mint,
                         owner: try context.config.userAuthorityAddress
                     ),
                 ])
@@ -35,11 +43,11 @@ extension  SwapTransactionBuilder {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
                     walletAddress: try context.config.accountStorage.pubkey,
-                    tokenMintAddress: context.config.destinationAccount.mint
+                    tokenMintAddress:  destinationInfo.destination.mint
                 )
 
                 let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
-                    mint: context.config.destinationAccount.mint,
+                    mint:  destinationInfo.destination.mint,
                     owner: try context.config.accountStorage.pubkey,
                     payer: context.feeRelayerContext.feePayerAddress
                 )

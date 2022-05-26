@@ -58,7 +58,7 @@ extension SwapTransactionBuilder {
                 network: context.config.network
             )
             
-            if context.config.needsCreateTransitTokenAccount == true {
+            if context.env.needsCreateTransitTokenAccount == true {
                 context.env.instructions.append(
                     try Program.createTransitTokenAccountInstruction(
                         feePayer: context.feeRelayerContext.feePayerAddress,

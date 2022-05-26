@@ -38,8 +38,8 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
         destinationAddress: PublicKey?,
         fee: TokenAccount,
         swapPools: PoolsPair,
-        inputAmount _: UInt64,
-        slippage _: Double
+        inputAmount : UInt64,
+        slippage: Double
     ) async throws
     -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         let context = try await FeeRelayerContext.create(
@@ -48,7 +48,6 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
             feeRelayerAPIClient: feeRelayerAPIClient
         )
 
-        let transitToken = try? getTransitToken(pools: swapPools)
         let preparedParams = try await prepareForTopUpAndSwap(
             context,
             source: sourceToken,
@@ -57,10 +56,27 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
             payingFeeToken: fee,
             swapPools: swapPools
         )
-
-        fatalError(
-            "prepareSwapTransaction(sourceToken:destinationTokenMint:destinationAddress:fee:swapPools:inputAmount:slippage:) has not been implemented"
+        
+        let latestBlockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
+    
+        var buildContext = SwapTransactionBuilder.BuildContext(
+            feeRelayerContext: context,
+            config: .init(
+                solanaApiClient: solanaApiClient,
+                orcaSwap: orcaSwap,
+                accountStorage: accountStorage,
+                pools:  preparedParams.actionFeesAndPools.poolsPair,
+                inputAmount: inputAmount,
+                slippage: slippage,
+                sourceAccount: sourceToken,
+                destinationTokenMint: destinationTokenMint,
+                destinationAddress: destinationAddress,
+                blockhash: latestBlockhash
+            ),
+            env: .init()
         )
+        
+        return try await SwapTransactionBuilder.prepareSwapTransaction(&buildContext)
     }
 
     func prepareForTopUpAndSwap(
@@ -121,26 +137,5 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
             topUpPreparedParam: topUpPreparedParam,
             actionFeesAndPools: .init(fee: swappingFee, poolsPair: swapPools)
         )
-    }
-
-    internal func getTransitToken(pools: PoolsPair) throws -> TokenInfo? {
-        guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools) else { return nil }
-
-        let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-            user: try accountStorage.pubkey,
-            transitTokenMint: transitTokenMintPubkey,
-            network: solanaApiClient.endpoint.network
-        )
-
-        return TokenInfo(
-            address: transitTokenAccountAddress.base58EncodedString,
-            mint: transitTokenMintPubkey.base58EncodedString
-        )
-    }
-
-    internal func getTransitTokenMintPubkey(pools: PoolsPair) throws -> PublicKey? {
-        guard pools.count == 2 else { return nil }
-        let interTokenName = pools[0].tokenBName
-        return try PublicKey(string: orcaSwap.getMint(tokenName: interTokenName))
     }
 }

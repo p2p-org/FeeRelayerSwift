@@ -11,7 +11,10 @@ internal enum SwapTransactionBuilder {
         let feeRelayerContext: FeeRelayerContext
         
         struct Configuration {
-            let network: Network
+            let solanaApiClient: SolanaAPIClient
+            let orcaSwap: OrcaSwap
+            
+            var network: Network { solanaApiClient.endpoint.network }
             let accountStorage: SolanaAccountStorage
         
             let pools: PoolsPair
@@ -19,12 +22,8 @@ internal enum SwapTransactionBuilder {
             let slippage: Double
         
             let sourceAccount: TokenAccount
-            let destinationAccount: TokenAccount
-            let transitTokenMintPubkey: PublicKey
-            let transitTokenAccountAddress: PublicKey
-            
-            let needsCreateDestinationTokenAccount: Bool
-            let needsCreateTransitTokenAccount: Bool?
+            let destinationTokenMint: PublicKey
+            let destinationAddress: PublicKey?
             
             let blockhash: String
             
@@ -35,6 +34,10 @@ internal enum SwapTransactionBuilder {
         struct Environment {
             var userSource: PublicKey? = nil
             var sourceWSOLNewAccount: Account? = nil
+            
+            var transitTokenMintPubkey: PublicKey?
+            var transitTokenAccountAddress: PublicKey?
+            var needsCreateTransitTokenAccount: Bool?
         
             var destinationNewAccount: Account? = nil
             var userDestinationTokenAccountAddress: PublicKey? = nil
@@ -62,11 +65,14 @@ internal enum SwapTransactionBuilder {
         )
         guard context.env.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
 
+        // check transit token
+        try await checkTransitTokenAccount(&context)
+        
         // check source
         try await checkSource(&context)
     
         // check destination
-        try await checkDestination(context: &context)
+        try await checkDestination(&context)
     
         // build swap data
         try checkSwapData(
@@ -78,8 +84,8 @@ internal enum SwapTransactionBuilder {
                 inputAmount: context.config.inputAmount,
                 minAmountOut: nil,
                 slippage: context.config.slippage,
-                transitTokenMintPubkey: context.config.transitTokenMintPubkey,
-                needsCreateTransitTokenAccount: context.config.needsCreateTransitTokenAccount == true
+                transitTokenMintPubkey: context.env.transitTokenMintPubkey,
+                needsCreateTransitTokenAccount: context.env.needsCreateTransitTokenAccount == true
             )
         )
     
@@ -87,7 +93,7 @@ internal enum SwapTransactionBuilder {
         try checkClosingAccount(&context)
         
         // check signers
-        try checkSigners(context: &context)
+        try checkSigners(&context)
     
         var transactions: [PreparedTransaction] = []
         
