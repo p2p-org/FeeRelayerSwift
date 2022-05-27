@@ -10,13 +10,13 @@ class TransitTokenAccountAnalysator {
     internal static func getTransitToken(
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwap,
-        accountStorage: SolanaAccountStorage,
+        account: Account,
         pools: PoolsPair
     ) throws -> TokenAccount? {
         guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(orcaSwap: orcaSwap, pools: pools) else { return nil }
 
         let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-            user: try accountStorage.pubkey,
+            user: account.publicKey,
             transitTokenMint: transitTokenMintPubkey,
             network: solanaApiClient.endpoint.network
         )

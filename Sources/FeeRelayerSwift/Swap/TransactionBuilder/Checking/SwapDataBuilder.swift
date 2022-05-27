@@ -13,7 +13,7 @@ extension SwapTransactionBuilder {
     }
     
     static func buildSwapData(
-        accountStorage: SolanaAccountStorage,
+        userAccount: Account,
         network: Network,
         pools: PoolsPair,
         inputAmount: UInt64?,
@@ -22,13 +22,13 @@ extension SwapTransactionBuilder {
         transitTokenMintPubkey: PublicKey? = nil,
         newTransferAuthority: Bool = false,
         needsCreateTransitTokenAccount: Bool
-    ) throws -> SwapData {
+    ) async throws -> SwapData {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayerError.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try Account(network: network)
+        let transferAuthority = try await Account(network: network)
         
         // form topUp params
         if pools.count == 1 {
@@ -39,7 +39,7 @@ extension SwapTransactionBuilder {
             else { throw FeeRelayerError.invalidAmount }
             
             let directSwapData = pool.getSwapData(
-                transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: try accountStorage.pubkey,
+                transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: userAccount.publicKey,
                 amountIn: amountIn,
                 minAmountOut: minAmountOut
             )
@@ -74,12 +74,12 @@ extension SwapTransactionBuilder {
             
             let transitiveSwapData = TransitiveSwapData(
                 from: firstPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: try accountStorage.pubkey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: userAccount.publicKey,
                     amountIn: firstPoolAmountIn,
                     minAmountOut: secondPoolAmountIn
                 ),
                 to: secondPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: try accountStorage.pubkey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: userAccount.publicKey,
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),

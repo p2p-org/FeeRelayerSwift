@@ -19,7 +19,7 @@ extension SwapTransactionBuilder {
                     TokenProgram.approveInstruction(
                         account: context.config.sourceAccount.address,
                         delegate: userTransferAuthority,
-                        owner: try context.config.userAuthorityAddress,
+                        owner: context.config.userAccount.publicKey,
                         multiSigners: [],
                         amount: swap.amountIn
                     )
@@ -29,7 +29,7 @@ extension SwapTransactionBuilder {
             // swap
             context.env.instructions.append(
                 try pool.createSwapInstruction(
-                    userTransferAuthorityPubkey: userTransferAuthority ?? (try context.config.userAuthorityAddress),
+                    userTransferAuthorityPubkey: userTransferAuthority ?? (context.config.userAccount.publicKey),
                     sourceTokenAddress: context.config.sourceAccount.address,
                     destinationTokenAddress: context.env.userDestinationTokenAccountAddress!,
                     amountIn: swap.amountIn,
@@ -43,7 +43,7 @@ extension SwapTransactionBuilder {
                     TokenProgram.approveInstruction(
                         account: context.config.sourceAccount.address,
                         delegate: userTransferAuthority,
-                        owner: try context.config.userAuthorityAddress,
+                        owner: context.config.userAccount.publicKey,
                         multiSigners: [],
                         amount: swap.from.amountIn
                     )
@@ -53,19 +53,19 @@ extension SwapTransactionBuilder {
             // create transit token account
             let transitTokenMint = try PublicKey(string: swap.transitTokenMintPubkey)
             let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-                user: try context.config.userAuthorityAddress,
+                user: context.config.userAccount.publicKey,
                 transitTokenMint: transitTokenMint,
-                network: context.config.network
+                network: context.solanaApiClient.endpoint.network
             )
             
             if context.env.needsCreateTransitTokenAccount == true {
                 context.env.instructions.append(
                     try Program.createTransitTokenAccountInstruction(
                         feePayer: context.feeRelayerContext.feePayerAddress,
-                        userAuthority: try context.config.userAuthorityAddress,
+                        userAuthority: context.config.userAccount.publicKey,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: transitTokenMint,
-                        network: context.config.network
+                        network: context.solanaApiClient.endpoint.network
                     )
                 )
             }
@@ -74,12 +74,12 @@ extension SwapTransactionBuilder {
             context.env.instructions.append(
                 try Program.createRelaySwapInstruction(
                     transitiveSwap: swap,
-                    userAuthorityAddressPubkey: context.config.userAuthorityAddress,
+                    userAuthorityAddressPubkey: context.config.userAccount.publicKey,
                     sourceAddressPubkey: context.config.sourceAccount.address,
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: context.env.userDestinationTokenAccountAddress!,
                     feePayerPubkey: context.feeRelayerContext.feePayerAddress,
-                    network: context.config.network
+                    network: context.solanaApiClient.endpoint.network
                 )
             )
         default:

@@ -10,15 +10,13 @@ class DestinationAnalysator {
         _ apiClient: SolanaAPIClient,
         destination: PublicKey?,
         mint: PublicKey,
-        accountStorage: SolanaAccountStorage
+        userAccount: Account
     ) async throws -> (destination: TokenAccount, destinationOwner: PublicKey?, needCreateDestination: Bool) {
-        let owner = try accountStorage.pubkey
-
         if PublicKey.wrappedSOLMint == mint {
             // Target is SOL Token
             return (
-                destination: TokenAccount(address: owner, mint: mint),
-                destinationOwner: owner,
+                destination: TokenAccount(address: userAccount.publicKey, mint: mint),
+                destinationOwner: userAccount.publicKey,
                 needCreateDestination: true
             )
         } else {
@@ -27,14 +25,14 @@ class DestinationAnalysator {
                 // User already has SPL account
                 return (
                     destination: TokenAccount(address: destination, mint: mint),
-                    destinationOwner: owner,
+                    destinationOwner: userAccount.publicKey,
                     needCreateDestination: false
                 )
             } else {
                 // User doesn't have SPL account
 
                 // Try to get associated account
-                let address = try await apiClient.getAssociatedSPLTokenAddress(for: owner, mint: mint)
+                let address = try await apiClient.getAssociatedSPLTokenAddress(for: userAccount.publicKey, mint: mint)
 
                 // Check destination address is exist.
                 let info: BufferInfo<AccountInfo>? = try await apiClient
@@ -42,7 +40,7 @@ class DestinationAnalysator {
                 let needsCreateDestinationTokenAccount = info?.owner == TokenProgram.id.base58EncodedString
 
                 return (
-                    destination: TokenAccount(address: owner, mint: mint),
+                    destination: TokenAccount(address: userAccount.publicKey, mint: mint),
                     destinationOwner: nil,
                     needCreateDestination: needsCreateDestinationTokenAccount
                 )
