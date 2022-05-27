@@ -17,9 +17,6 @@ struct FeeRelayerConfiguration {
 /// The service that allows users to do gas-less transactions.
 protocol FeeRelayer {
     var account: Account { get throws }
-    
-    /// Fetch current usage status
-    func getUsageStatus() async throws -> UsageStatus
 
     func topUpAndRelayTransaction(
         _ preparedTransaction: PreparedTransaction,

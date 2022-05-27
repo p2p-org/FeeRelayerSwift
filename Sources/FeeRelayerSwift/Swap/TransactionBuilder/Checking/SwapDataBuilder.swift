@@ -94,7 +94,7 @@ extension SwapTransactionBuilder {
     }
 }
 
-private extension Pool {
+extension Pool {
     func getSwapData(
         transferAuthorityPubkey: PublicKey,
         amountIn: UInt64,

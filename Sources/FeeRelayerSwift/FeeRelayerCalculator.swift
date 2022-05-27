@@ -47,6 +47,106 @@ protocol FeeRelayerCalculator {
     func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount?
 }
 
+class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
+
+    func calculateNeededTopUpAmount(
+        _ context: FeeRelayerContext,
+        expectedFee: FeeAmount,
+        payingTokenMint: PublicKey?
+    ) async throws -> FeeAmount {
+//        var amount = calculateTopUpAmount(context,
+//                                          targetAmount: <#T##UInt64#>,
+//                                          relayAccountStatus: <#T##RelayAccountStatus#>,
+//                                          freeTransactionFeeLimit: <#T##UsageStatus?#>
+//        )
+//            var amount = calculateTopUpAmount(
+//                expectedFee: expectedFee,
+//                payingTokenMint: payingTokenMint,
+//                freeTransactionFeeLimit: freeTransactionFeeLimit,
+//                relayAccountStatus: relayAccountStatus
+//            )
+//            if amount.total > 0, amount.total < 1000 {
+//                amount.transaction += 1000 - amount.total
+//            }
+//            print("needed topup amount: \(amount)")
+//            return amount
+        fatalError()
+    }
+    
+    func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64 {
+        fatalError()
+    }
+    
+    func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount? {
+        fatalError()
+    }
+    
+    
+    func calculateTopUpAmount(
+        _ context: FeeRelayerContext,
+       targetAmount: UInt64,
+       relayAccountStatus: RelayAccountStatus,
+       freeTransactionFeeLimit: UsageStatus?
+    ) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
+        // get cache
+        let minimumRelayAccountBalance = context.minimumRelayAccountBalance
+        let lamportsPerSignature = context.lamportsPerSignature
+        let minimumTokenAccountBalance = context.minimumTokenAccountBalance
+
+        // current_fee
+        var currentFee: UInt64 = 0
+        if relayAccountStatus == .notYetCreated {
+           currentFee += minimumRelayAccountBalance
+        }
+
+        let transactionNetworkFee = 2 * lamportsPerSignature // feePayer, owner
+        if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
+           currentFee += transactionNetworkFee
+        }
+
+        // swap_amount_out
+        //        let swapAmountOut = targetAmount + currentFee
+        var swapAmountOut = targetAmount
+        if relayAccountStatus == .notYetCreated {
+           swapAmountOut += context.lamportsPerSignature
+        } else {
+           swapAmountOut += currentFee
+        }
+
+        // expected_fee
+        let expectedFee = currentFee + minimumTokenAccountBalance
+
+        return (topUpAmount: swapAmountOut, expectedFee: expectedFee)
+    }
+    
+    /// Calculate needed fee for topup transaction by forming fake transaction
+    func calculateTopUpFee(
+        _ context: FeeRelayerContext,
+        relayAccountStatus: RelayAccountStatus
+    ) throws -> FeeAmount {
+        let lamportsPerSignature = context.lamportsPerSignature
+        let minimumRelayAccountBalance = context.minimumRelayAccountBalance
+        let minimumTokenAccountBalance = context.minimumTokenAccountBalance
+        var topUpFee = FeeAmount.zero
+
+        // transaction fee
+        let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
+        //        numberOfSignatures += 1 // transferAuthority
+        topUpFee.transaction = numberOfSignatures * lamportsPerSignature
+
+        // account creation fee
+        if relayAccountStatus == .notYetCreated {
+            topUpFee.accountBalances += minimumRelayAccountBalance
+        }
+
+        // swap fee
+        topUpFee.accountBalances += minimumTokenAccountBalance
+
+        return topUpFee
+    }
+    
+}
+
 ///// Calculate needed top up amount for swap
 // public func calculateNeededTopUpAmount(
 //    swapTransactions: [PreparedSwapTransaction],
@@ -67,64 +167,3 @@ protocol FeeRelayerCalculator {
 // }
 
 // MARK: - Helpers
-
-///// Calculate needed fee for topup transaction by forming fake transaction
-// func calculateTopUpFee(relayAccountStatus: RelayAccountStatus) throws -> FeeAmount {
-//    guard let lamportsPerSignature = cache.lamportsPerSignature,
-//          let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
-//          let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
-//    else {throw FeeRelayer.Error.relayInfoMissing}
-//    var topUpFee = FeeAmount.zero
-//
-//    // transaction fee
-//    let numberOfSignatures: UInt64 = 2 // feePayer's signature, owner's Signature
-////        numberOfSignatures += 1 // transferAuthority
-//    topUpFee.transaction = numberOfSignatures * lamportsPerSignature
-//
-//    // account creation fee
-//    if relayAccountStatus == .notYetCreated {
-//        topUpFee.accountBalances += minimumRelayAccountBalance
-//    }
-//
-//    // swap fee
-//    topUpFee.accountBalances += minimumTokenAccountBalance
-//
-//    return topUpFee
-// }
-//
-// func calculateTopUpAmount(
-//    targetAmount: UInt64,
-//    relayAccountStatus: RelayAccountStatus,
-//    freeTransactionFeeLimit: FreeTransactionFeeLimit?
-// ) throws -> (topUpAmount: UInt64, expectedFee: UInt64) {
-//    // get cache
-//    guard let minimumRelayAccountBalance = cache.minimumRelayAccountBalance,
-//          let lamportsPerSignature = cache.lamportsPerSignature,
-//          let minimumTokenAccountBalance = cache.minimumTokenAccountBalance
-//    else {throw FeeRelayer.Error.relayInfoMissing}
-//
-//    // current_fee
-//    var currentFee: UInt64 = 0
-//    if relayAccountStatus == .notYetCreated {
-//        currentFee += minimumRelayAccountBalance
-//    }
-//
-//    let transactionNetworkFee = 2 * lamportsPerSignature // feePayer, owner
-//    if freeTransactionFeeLimit?.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
-//        currentFee += transactionNetworkFee
-//    }
-//
-//    // swap_amount_out
-////        let swapAmountOut = targetAmount + currentFee
-//    var swapAmountOut = targetAmount
-//    if relayAccountStatus == .notYetCreated {
-//        swapAmountOut += getRelayAccountCreationCost() // Temporary solution
-//    } else {
-//        swapAmountOut += currentFee
-//    }
-//
-//    // expected_fee
-//    let expectedFee = currentFee + minimumTokenAccountBalance
-//
-//    return (topUpAmount: swapAmountOut, expectedFee: expectedFee)
-// }

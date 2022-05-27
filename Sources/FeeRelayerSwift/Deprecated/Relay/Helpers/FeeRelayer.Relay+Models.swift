@@ -1,10 +1,3 @@
-//
-//  FeeRelayer+Relay.swift
-//  FeeRelayerSwift
-//
-//  Created by Chung Tran on 28/12/2021.
-//
-
 import Foundation
 import SolanaSwift
 import OrcaSwapSwift
@@ -50,21 +43,21 @@ public struct FeeLimitForAuthorityResponse: Codable {
     }
 }
 
-@available(*, deprecated, message: "Rename to UsageStatus")
-public struct FreeTransactionFeeLimit {
-    public let maxUsage: Int
-    public var currentUsage: Int
-    public let maxAmount: UInt64
-    public var amountUsed: UInt64
-    
-    public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
-        var currentUsage = currentUsage
-        if forNextTransaction {
-            currentUsage += 1
-        }
-        return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
-    }
-}
+//@available(*, deprecated, message: "Rename to UsageStatus")
+//public struct FreeTransactionFeeLimit {
+//    public let maxUsage: Int
+//    public var currentUsage: Int
+//    public let maxAmount: UInt64
+//    public var amountUsed: UInt64
+//
+//    public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
+//        var currentUsage = currentUsage
+//        if forNextTransaction {
+//            currentUsage += 1
+//        }
+//        return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
+//    }
+//}
 
 // MARK: - Relay info
 public struct RelayCache {
@@ -328,16 +321,16 @@ public enum RelayAccountStatus: Equatable {
     }
 }
 
-@available(*, deprecated, message: "Use TokenAccount")
-public struct TokenInfo {
-    public init(address: String, mint: String) {
-        self.address = address
-        self.mint = mint
-    }
-    
-    public let address: String
-    public let mint: String
-}
+//@available(*, deprecated, message: "Use TokenAccount")
+//public struct TokenInfo {
+//    public init(address: String, mint: String) {
+//        self.address = address
+//        self.mint = mint
+//    }
+//    
+//    public let address: String
+//    public let mint: String
+//}
 
 public struct TopUpPreparedParams {
     public let amount: UInt64

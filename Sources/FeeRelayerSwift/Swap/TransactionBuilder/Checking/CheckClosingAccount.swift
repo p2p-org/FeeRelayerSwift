@@ -18,7 +18,7 @@ extension SwapTransactionBuilder {
             ])
         }
         // close destination
-        if let newAccount = context.env.destinationNewAccount, context.config.destinationAccount.mint == .wrappedSOLMint {
+        if let newAccount = context.env.destinationNewAccount, context.config.destinationTokenMint == .wrappedSOLMint {
             context.env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
