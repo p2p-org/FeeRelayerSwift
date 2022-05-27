@@ -24,7 +24,7 @@ class FeeRelayerService: FeeRelayer {
         accountStorage: SolanaAccountStorage,
         solanaApiClient: SolanaAPIClient,
         orcaSwapAPIClient: OrcaSwapAPIClient,
-        feeCalculator: FeeRelayerCalculator,
+        feeCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator(),
         feeRelayerAPIClient: FeeRelayerAPIClient,
         deviceType: StatsInfo.DeviceType,
         buildNumber: String?
@@ -192,7 +192,6 @@ class FeeRelayerService: FeeRelayer {
         )
         
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
-        
         let minimumRelayAccountBalance = context.minimumRelayAccountBalance
         let minimumTokenAccountBalance = context.minimumTokenAccountBalance
         let feePayerAddress = context.feePayerAddress
