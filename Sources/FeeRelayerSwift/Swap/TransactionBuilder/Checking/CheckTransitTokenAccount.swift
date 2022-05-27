@@ -9,15 +9,15 @@ import OrcaSwapSwift
 extension SwapTransactionBuilder {
     static func checkTransitTokenAccount(_ context: inout BuildContext) async throws {
         let transitToken = try? TransitTokenAccountAnalysator.getTransitToken(
-            solanaApiClient: context.config.solanaApiClient,
-            orcaSwap: context.config.orcaSwap,
-            accountStorage: context.config.accountStorage,
+            solanaApiClient: context.solanaApiClient,
+            orcaSwap: context.orcaSwap,
+            account: context.config.userAccount,
             pools: context.config.pools
         )
         
         let needsCreateTransitTokenAccount = try await TransitTokenAccountAnalysator
             .checkIfNeedsCreateTransitTokenAccount(
-                solanaApiClient: context.config.solanaApiClient,
+                solanaApiClient: context.solanaApiClient,
                 transitToken: transitToken
             )
 

@@ -10,10 +10,10 @@ extension SwapTransactionBuilder {
     internal static func checkSource(_ context: inout BuildContext) async throws {
         var sourceWSOLNewAccount: Account?
         if context.config.sourceAccount.mint == PublicKey.wrappedSOLMint {
-            sourceWSOLNewAccount = try await Account(network: context.config.network)
+            sourceWSOLNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)
             context.env.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
-                    from: try context.config.accountStorage.pubkey,
+                    from: context.config.userAccount.publicKey,
                     to: context.feeRelayerContext.feePayerAddress,
                     lamports: context.config.inputAmount
                 ),
@@ -27,7 +27,7 @@ extension SwapTransactionBuilder {
                 TokenProgram.initializeAccountInstruction(
                     account: sourceWSOLNewAccount!.publicKey,
                     mint: .wrappedSOLMint,
-                    owner: try context.config.userAuthorityAddress
+                    owner: context.config.userAccount.publicKey
                 ),
             ])
             context.env.userSource = sourceWSOLNewAccount!.publicKey

@@ -7,7 +7,7 @@ import OrcaSwapSwift
 import SolanaSwift
 
 class SwapFeeRelayerImpl: SwapFeeRelayer {
-    private let accountStorage: SolanaAccountStorage
+    private let userAccount: Account
     private let feeRelayerAPIClient: FeeRelayerAPIClient
     private let solanaApiClient: SolanaAPIClient
     private let orcaSwap: OrcaSwap
@@ -16,19 +16,19 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     private var feeRelayerCalculator: FeeRelayerCalculator!
 
     init(
-        accountStorage: SolanaAccountStorage,
+        userAccount: Account,
         feeRelayerAPIClient: FeeRelayerAPIClient,
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwap
     ) {
-        self.accountStorage = accountStorage
+        self.userAccount = userAccount
         self.feeRelayerAPIClient = feeRelayerAPIClient
         self.solanaApiClient = solanaApiClient
         self.orcaSwap = orcaSwap
 
         swapCalculator = DefaultSwapFeeRelayerCalculator(
             solanaApiClient: solanaApiClient,
-            accountStorage: accountStorage
+            userAccount: userAccount
         )
     }
 
@@ -43,7 +43,7 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     ) async throws
     -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         let context = try await FeeRelayerContext.create(
-            accountStorage: accountStorage,
+            userAccount: userAccount,
             solanaAPIClient: solanaApiClient,
             feeRelayerAPIClient: feeRelayerAPIClient
         )
@@ -61,10 +61,10 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     
         var buildContext = SwapTransactionBuilder.BuildContext(
             feeRelayerContext: context,
+            solanaApiClient: solanaApiClient,
+            orcaSwap: orcaSwap,
             config: .init(
-                solanaApiClient: solanaApiClient,
-                orcaSwap: orcaSwap,
-                accountStorage: accountStorage,
+                userAccount: userAccount,
                 pools:  preparedParams.actionFeesAndPools.poolsPair,
                 inputAmount: inputAmount,
                 slippage: slippage,

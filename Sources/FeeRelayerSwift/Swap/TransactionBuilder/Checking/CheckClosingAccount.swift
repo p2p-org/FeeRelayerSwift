@@ -12,8 +12,8 @@ extension SwapTransactionBuilder {
             context.env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
-                    destination: try context.config.userAuthorityAddress,
-                    owner: try context.config.userAuthorityAddress
+                    destination: context.config.userAccount.publicKey,
+                    owner: context.config.userAccount.publicKey
                 )
             ])
         }
@@ -22,11 +22,11 @@ extension SwapTransactionBuilder {
             context.env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
-                    destination: try context.config.userAuthorityAddress,
-                    owner: try context.config.userAuthorityAddress
+                    destination: context.config.userAccount.publicKey,
+                    owner: context.config.userAccount.publicKey
                 ),
                 SystemProgram.transferInstruction(
-                    from: try context.config.userAuthorityAddress,
+                    from: context.config.userAccount.publicKey,
                     to: context.feeRelayerContext.feePayerAddress,
                     lamports: context.feeRelayerContext.minimumTokenAccountBalance
                 )

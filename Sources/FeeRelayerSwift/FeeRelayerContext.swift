@@ -14,12 +14,10 @@ struct FeeRelayerContext {
     public var usageStatus: UsageStatus
 
     static func create(
-        accountStorage: SolanaAccountStorage,
+        userAccount: Account,
         solanaAPIClient: SolanaAPIClient,
         feeRelayerAPIClient: FeeRelayerAPIClient
     ) async throws -> FeeRelayerContext {
-        let account = try accountStorage.pubkey
-
         let (
             minimumTokenAccountBalance,
             minimumRelayAccountBalance,
@@ -32,8 +30,8 @@ struct FeeRelayerContext {
             solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
             solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
             feeRelayerAPIClient.getFeePayerPubkey(),
-            solanaAPIClient.getRelayAccountStatus(account.base58EncodedString),
-            feeRelayerAPIClient.requestFreeFeeLimits(for: account.base58EncodedString)
+            solanaAPIClient.getRelayAccountStatus(userAccount.publicKey.base58EncodedString),
+            feeRelayerAPIClient.requestFreeFeeLimits(for: userAccount.publicKey.base58EncodedString)
                 .asUsageStatus()
         )
 

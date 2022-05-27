@@ -70,7 +70,6 @@ class FeeRelayerService: FeeRelayer {
         let topUpAmount = try await feeCalculator.calculateNeededTopUpAmount(
             context,
             expectedFee: expectedFee,
-            // TODO: Уточнить у Лонга
             payingTokenMint: payingFeeToken?.mint
         )
         // no need to top up
@@ -146,9 +145,19 @@ class FeeRelayerService: FeeRelayer {
         expectedFee: UInt64
     ) async throws -> [String] {
         
-        let transitToken = try getTransitToken(pools: topUpPools) ?! FeeRelayerError.unknown
+        let transitToken = try TransitTokenAccountAnalysator.getTransitToken(
+            solanaApiClient: solanaApiClient,
+            orcaSwap: orcaSwap,
+            account: account,
+            pools: topUpPools
+        )
+        
+        let needsCreateTransitTokenAccount = try await TransitTokenAccountAnalysator.checkIfNeedsCreateTransitTokenAccount(
+            solanaApiClient: solanaApiClient,
+            transitToken: transitToken
+        )
+        
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
-        let needsCreateTransitTokenAccount = try await checkIfNeedsCreateTransitTokenAccount(transitToken)
         
         let minimumRelayAccountBalance = context.minimumRelayAccountBalance
         let minimumTokenAccountBalance = context.minimumTokenAccountBalance
@@ -195,39 +204,7 @@ class FeeRelayerService: FeeRelayer {
         
         fatalError()
     }
-    
-    internal func getTransitToken(pools: PoolsPair) throws -> TokenAccount? {
-        guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools) else { return nil }
-
-        let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
-            user: account.publicKey,
-            transitTokenMint: transitTokenMintPubkey,
-            network: solanaApiClient.endpoint.network
-        )
-
-        return TokenAccount(
-            address: transitTokenAccountAddress,
-            mint: transitTokenMintPubkey
-        )
-    }
-    
-    internal func getTransitTokenMintPubkey(pools: PoolsPair) throws -> PublicKey? {
-        guard pools.count == 2 else { return nil }
-        let interTokenName = pools[0].tokenBName
-        return try PublicKey(string: orcaSwap.getMint(tokenName: interTokenName))
-    }
-    
-    private func checkIfNeedsCreateTransitTokenAccount(_ token: TokenAccount) async throws -> Bool? {
-        do {
-            let accountInfo: BufferInfo<AccountInfo>? = try await solanaApiClient.getAccountInfo(account: token.address.base58EncodedString)
-            // TODO: Уточнить у Лонга
-            // detect if destination address is already a SPLToken address
-            return !(accountInfo?.data.mint == token.address)
-        } catch {
-            return true
-        }
-    }
-    
+ 
     /// Prepare transaction and expected fee for a given relay transaction
     private func prepareForTopUp(
         network: Network,

@@ -11,10 +11,10 @@ extension  SwapTransactionBuilder {
         var destinationNewAccount: Account?
         
         let destinationInfo = try await DestinationAnalysator.analyseDestination(
-            context.config.solanaApiClient,
+            context.solanaApiClient,
             destination: context.config.destinationAddress,
             mint: context.config.destinationTokenMint,
-            accountStorage: context.config.accountStorage
+            userAccount: context.config.userAccount
         )
         
         var userDestinationTokenAccountAddress = destinationInfo.destination.address
@@ -22,7 +22,7 @@ extension  SwapTransactionBuilder {
         if destinationInfo.needCreateDestination {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
-                destinationNewAccount = try await Account(network: context.config.network)
+                destinationNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)
                 context.env.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
                         from: context.feeRelayerContext.feePayerAddress,
@@ -34,7 +34,7 @@ extension  SwapTransactionBuilder {
                     TokenProgram.initializeAccountInstruction(
                         account: destinationNewAccount!.publicKey,
                         mint:  destinationInfo.destination.mint,
-                        owner: try context.config.userAuthorityAddress
+                        owner: context.config.userAccount.publicKey
                     ),
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey
@@ -42,13 +42,13 @@ extension  SwapTransactionBuilder {
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
-                    walletAddress: try context.config.accountStorage.pubkey,
+                    walletAddress: context.config.userAccount.publicKey,
                     tokenMintAddress:  destinationInfo.destination.mint
                 )
 
                 let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
                     mint:  destinationInfo.destination.mint,
-                    owner: try context.config.accountStorage.pubkey,
+                    owner: context.config.userAccount.publicKey,
                     payer: context.feeRelayerContext.feePayerAddress
                 )
 
@@ -57,7 +57,7 @@ extension  SwapTransactionBuilder {
                     context.env.additionalTransaction = try makeTransaction(
                         context.feeRelayerContext,
                         instructions: [instruction],
-                        signers: [try context.config.accountStorage.signer],
+                        signers: [context.config.userAccount],
                         blockhash: context.config.blockhash,
                         accountCreationFee: context.feeRelayerContext.minimumTokenAccountBalance
                     )
