@@ -43,22 +43,6 @@ public struct FeeLimitForAuthorityResponse: Codable {
     }
 }
 
-//@available(*, deprecated, message: "Rename to UsageStatus")
-//public struct FreeTransactionFeeLimit {
-//    public let maxUsage: Int
-//    public var currentUsage: Int
-//    public let maxAmount: UInt64
-//    public var amountUsed: UInt64
-//
-//    public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
-//        var currentUsage = currentUsage
-//        if forNextTransaction {
-//            currentUsage += 1
-//        }
-//        return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
-//    }
-//}
-
 // MARK: - Relay info
 public struct RelayCache {
     public var minimumTokenAccountBalance: UInt64?
@@ -72,23 +56,50 @@ public struct RelayCache {
 
 // MARK: - Top up
 public struct TopUpWithSwapParams: Encodable {
-    let userSourceTokenAccountPubkey: String
-    let sourceTokenMintPubkey: String
-    let userAuthorityPubkey: String
+    let userSourceTokenAccount: PublicKey
+    let sourceTokenMint: PublicKey
+    let userAuthority: PublicKey
     let topUpSwap: SwapData
     let feeAmount:  UInt64
     let signatures: SwapTransactionSignatures
     let blockhash:  String
+    let statsInfo: StatsInfo
     
     enum CodingKeys: String, CodingKey {
-        case userSourceTokenAccountPubkey = "user_source_token_account_pubkey"
-        case sourceTokenMintPubkey = "source_token_mint_pubkey"
-        case userAuthorityPubkey = "user_authority_pubkey"
+        case userSourceTokenAccount = "user_source_token_account_pubkey"
+        case sourceTokenMint = "source_token_mint_pubkey"
+        case userAuthority = "user_authority_pubkey"
         case topUpSwap = "top_up_swap"
         case feeAmount = "fee_amount"
         case signatures = "signatures"
         case blockhash = "blockhash"
+        case statsInfo = "info"
     }
+    
+    init(
+        userSourceTokenAccount: PublicKey,
+        sourceTokenMint: PublicKey,
+        userAuthority: PublicKey,
+        topUpSwap: SwapData,
+        feeAmount: UInt64,
+        signatures: SwapTransactionSignatures,
+        blockhash: String,
+        deviceType: StatsInfo.DeviceType,
+        buildNumber: String?) {
+            self.userSourceTokenAccount = userSourceTokenAccount
+            self.sourceTokenMint = sourceTokenMint
+            self.userAuthority = userAuthority
+            self.topUpSwap = topUpSwap
+            self.feeAmount = feeAmount
+            self.signatures = signatures
+            self.blockhash = blockhash
+            self.statsInfo = .init(
+                operationType: .topUp,
+                deviceType: deviceType,
+                currency: sourceTokenMint.base58EncodedString,
+                build: buildNumber
+            )
+        }
 }
 
 // MARK: - Swap
@@ -320,17 +331,6 @@ public enum RelayAccountStatus: Equatable {
         }
     }
 }
-
-//@available(*, deprecated, message: "Use TokenAccount")
-//public struct TokenInfo {
-//    public init(address: String, mint: String) {
-//        self.address = address
-//        self.mint = mint
-//    }
-//    
-//    public let address: String
-//    public let mint: String
-//}
 
 public struct TopUpPreparedParams {
     public let amount: UInt64

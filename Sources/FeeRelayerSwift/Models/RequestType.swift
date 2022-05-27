@@ -25,22 +25,14 @@ public struct RequestType {
     }
     
     // MARK: - Builders
-
-//        public static func rewardTransferSOL(_ params: Reward.TransferSolParams) -> RequestType {
-//            .init(path: "/transfer_sol", params: params)
-//        }
-//
-//        public static func rewardTransferSPLToken(_ params: Reward.TransferSPLTokenParams) -> RequestType {
-//            .init(path: "/transfer_spl_token", params: params)
-//        }
 //
 //        public static func compensationSwapToken(_ params: Compensation.SwapTokensParams) -> RequestType {
 //            .init(path: "/swap_spl_token_with_fee_compensation", params: params)
 //        }
     
-//        public static func relayTopUpWithSwap(_ params: Relay.TopUpWithSwapParams) -> RequestType {
-//            .init(path: "/relay_top_up_with_swap", params: params)
-//        }
+    public static func relayTopUpWithSwap(_ params: TopUpWithSwapParams) -> RequestType {
+        .init(path: "/relay_top_up_with_swap", params: params)
+    }
 
     public static func relayTransaction(_ params: RelayTransactionParam) -> RequestType {
         .init(path: "/relay_transaction", params: params)
