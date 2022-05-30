@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-protocol FeeRelayerCalculator {
+public protocol FeeRelayerCalculator {
     /// Calculate a top up amount for user's relayer account.
     ///
     /// The user's relayer account will be used as fee payer address.
@@ -35,8 +35,10 @@ protocol FeeRelayerCalculator {
     // func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount?
 }
 
-class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
-    func calculateNeededTopUpAmount(
+public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
+    public init() {}
+    
+    public func calculateNeededTopUpAmount(
         _ context: FeeRelayerContext,
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
@@ -131,7 +133,7 @@ class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
         return neededAmount
     }
     
-    func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64 {
+    public func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64 {
         var expectedFee: UInt64 = 0
         if context.relayAccountStatus == .notYetCreated {
             expectedFee += context.minimumRelayAccountBalance

@@ -6,24 +6,21 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-class FeeRelayerService: FeeRelayer {
+public class FeeRelayerService: FeeRelayer {
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
-    private(set) var orcaSwapAPIClient: OrcaSwapAPIClient
     private(set) var orcaSwap: OrcaSwap
-    private(set) var account: Account
+    public let account: Account
     private(set) var accountStorage: SolanaAccountStorage
     private let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
     
-
-    init(
+    public init(
         account: Account,
         orcaSwap: OrcaSwap,
         accountStorage: SolanaAccountStorage,
         solanaApiClient: SolanaAPIClient,
-        orcaSwapAPIClient: OrcaSwapAPIClient,
         feeCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator(),
         feeRelayerAPIClient: FeeRelayerAPIClient,
         deviceType: StatsInfo.DeviceType,
@@ -31,7 +28,6 @@ class FeeRelayerService: FeeRelayer {
     ) {
         self.account = account
         self.solanaApiClient = solanaApiClient
-        self.orcaSwapAPIClient = orcaSwapAPIClient
         self.accountStorage = accountStorage
         self.feeCalculator = feeCalculator
         self.orcaSwap = orcaSwap
@@ -39,8 +35,12 @@ class FeeRelayerService: FeeRelayer {
         self.deviceType = deviceType
         self.buildNumber = buildNumber
     }
-
-    func topUpAndRelayTransaction(
+    
+    public func getFeePayer() async throws -> PublicKey {
+        try PublicKey(string: try await feeRelayerAPIClient.getFeePayerPubkey())
+    }
+    
+    public func topUpAndRelayTransaction(
         _ transaction: PreparedTransaction,
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
@@ -48,8 +48,8 @@ class FeeRelayerService: FeeRelayer {
         try await topUpAndRelayTransaction([transaction], fee: fee, config: config).first
         ?! FeeRelayerError.unknown
     }
-
-    func topUpAndRelayTransaction(
+    
+    public func topUpAndRelayTransaction(
         _ transactions: [PreparedTransaction],
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
@@ -70,19 +70,24 @@ class FeeRelayerService: FeeRelayer {
             payingFeeToken: fee
         )
         
-        guard let firstTx = transactions.first else { throw FeeRelayerError.unknown }
-        
         do {
-            let request = try await relayTransaction(
-                context,
-                preparedTransaction: firstTx,
-                payingFeeToken: fee,
-                relayAccountStatus: context.relayAccountStatus,
-                additionalPaybackFee: transactions.count == 1 ? config.additionalPaybackFee : 0,
-                operationType: config.operationType,
-                currency: config.currency
-            )
-            return request
+            var trx: [String] = []
+            
+            for preparedTransaction in transactions {
+                let request = try await relayTransaction(
+                    context,
+                    preparedTransaction: preparedTransaction,
+                    payingFeeToken: fee,
+                    relayAccountStatus: context.relayAccountStatus,
+                    additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
+                    operationType: config.operationType,
+                    currency: config.currency
+                )
+                
+                trx.append(contentsOf: request)
+            }
+
+            return trx
         } catch let error {
             if res != nil {
                 throw FeeRelayerError.topUpSuccessButTransactionThrows

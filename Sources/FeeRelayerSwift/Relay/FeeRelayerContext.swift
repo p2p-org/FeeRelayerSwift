@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-struct FeeRelayerContext {
+public struct FeeRelayerContext {
     public var minimumTokenAccountBalance: UInt64
     public var minimumRelayAccountBalance: UInt64
     public var feePayerAddress: PublicKey
