@@ -18,7 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "refactor/pwn-3297"),
-        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "swap-unit-tests")
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "refactor/ui-imlementation")
     ],
     targets: [
         .target(

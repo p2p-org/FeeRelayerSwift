@@ -14,8 +14,8 @@
         "package": "OrcaSwapSwift",
         "repositoryURL": "https://github.com/p2p-org/OrcaSwapSwift.git",
         "state": {
-          "branch": "swap-unit-tests",
-          "revision": "1f6553d2bca83e96aaa1dbd42f50f6d5df9b9249",
+          "branch": "refactor/ui-imlementation",
+          "revision": "7571ed1d304b0a21ed920f46f99c5c3683dcc431",
           "version": null
         }
       },
