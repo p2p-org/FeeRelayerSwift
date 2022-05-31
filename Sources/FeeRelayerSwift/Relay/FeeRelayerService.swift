@@ -10,14 +10,15 @@ public class FeeRelayerService: FeeRelayer {
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
     private(set) var orcaSwap: OrcaSwap
-    public let account: Account
     private(set) var accountStorage: SolanaAccountStorage
     private let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
     
+    public var account: Account {
+        accountStorage.account!
+    }
     public init(
-        account: Account,
         orcaSwap: OrcaSwap,
         accountStorage: SolanaAccountStorage,
         solanaApiClient: SolanaAPIClient,
@@ -26,7 +27,6 @@ public class FeeRelayerService: FeeRelayer {
         deviceType: StatsInfo.DeviceType,
         buildNumber: String?
     ) {
-        self.account = account
         self.solanaApiClient = solanaApiClient
         self.accountStorage = accountStorage
         self.feeCalculator = feeCalculator

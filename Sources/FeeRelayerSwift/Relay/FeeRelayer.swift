@@ -21,7 +21,6 @@ public struct FeeRelayerConfiguration {
 
 /// The service that allows users to do gas-less transactions.
 public protocol FeeRelayer {
-    var account: Account { get throws }
     
     func topUpAndRelayTransaction(
         _ preparedTransaction: PreparedTransaction,
