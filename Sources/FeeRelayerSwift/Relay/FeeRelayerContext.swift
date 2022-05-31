@@ -5,54 +5,43 @@
 import Foundation
 import SolanaSwift
 
-public struct FeeRelayerContext {
-    public var minimumTokenAccountBalance: UInt64
-    public var minimumRelayAccountBalance: UInt64
-    public var feePayerAddress: PublicKey
-    public var lamportsPerSignature: UInt64
-    public var relayAccountStatus: RelayAccountStatus
-    public var usageStatus: UsageStatus
-
-    static public func create(
-        userAccount: Account,
-        solanaAPIClient: SolanaAPIClient,
-        feeRelayerAPIClient: FeeRelayerAPIClient
-    ) async throws -> FeeRelayerContext {
-        let (
-            minimumTokenAccountBalance,
-            minimumRelayAccountBalance,
-            lamportsPerSignature,
-            feePayerAddress,
-            relayAccountStatus,
-            usageStatus
-        ) = try await(
-            solanaAPIClient.getMinimumBalanceForRentExemption(span: 165),
-            solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
-            solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
-            feeRelayerAPIClient.getFeePayerPubkey(),
-            solanaAPIClient.getRelayAccountStatus(userAccount.publicKey.base58EncodedString),
-            feeRelayerAPIClient.requestFreeFeeLimits(for: userAccount.publicKey.base58EncodedString)
-                .asUsageStatus()
-        )
-
-        return .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: try PublicKey(string: feePayerAddress),
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: relayAccountStatus,
-            usageStatus: usageStatus
-        )
+public struct FeeRelayerContext: Hashable {
+    public let minimumTokenAccountBalance: UInt64
+    public let minimumRelayAccountBalance: UInt64
+    public let feePayerAddress: PublicKey
+    public let lamportsPerSignature: UInt64
+    public let relayAccountStatus: RelayAccountStatus
+    public let usageStatus: UsageStatus
+    
+    public init(
+        minimumTokenAccountBalance: UInt64,
+        minimumRelayAccountBalance: UInt64,
+        feePayerAddress: PublicKey,
+        lamportsPerSignature: UInt64,
+        relayAccountStatus: RelayAccountStatus,
+        usageStatus: UsageStatus
+    ) {
+        self.minimumTokenAccountBalance = minimumTokenAccountBalance
+        self.minimumRelayAccountBalance = minimumRelayAccountBalance
+        self.feePayerAddress = feePayerAddress
+        self.lamportsPerSignature = lamportsPerSignature
+        self.relayAccountStatus = relayAccountStatus
+        self.usageStatus = usageStatus
     }
-}
-
-internal extension FeeLimitForAuthorityResponse {
-    func asUsageStatus() -> UsageStatus {
-        UsageStatus(
-            maxUsage: limits.maxCount,
-            currentUsage: processedFee.count,
-            maxAmount: limits.maxAmount,
-            amountUsed: processedFee.totalAmount
-        )
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(minimumTokenAccountBalance)
+        hasher.combine(minimumRelayAccountBalance)
+        hasher.combine(feePayerAddress)
+        hasher.combine(lamportsPerSignature)
+    }
+    
+    public static func ==(lhs: FeeRelayerContext, rhs: FeeRelayerContext) -> Bool {
+        if lhs.minimumTokenAccountBalance != rhs.minimumTokenAccountBalance { return false }
+        if lhs.minimumRelayAccountBalance != rhs.minimumRelayAccountBalance { return false }
+        if lhs.feePayerAddress != rhs.feePayerAddress { return false }
+        if lhs.lamportsPerSignature != rhs.lamportsPerSignature { return false }
+        if lhs.relayAccountStatus != rhs.relayAccountStatus { return false }
+        return true
     }
 }
