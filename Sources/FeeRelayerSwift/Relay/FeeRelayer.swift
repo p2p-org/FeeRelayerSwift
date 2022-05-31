@@ -23,12 +23,14 @@ public struct FeeRelayerConfiguration {
 public protocol FeeRelayer {
     
     func topUpAndRelayTransaction(
+        _ context: FeeRelayerContext,
         _ preparedTransaction: PreparedTransaction,
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> TransactionID
 
     func topUpAndRelayTransaction(
+        _ context: FeeRelayerContext,
         _ preparedTransaction: [PreparedTransaction],
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration

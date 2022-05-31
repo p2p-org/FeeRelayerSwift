@@ -41,25 +41,21 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     public func topUpAndRelayTransaction(
+        _ context: FeeRelayerContext,
         _ transaction: PreparedTransaction,
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
     ) async throws -> TransactionID {
-        try await topUpAndRelayTransaction([transaction], fee: fee, config: config).first
+        try await topUpAndRelayTransaction(context, [transaction], fee: fee, config: config).first
         ?! FeeRelayerError.unknown
     }
     
     public func topUpAndRelayTransaction(
+        _ context: FeeRelayerContext,
         _ transactions: [PreparedTransaction],
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
     ) async throws -> [TransactionID] {
-        // 1. create context
-        let context = try await FeeRelayerContext.create(
-            userAccount: account,
-            solanaAPIClient: solanaApiClient,
-            feeRelayerAPIClient: feeRelayerAPIClient
-        )
         let expectedFees = transactions.map { $0.expectedFee }
         let res = try await checkAndTopUp(
             context,

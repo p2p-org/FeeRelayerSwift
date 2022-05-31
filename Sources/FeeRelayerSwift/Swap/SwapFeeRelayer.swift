@@ -7,7 +7,7 @@ import SolanaSwift
 import OrcaSwapSwift
 
 /// The service that allows users to create gas-less swap transactions.
-protocol SwapFeeRelayer {
+public protocol SwapFeeRelayer {
     func prepareSwapTransaction(
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
