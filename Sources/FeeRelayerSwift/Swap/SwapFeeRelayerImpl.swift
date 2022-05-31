@@ -35,6 +35,7 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     var calculator: SwapFeeRelayerCalculator { swapCalculator }
 
     func prepareSwapTransaction(
+        _ context: FeeRelayerContext,
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,
@@ -44,12 +45,6 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
         slippage: Double
     ) async throws
     -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
-        let context = try await FeeRelayerContext.create(
-            userAccount: userAccount,
-            solanaAPIClient: solanaApiClient,
-            feeRelayerAPIClient: feeRelayerAPIClient
-        )
-
         let preparedParams = try await prepareForTopUpAndSwap(
             context,
             source: sourceToken,

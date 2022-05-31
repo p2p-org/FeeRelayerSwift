@@ -11,7 +11,7 @@ public class FeeRelayerService: FeeRelayer {
     private(set) var solanaApiClient: SolanaAPIClient
     private(set) var orcaSwap: OrcaSwap
     private(set) var accountStorage: SolanaAccountStorage
-    private let feeCalculator: FeeRelayerCalculator
+    public let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
     

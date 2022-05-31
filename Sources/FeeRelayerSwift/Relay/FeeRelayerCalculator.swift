@@ -4,6 +4,7 @@
 
 import Foundation
 import SolanaSwift
+import OrcaSwapSwift
 
 public protocol FeeRelayerCalculator {
     /// Calculate a top up amount for user's relayer account.
@@ -23,16 +24,19 @@ public protocol FeeRelayerCalculator {
 
     func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64
 
-    /// TODO: is return value optional?
-    /// TODO: Add this function to OrcaSwap. We use this function at many places.
     /// Convert fee amount into spl value.
     ///
     /// - Parameters:
+    ///   - orcaSwap: OrcaSwap service
     ///   - feeInSOL: a fee amount in SOL
     ///   - payingFeeTokenMint: a mint address of spl token, that user will use to play fee.
     /// - Returns:
     /// - Throws:
-    // func calculateFeeInPayingToken(feeInSOL: FeeAmount, payingFeeTokenMint: PublicKey) async throws -> FeeAmount?
+    func calculateFeeInPayingToken(
+        orcaSwap: OrcaSwapType,
+        feeInSOL: FeeAmount,
+        payingFeeTokenMint: PublicKey
+    ) async throws -> FeeAmount?
 }
 
 public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
@@ -146,5 +150,28 @@ public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
         
         expectedFee += context.minimumTokenAccountBalance
         return expectedFee
+    }
+    
+    public func calculateFeeInPayingToken(
+        orcaSwap: OrcaSwapType,
+        feeInSOL: FeeAmount,
+        payingFeeTokenMint: PublicKey
+    ) async throws -> FeeAmount? {
+        if payingFeeTokenMint == PublicKey.wrappedSOLMint {
+            return feeInSOL
+        }
+        let tradableTopUpPoolsPair = try await orcaSwap.getTradablePoolsPairs(
+            fromMint: payingFeeTokenMint.base58EncodedString,
+            toMint: PublicKey.wrappedSOLMint.base58EncodedString
+        )
+            
+        guard let topUpPools = try orcaSwap.findBestPoolsPairForEstimatedAmount(feeInSOL.total, from: tradableTopUpPoolsPair) else {
+            throw FeeRelayerError.swapPoolsNotFound
+        }
+        
+        let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: 0.01)
+        let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: 0.01)
+                
+        return .init(transaction: transactionFee ?? 0, accountBalances: accountCreationFee ?? 0)
     }
 }

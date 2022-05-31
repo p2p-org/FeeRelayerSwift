@@ -12,7 +12,7 @@ public struct FeeRelayerConfiguration {
     let operationType: StatsInfo.OperationType
     let currency: String?
 
-    init(additionalPaybackFee: UInt64 = 0, operationType: StatsInfo.OperationType, currency: String? = nil) {
+    public init(additionalPaybackFee: UInt64 = 0, operationType: StatsInfo.OperationType, currency: String? = nil) {
         self.additionalPaybackFee = additionalPaybackFee
         self.operationType = operationType
         self.currency = currency
@@ -21,6 +21,8 @@ public struct FeeRelayerConfiguration {
 
 /// The service that allows users to do gas-less transactions.
 public protocol FeeRelayer {
+    
+    var feeCalculator: FeeRelayerCalculator { get }
     
     func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,

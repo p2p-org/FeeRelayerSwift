@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
+public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
     private let accountStorage: SolanaAccountStorage
     private let solanaAPIClient: SolanaAPIClient
     private let feeRelayerAPIClient: FeeRelayerAPIClient
@@ -22,16 +22,16 @@ actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
         self.feeRelayerAPIClient = feeRelayerAPIClient
     }
     
-    func getCurrentContext() async throws -> FeeRelayerContext {
+    public func getCurrentContext() async throws -> FeeRelayerContext {
         guard let context = context else { throw FeeRelayerContextManagerError.invalidContext }
         return context;
     }
     
-    func update() async throws {
+    public func update() async throws {
         context = try await loadNewContext()
     }
     
-    func validate() async throws -> Bool {
+    public func validate() async throws -> Bool {
         let newContext = try await loadNewContext()
         return newContext == context
     }

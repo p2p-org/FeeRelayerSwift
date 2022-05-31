@@ -11,6 +11,7 @@ public protocol SwapFeeRelayer {
     var calculator: SwapFeeRelayerCalculator { get }
     
     func prepareSwapTransaction(
+        _ context: FeeRelayerContext,
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,

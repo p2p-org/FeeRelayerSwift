@@ -7,15 +7,9 @@ import SolanaSwift
 
 extension SolanaAPIClient {
     public func getRelayAccountStatus(_ address: String) async throws -> RelayAccountStatus {
-        do {
-            let ret: BufferInfo<EmptyInfo> = try await getAccountInfo(account: address)!
-            return .created(balance: ret.lamports)
-        } catch {
-            if error.isEqualTo(.couldNotRetrieveAccountInfo) {
-                return .notYetCreated
-            }
-            throw error
-        }
+        let account: BufferInfo<EmptyInfo>? = try await getAccountInfo(account: address)
+        guard let account = account else { return .notYetCreated }
+        return .created(balance: account.lamports)
     }
 
     /// Retrieves associated SPL Token address for ``address``.

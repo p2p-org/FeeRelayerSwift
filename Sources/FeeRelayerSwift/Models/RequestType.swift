@@ -4,7 +4,7 @@ public struct EncodableWrapper: Encodable {
     let wrapped: Encodable
     
     public func encode(to encoder: Encoder) throws {
-        try self.wrapped.encode(to: encoder)
+        try wrapped.encode(to: encoder)
     }
 }
 
@@ -29,6 +29,14 @@ public struct RequestType {
 //        public static func compensationSwapToken(_ params: Compensation.SwapTokensParams) -> RequestType {
 //            .init(path: "/swap_spl_token_with_fee_compensation", params: params)
 //        }
+
+    public static func rewardTransferSOL(_ params: TransferSolParams) -> RequestType {
+        .init(path: "/transfer_sol", params: params)
+    }
+
+    public static func rewardTransferSPLToken(_ params: TransferSPLTokenParams) -> RequestType {
+        .init(path: "/transfer_spl_token", params: params)
+    }
     
     public static func relayTopUpWithSwap(_ params: TopUpWithSwapParams) -> RequestType {
         .init(path: "/relay_top_up_with_swap", params: params)

@@ -10,6 +10,6 @@ public protocol FeeRelayerContextManager: AnyObject {
     func validate() async throws -> Bool
 }
 
-enum FeeRelayerContextManagerError: Swift.Error {
+public enum FeeRelayerContextManagerError: Swift.Error {
     case invalidContext
 }
