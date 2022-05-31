@@ -6,7 +6,7 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
+public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     let solanaApiClient: SolanaAPIClient
     let userAccount: Account
 
@@ -14,8 +14,8 @@ class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         self.solanaApiClient = solanaApiClient
         self.userAccount = userAccount
     }
-
-    func calculateSwappingNetworkFees(
+    
+    public func calculateSwappingNetworkFees(
         _ context: FeeRelayerContext,
         swapPools: PoolsPair?,
         sourceTokenMint: PublicKey,

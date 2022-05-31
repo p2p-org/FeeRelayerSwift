@@ -31,6 +31,8 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
             userAccount: userAccount
         )
     }
+    
+    var calculator: SwapFeeRelayerCalculator { swapCalculator }
 
     func prepareSwapTransaction(
         sourceToken: TokenAccount,

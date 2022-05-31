@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-protocol SwapFeeRelayerCalculator {
+public protocol SwapFeeRelayerCalculator {
     func calculateSwappingNetworkFees(
         _ context: FeeRelayerContext,
         swapPools: PoolsPair?,

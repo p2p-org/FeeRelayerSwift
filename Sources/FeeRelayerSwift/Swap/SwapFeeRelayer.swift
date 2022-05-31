@@ -8,6 +8,8 @@ import OrcaSwapSwift
 
 /// The service that allows users to create gas-less swap transactions.
 public protocol SwapFeeRelayer {
+    var calculator: SwapFeeRelayerCalculator { get }
+    
     func prepareSwapTransaction(
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,

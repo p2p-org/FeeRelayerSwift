@@ -13,7 +13,7 @@ public struct FeeRelayerContext {
     public var relayAccountStatus: RelayAccountStatus
     public var usageStatus: UsageStatus
 
-    static func create(
+    static public func create(
         userAccount: Account,
         solanaAPIClient: SolanaAPIClient,
         feeRelayerAPIClient: FeeRelayerAPIClient
