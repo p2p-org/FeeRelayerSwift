@@ -18,7 +18,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "refactor/pwn-3297"),
-        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "refactor/ui-imlementation")
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", branch: "refactor/ui-imlementation"),
+        .package(url: "https://github.com/Brightify/Cuckoo.git", .upToNextMajor(from: "1.5.0"))
     ],
     targets: [
         .target(
@@ -30,6 +31,6 @@ let package = Package(
         ),
         .testTarget(
             name: "FeeRelayerSwiftTests",
-            dependencies: ["FeeRelayerSwift"]),
+            dependencies: ["FeeRelayerSwift", "Cuckoo"]),
     ]
 )

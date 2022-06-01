@@ -3,14 +3,14 @@ import Foundation
 // MARK: - RelayTests
 struct RelayTestsInfo: Codable {
     let topUp: RelayTopUpTest?
-    let solToSPL: RelaySwapTestInfo?
-    let splToSOL: RelaySwapTestInfo?
-    let splToCreatedSpl: RelaySwapTestInfo?
-    let splToNonCreatedSpl: RelaySwapTestInfo?
-    let usdtTransfer: RelayTransferTestInfo?
-    let usdtBackTransfer: RelayTransferTestInfo?
-    let usdtTransferToNonCreatedToken: RelayTransferTestInfo?
-    let relaySendNativeSOL: RelayTransferNativeSOLTestInfo?
+//    let solToSPL: RelaySwapTestInfo?
+//    let splToSOL: RelaySwapTestInfo?
+//    let splToCreatedSpl: RelaySwapTestInfo?
+//    let splToNonCreatedSpl: RelaySwapTestInfo?
+//    let usdtTransfer: RelayTransferTestInfo?
+//    let usdtBackTransfer: RelayTransferTestInfo?
+//    let usdtTransferToNonCreatedToken: RelayTransferTestInfo?
+//    let relaySendNativeSOL: RelayTransferNativeSOLTestInfo?
 }
 
 protocol RelayTestType {

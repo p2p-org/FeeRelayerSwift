@@ -29,7 +29,6 @@ public final class FeeRelayerHTTPClient: HTTPClient {
     }
     
     public func sendRequest<T: Decodable>(request: URLRequest, decoder: JSONDecoder = JSONDecoder()) async throws -> T {
-//        do {
             let (data, response) = try await networkManager.requestData(request: request)
             guard let response = response as? HTTPURLResponse else { throw HTTPClientError.noResponse }
             switch response.statusCode {
@@ -43,9 +42,6 @@ public final class FeeRelayerHTTPClient: HTTPClient {
             default:
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
             }
-//        } catch let error {
-//            throw error
-//        }
     }
 }
 
@@ -87,6 +83,6 @@ extension URLSession {
 @available(iOS 15, *)
 extension URLSession: NetworkManager {
     public func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
-        return try await self.data(for: request)
+        try await self.data(for: request)
     }
 }

@@ -64,17 +64,12 @@ public class APIClient: FeeRelayerAPIClient {
         url += "/free_fee_limits/\(authority)"
         guard let url = URL(string: url) else { throw APIClientError.unknown }
 
-        var urlRequest: URLRequest
-        do {
-            urlRequest = URLRequest(url: url)
-            urlRequest.httpMethod = "GET"
-            urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
-            #if DEBUG
-            print(NSString(string: urlRequest.cURL()))
-            #endif
-        } catch {
-            throw APIClientError.unknown
-        }
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        #if DEBUG
+        print(NSString(string: urlRequest.cURL()))
+        #endif
 
         do {
             return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeLimitForAuthorityResponse

@@ -36,10 +36,13 @@ class TransitTokenAccountAnalysator {
     internal static func checkIfNeedsCreateTransitTokenAccount(solanaApiClient: SolanaAPIClient, transitToken: TokenAccount?) async throws -> Bool? {
         guard let transitToken = transitToken else { return nil }
 
-        guard let account: BufferInfo<AccountInfo> = try await solanaApiClient.getAccountInfo(account: transitToken.address.base58EncodedString) else {
+        do {
+            guard let account: BufferInfo<AccountInfo> = try await solanaApiClient.getAccountInfo(account: transitToken.address.base58EncodedString) else {
+                return true
+            }
+            return account.data.mint != transitToken.mint
+        } catch {
             return true
         }
-        
-        return account.data.mint != transitToken.mint
     }
 }

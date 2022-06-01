@@ -28,7 +28,7 @@ public class FeeRelayerService: FeeRelayer {
         buildNumber: String?
     ) {
         self.solanaApiClient = solanaApiClient
-        self.accountStorage = accountStorage
+//        self.accountStorage = accountStorage
         self.feeCalculator = feeCalculator
         self.orcaSwap = orcaSwap
         self.feeRelayerAPIClient = feeRelayerAPIClient
@@ -117,8 +117,7 @@ public class FeeRelayerService: FeeRelayer {
         let prepareResult = try await prepareForTopUp(
             context,
             topUpAmount: topUpAmount.total,
-            payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown,
-            relayAccountStatus: context.relayAccountStatus
+            payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown
         )
         (params, needsCreateUserRelayAddress) = (prepareResult, context.relayAccountStatus == .notYetCreated)
         
@@ -138,10 +137,10 @@ public class FeeRelayerService: FeeRelayer {
         _ context: FeeRelayerContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
-        relayAccountStatus: RelayAccountStatus,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
     ) async throws -> TopUpPreparedParams? {
         // form request
+        try await orcaSwap.load()
         let tradableTopUpPoolsPair = try await orcaSwap.getTradablePoolsPairs(
             fromMint: payingFeeToken.mint.base58EncodedString,
             toMint: PublicKey.wrappedSOLMint.base58EncodedString
@@ -152,8 +151,8 @@ public class FeeRelayerService: FeeRelayer {
         let topUpPools: PoolsPair
         // force using transitive swap (for testing only)
         if forceUsingTransitiveSwap {
-            let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})!
-            topUpPools = pools
+            let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})
+            topUpPools = pools ?? []
         }
         // prefer direct swap to transitive swap
         else if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
@@ -179,7 +178,6 @@ public class FeeRelayerService: FeeRelayer {
         topUpPools: PoolsPair,
         expectedFee: UInt64
     ) async throws -> [String] {
-        
         let transitToken = try TransitTokenAccountAnalysator.getTransitToken(
             solanaApiClient: solanaApiClient,
             orcaSwap: orcaSwap,
