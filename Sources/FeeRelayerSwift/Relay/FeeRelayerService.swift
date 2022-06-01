@@ -107,23 +107,23 @@ public class FeeRelayerService: FeeRelayer {
             expectedFee: expectedFee,
             payingTokenMint: payingFeeToken?.mint
         )
-        // no need to top up
         var (params, needsCreateUserRelayAddress): (TopUpPreparedParams?, Bool)
         if topUpAmount.total <= 0 {
+            // no need to top up
             (params, needsCreateUserRelayAddress) = (nil, context.relayAccountStatus == .notYetCreated)
+        } else {
+            // top up
+            let prepareResult = try await prepareForTopUp(
+                context,
+                topUpAmount: topUpAmount.total,
+                payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown,
+                relayAccountStatus: context.relayAccountStatus
+            )
+            (params, needsCreateUserRelayAddress) = (prepareResult, context.relayAccountStatus == .notYetCreated)
         }
 
-        // top up
-        let prepareResult = try await prepareForTopUp(
-            context,
-            topUpAmount: topUpAmount.total,
-            payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown,
-            relayAccountStatus: context.relayAccountStatus
-        )
-        (params, needsCreateUserRelayAddress) = (prepareResult, context.relayAccountStatus == .notYetCreated)
-        
         if let topUpParams = params, let payingFeeToken = payingFeeToken {
-            return try await self.topUp(
+            return try await topUp(
                 context,
                 needsCreateUserRelayAddress: needsCreateUserRelayAddress,
                 sourceToken: payingFeeToken,
@@ -348,7 +348,7 @@ public class FeeRelayerService: FeeRelayer {
                         delegate: userTransferAuthority,
                         owner: userAuthorityAddress,
                         multiSigners: [],
-                        amount: swap.to.amountIn
+                        amount: swap.from.amountIn
                     )
                 )
             }
@@ -411,9 +411,9 @@ public class FeeRelayerService: FeeRelayer {
         }
         try transaction.sign(signers: signers)
         
-//        if let decodedTransaction = transaction.jsonString {
-//            Logger.log(message: decodedTransaction, event: .info)
-//        }
+       if let decodedTransaction = transaction.jsonString {
+           print(decodedTransaction)
+       }
         
         return (
             swapData: swap.swapData,
