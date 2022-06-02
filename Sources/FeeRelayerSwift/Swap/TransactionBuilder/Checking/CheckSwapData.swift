@@ -17,7 +17,7 @@ extension SwapTransactionBuilder {
             if let userTransferAuthority = userTransferAuthority {
                 context.env.instructions.append(
                     TokenProgram.approveInstruction(
-                        account: context.config.sourceAccount.address,
+                        account: context.env.userSource!,
                         delegate: userTransferAuthority,
                         owner: context.config.userAccount.publicKey,
                         multiSigners: [],
@@ -30,7 +30,7 @@ extension SwapTransactionBuilder {
             context.env.instructions.append(
                 try pool.createSwapInstruction(
                     userTransferAuthorityPubkey: userTransferAuthority ?? (context.config.userAccount.publicKey),
-                    sourceTokenAddress: context.config.sourceAccount.address,
+                    sourceTokenAddress: context.env.userSource!,
                     destinationTokenAddress: context.env.userDestinationTokenAccountAddress!,
                     amountIn: swap.amountIn,
                     minAmountOut: swap.minimumAmountOut
@@ -41,7 +41,7 @@ extension SwapTransactionBuilder {
             if let userTransferAuthority = userTransferAuthority {
                 context.env.instructions.append(
                     TokenProgram.approveInstruction(
-                        account: context.config.sourceAccount.address,
+                        account: context.env.userSource!,
                         delegate: userTransferAuthority,
                         owner: context.config.userAccount.publicKey,
                         multiSigners: [],
@@ -75,7 +75,7 @@ extension SwapTransactionBuilder {
                 try Program.createRelaySwapInstruction(
                     transitiveSwap: swap,
                     userAuthorityAddressPubkey: context.config.userAccount.publicKey,
-                    sourceAddressPubkey: context.config.sourceAccount.address,
+                    sourceAddressPubkey: context.env.userSource!,
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: context.env.userDestinationTokenAccountAddress!,
                     feePayerPubkey: context.feeRelayerContext.feePayerAddress,

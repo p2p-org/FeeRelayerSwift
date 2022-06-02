@@ -557,6 +557,7 @@ public class FeeRelayerService: FeeRelayer {
 //        if let decodedTransaction = preparedTransaction.transaction.jsonString {
 //            Logger.log(message: decodedTransaction, event: .info)
 //        }
+        print(preparedTransaction.transaction.jsonString!)
         #endif
         
         // resign transaction

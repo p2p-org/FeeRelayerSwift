@@ -8,11 +8,13 @@ import SolanaSwift
 
 public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     let solanaApiClient: SolanaAPIClient
-    let userAccount: Account
+    let accountStorage: SolanaAccountStorage
+    
+    var userAccount: Account { accountStorage.account! }
 
-    init(solanaApiClient: SolanaAPIClient, userAccount: Account) {
+    init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage) {
         self.solanaApiClient = solanaApiClient
-        self.userAccount = userAccount
+        self.accountStorage = accountStorage
     }
     
     public func calculateSwappingNetworkFees(

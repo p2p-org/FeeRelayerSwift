@@ -15,7 +15,7 @@ public protocol SwapFeeRelayer {
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,
-        fee payingFeeToken: TokenAccount,
+        fee payingFeeToken: TokenAccount?,
         swapPools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double

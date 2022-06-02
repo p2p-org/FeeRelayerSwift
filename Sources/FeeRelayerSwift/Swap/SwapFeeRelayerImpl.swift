@@ -6,8 +6,10 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-class SwapFeeRelayerImpl: SwapFeeRelayer {
-    private let userAccount: Account
+public class SwapFeeRelayerImpl: SwapFeeRelayer {
+    private var userAccount: Account { accountStorage.account! }
+    
+    private let accountStorage: SolanaAccountStorage
     private let feeRelayerAPIClient: FeeRelayerAPIClient
     private let solanaApiClient: SolanaAPIClient
     private let orcaSwap: OrcaSwap
@@ -15,31 +17,31 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     private let swapCalculator: SwapFeeRelayerCalculator
     private var feeRelayerCalculator: FeeRelayerCalculator!
 
-    init(
-        userAccount: Account,
+    public init(
+        accountStorage: SolanaAccountStorage,
         feeRelayerAPIClient: FeeRelayerAPIClient,
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwap
     ) {
-        self.userAccount = userAccount
+        self.accountStorage = accountStorage
         self.feeRelayerAPIClient = feeRelayerAPIClient
         self.solanaApiClient = solanaApiClient
         self.orcaSwap = orcaSwap
 
         swapCalculator = DefaultSwapFeeRelayerCalculator(
             solanaApiClient: solanaApiClient,
-            userAccount: userAccount
+            accountStorage: accountStorage
         )
     }
     
-    var calculator: SwapFeeRelayerCalculator { swapCalculator }
-
-    func prepareSwapTransaction(
+    public var calculator: SwapFeeRelayerCalculator { swapCalculator }
+    
+    public func prepareSwapTransaction(
         _ context: FeeRelayerContext,
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,
-        fee: TokenAccount,
+        fee: TokenAccount?,
         swapPools: PoolsPair,
         inputAmount : UInt64,
         slippage: Double

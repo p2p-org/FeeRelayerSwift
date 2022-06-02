@@ -23,6 +23,7 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
     }
     
     public func getCurrentContext() async throws -> FeeRelayerContext {
+        if context == nil { try await update() }
         guard let context = context else { throw FeeRelayerContextManagerError.invalidContext }
         return context;
     }
@@ -51,7 +52,10 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
             solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
             solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
             feeRelayerAPIClient.getFeePayerPubkey(),
-            solanaAPIClient.getRelayAccountStatus(account.publicKey.base58EncodedString),
+            solanaAPIClient.getRelayAccountStatus(
+                try Program.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
+                    .base58EncodedString
+            ),
             feeRelayerAPIClient.requestFreeFeeLimits(for: account.publicKey.base58EncodedString)
                 .asUsageStatus()
         )
