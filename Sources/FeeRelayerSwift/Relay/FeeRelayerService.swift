@@ -28,7 +28,7 @@ public class FeeRelayerService: FeeRelayer {
         buildNumber: String?
     ) {
         self.solanaApiClient = solanaApiClient
-//        self.accountStorage = accountStorage
+        self.accountStorage = accountStorage
         self.feeCalculator = feeCalculator
         self.orcaSwap = orcaSwap
         self.feeRelayerAPIClient = feeRelayerAPIClient
@@ -198,7 +198,7 @@ public class FeeRelayerService: FeeRelayer {
         let freeTransactionFeeLimit = context.usageStatus
 
         // STEP 3: prepare for topUp
-        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try self.prepareForTopUp(
+        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try prepareForTopUp(
             network: solanaApiClient.endpoint.network,
             sourceToken: sourceToken,
             userAuthorityAddress: account.publicKey,

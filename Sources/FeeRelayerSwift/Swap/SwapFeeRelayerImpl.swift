@@ -13,7 +13,7 @@ class SwapFeeRelayerImpl: SwapFeeRelayer {
     private let orcaSwap: OrcaSwap
 
     private let swapCalculator: SwapFeeRelayerCalculator
-    private var feeRelayerCalculator: FeeRelayerCalculator!
+    private var feeRelayerCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator()
 
     init(
         userAccount: Account,

@@ -1,5 +1,4 @@
 import XCTest
-import RxBlocking
 import SolanaSwift
 @testable import FeeRelayerSwift
 import Cuckoo
@@ -33,9 +32,8 @@ class RelayTests: XCTestCase {
 
         let apiClient = APIClient(version: 1)
         relayService = FeeRelayerService(
-            account: accountStorage.account!,
             orcaSwap: orcaSwap,
-//            accountStorage: accountStorage,
+            accountStorage: accountStorage,
             solanaApiClient: solanaAPIClient,
             feeCalculator: DefaultFreeRelayerCalculator(),
             feeRelayerAPIClient: APIClient(version: 1),

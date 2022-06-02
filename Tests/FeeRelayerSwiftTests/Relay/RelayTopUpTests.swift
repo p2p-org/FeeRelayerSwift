@@ -23,22 +23,25 @@ class RelayTopUpTests: RelayTests {
         let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
         let feeRelayAPIClient = FeeRelayerSwift.APIClient(httpClient: FeeRelayerHTTPClient(), version: 1)
         let accountStorage = FakeAccountStorage(seedPhrase: testInfo.seedPhrase, network: Network.mainnetBeta)
-        let context = try await FeeRelayerContext.create(
-            userAccount: accountStorage.account!,
+        
+        let contextManager = try FeeRelayerContextManagerImpl(
+            accountStorage: accountStorage,
             solanaAPIClient: solanaAPIClient,
             feeRelayerAPIClient: feeRelayAPIClient
         )
+        try await contextManager.update()
+        let ctx = try await contextManager.getCurrentContext()
+        
         let params = try await relayService.prepareForTopUp(
-            context,
+            ctx,
             topUpAmount: testInfo.amount,
             payingFeeToken: payingToken,
             forceUsingTransitiveSwap: true
         )
-//        print(params)
         
         let signatures = try await relayService.topUp(
-            context,
-            needsCreateUserRelayAddress: context.relayAccountStatus == .notYetCreated,
+            ctx,
+            needsCreateUserRelayAddress: ctx.relayAccountStatus == .notYetCreated,
             sourceToken: payingToken,
             targetAmount: params!.amount,
             topUpPools: params!.poolsPair,

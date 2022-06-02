@@ -1,17 +1,18 @@
 import XCTest
-import RxBlocking
 import SolanaSwift
 @testable import FeeRelayerSwift
 import OrcaSwapSwift
 
 class RelaySendTests: RelayTests {
     
-    var account: Account!
+    var account: SolanaAccountStorage!
+    let feeRelayerAPIClient = MockFakeFeeRelayerAPIClient()
+    lazy var solanaAPIClient = MockFakeJSONRPCAPIClient(endpoint: self.endpoint)
+    let orcaSwapAPIClient = MockFakeOrcaSwapAPIClient(configsProvider: MockConfigsProvider())
     
     override func setUp() async throws {
-        account = try await Account(
-            phrase: "miracle pizza supply useful steak border same again youth silver access hundred"
-                .components(separatedBy: " "),
+        account = FakeAccountStorage(
+            seedPhrase: "miracle pizza supply useful steak border same again youth silver access hundred",
             network: .mainnetBeta
         )
     }
@@ -41,30 +42,37 @@ class RelaySendTests: RelayTests {
         )
         
         let apiClient = SolanaAPIClientMock(endpoint: endpoint)
-        let feePayer = try await feeRelayerAPIClient.getFeePayerPubkey()
+//        let feePayer = try await feeRelayerAPIClient.getFeePayerPubkey()
 
-//        let preparedTransaction = try solanaClient.prepareSendingNativeSOL(
-//            to: test.destination,
-//            amount: test.inputAmount,
-//            feePayer: try PublicKey(string: feePayer)
-//        )
-        
         let blockchain = BlockchainClient(apiClient: apiClient)
         
         let tx = try await blockchain.prepareSendingNativeSOL(
-            from: account,
+            from: account.account!,
             to: test.destination,
             amount: 1,
-            feePayer: account.publicKey
+            feePayer: account.account!.publicKey
         )
 
         XCTAssertEqual(tx.expectedFee.total, test.expectedFee)
-
+        
+        let context = try await FeeRelayerContextManagerImpl(
+            accountStorage: account,
+            solanaAPIClient: solanaAPIClient,
+            feeRelayerAPIClient: feeRelayerAPIClient
+        ).getCurrentContext()
+        
         let signature = try await relayService.topUpAndRelayTransaction(
+            context,
             tx,
             fee: payingToken,
-            config: .init(operationType: .topUp)
+            config:  .init(operationType: .topUp)
         )
+
+//        let signature = try await relayService.topUpAndRelayTransaction(
+//            tx,
+//            fee: payingToken,
+//            config: .init(operationType: .topUp)
+//        )
         print(signature ?? "Nothing")
         
     }
@@ -105,3 +113,6 @@ extension PublicKey {
         try? self.init(string: value)
     }
 }
+
+
+//swap calculator,

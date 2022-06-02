@@ -9,6 +9,10 @@ class RelayCalculatorTests: XCTestCase {
         address: "https://api.mainnet-beta.solana.com",
         network: .mainnetBeta
     )
+    let accountStorage = FakeAccountStorage(
+        seedPhrase: "miracle pizza supply useful steak border same again youth silver access hundred",
+        network: .mainnetBeta
+    )
     
     var calculator = DefaultFreeRelayerCalculator()
 
@@ -37,11 +41,15 @@ class RelayCalculatorTests: XCTestCase {
             when(stub.requestFreeFeeLimits(for: any())).thenReturn(.init(authority: [], limits: .init(useFreeFee: false, maxAmount: 1, maxCount: 1, period: .init(secs: 1, nanos: 1)), processedFee: .init(totalAmount: 1, count: 1)))
         }
         
-        let ctx = try await FeeRelayerContext.create(
-            userAccount: account,
+        
+        let contextManager = FeeRelayerContextManagerImpl(
+            accountStorage: accountStorage,
             solanaAPIClient: solanaApiClient,
             feeRelayerAPIClient: feeRelayerAPIClient
         )
+        try await contextManager.update()
+        let ctx = try await contextManager.getCurrentContext()
+        
         let result = try calculator.calculateExpectedFeeForTopUp(ctx)
         XCTAssertEqual(900_880, result)
     }
@@ -64,11 +72,13 @@ class RelayCalculatorTests: XCTestCase {
             when(stub.requestFreeFeeLimits(for: any())).thenReturn(.init(authority: [231], limits: .init(useFreeFee: true, maxAmount: 10000000, maxCount: 100, period: .init(secs: 86400, nanos: 0)), processedFee: .init(totalAmount: 0, count: 0)))
         }
         
-        let ctx = try await FeeRelayerContext.create(
-            userAccount: account,
+        let contextManager = FeeRelayerContextManagerImpl(
+            accountStorage: accountStorage,
             solanaAPIClient: solanaApiClient,
             feeRelayerAPIClient: feeRelayerAPIClient
         )
+        try await contextManager.update()
+        let ctx = try await contextManager.getCurrentContext()
         
         let result = try await calculator.calculateNeededTopUpAmount(
             ctx,

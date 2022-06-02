@@ -6,16 +6,15 @@ import Cuckoo
 
 class FeeRelayerServiceTests: XCTestCase {
     
-    var account: Account!
+    var account: SolanaAccountStorage!
     let endpoint = APIEndPoint(
         address: "https://api.mainnet-beta.solana.com",
         network: .mainnetBeta
     )
 
     override func setUp() async throws {
-        account = try await Account(
-            phrase: "miracle pizza supply useful steak border same again youth silver access hundred"
-                .components(separatedBy: " "),
+        account = FakeAccountStorage(
+            seedPhrase: "miracle pizza supply useful steak border same again youth silver access hundred",
             network: .mainnetBeta
         )
     }
@@ -38,8 +37,8 @@ class FeeRelayerServiceTests: XCTestCase {
             when(stub.getFeePayerPubkey()).thenReturn(expectedPubKey)
         }
         let relayService = FeeRelayerService(
-            account: account,
             orcaSwap: orcaSwap,
+            accountStorage: account,
             solanaApiClient: solanaAPIClient,
             feeCalculator: DefaultFreeRelayerCalculator(),
             feeRelayerAPIClient: APIClient(version: 1),
@@ -62,8 +61,8 @@ class FeeRelayerServiceTests: XCTestCase {
         )
     
         let relayService = FeeRelayerService(
-            account: account,
             orcaSwap: orcaSwap,
+            accountStorage: account,
             solanaApiClient: solanaAPIClient,
             feeCalculator: DefaultFreeRelayerCalculator(),
             feeRelayerAPIClient: APIClient(version: 1),
@@ -87,11 +86,13 @@ class FeeRelayerServiceTests: XCTestCase {
             when(stub.requestFreeFeeLimits(for: any())).thenReturn(.init(authority: [], limits: .init(useFreeFee: false, maxAmount: 1, maxCount: 1, period: .init(secs: 1, nanos: 1)), processedFee: .init(totalAmount: 1, count: 1)))
         }
         
-        let ctx = try await FeeRelayerContext.create(
-            userAccount: account,
+        let contextManager = try FeeRelayerContextManagerImpl(
+            accountStorage: account,
             solanaAPIClient: solanaAPIClient,
             feeRelayerAPIClient: feeRelayerAPIClient
         )
+        try await contextManager.update()
+        let ctx = try await contextManager.getCurrentContext()
         
         let payingToken = TokenAccount(
             address: try! PublicKey(string: "mCZrAFuPfBDPUW45n5BSkasRLpPZpmqpY7vs3XSYE7x"),
