@@ -200,7 +200,7 @@ public class FeeRelayerService: FeeRelayer {
         let freeTransactionFeeLimit = context.usageStatus
 
         // STEP 3: prepare for topUp
-        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try self.prepareForTopUp(
+        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try await self.prepareForTopUp(
             network: solanaApiClient.endpoint.network,
             sourceToken: sourceToken,
             userAuthorityAddress: account.publicKey,
@@ -271,7 +271,7 @@ public class FeeRelayerService: FeeRelayer {
         needsCreateTransitTokenAccount: Bool?,
         transitTokenMintPubkey: PublicKey?,
         transitTokenAccountAddress: PublicKey?
-    ) throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) {
+    ) async throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) {
         // assertion
         let userSourceTokenAccountAddress = sourceToken.address
         let sourceTokenMintAddress = sourceToken.mint
@@ -302,7 +302,7 @@ public class FeeRelayerService: FeeRelayer {
         }
         
         // top up swap
-        let swap = try prepareSwapData(
+        let swap = try await prepareSwapData(
             network: network,
             pools: topUpPools,
             inputAmount: nil,
@@ -435,13 +435,13 @@ public class FeeRelayerService: FeeRelayer {
         transitTokenMintPubkey: PublicKey? = nil,
         newTransferAuthority: Bool = false,
         needsCreateTransitTokenAccount: Bool
-    ) throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: Account?) {
+    ) async throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: Account?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayerError.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try Account(network: network)
+        let transferAuthority = try await Account(network: network)
         
         // form topUp params
         if pools.count == 1 {
