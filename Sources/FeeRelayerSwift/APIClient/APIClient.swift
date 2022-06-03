@@ -51,9 +51,8 @@ public class APIClient: FeeRelayerAPIClient {
         } catch HTTPClientError.cantDecode(let data) {
             res = String(data: data, encoding: .utf8)
         }
-        guard res != nil else { throw APIClientError.unknown }
-        let response = (res ?? "")
-        return fixedResponse(responseString: response)
+        guard let res = res else { throw APIClientError.unknown }
+        return res
     }
     
     public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
@@ -88,10 +87,15 @@ public class APIClient: FeeRelayerAPIClient {
     public func sendTransaction(_ requestType: RequestType) async throws -> String {
         do {
             let response: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
-            return fixedResponse(responseString: response)
+            return response
         } catch HTTPClientError.cantDecode(let data) {
             guard let ret = String(data: data, encoding: .utf8) else { throw APIClientError.unknown }
-            return ret
+            
+            let signature = ret.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: "\"", with: "")
+            #if DEBUG
+            print("Transaction has been successfully sent with signature: \(signature)")
+            #endif
+            return signature
         }
     }
     
@@ -150,12 +154,4 @@ extension URLRequest {
 
         return cURL
     }
-}
-
-private func fixedResponse(responseString: String) -> String {
-    responseString.replacingOccurrences(of: "[", with: "")
-        .replacingOccurrences(of: "]", with: "")
-    
-    // response is invalid, so it has to be fixed
-    // [\"2z2yfDa1EMa51BB7ojgeTN4CRgFVKuokrpRnry2ZzfHE8KnXrvyMvQwy4PAiPVsmQjqBYzL8k6Kgneig7vQdCvJT\"]
 }
