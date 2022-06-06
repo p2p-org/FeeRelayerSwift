@@ -1,8 +1,6 @@
 import XCTest
-import RxBlocking
 import SolanaSwift
 @testable import FeeRelayerSwift
-import RxSwift
 import OrcaSwapSwift
 
 class RelayTests: XCTestCase {
