@@ -4,6 +4,7 @@
 
 import Foundation
 import SolanaSwift
+import LoggerSwift
 
 public enum HTTPClientError: Error {
     case noResponse
@@ -41,6 +42,11 @@ public final class FeeRelayerHTTPClient: HTTPClient {
             case 401:
                 throw HTTPClientError.unauthorized
             default:
+                #if DEBUG
+                if let log = String(data: data, encoding: .utf8) {
+                    Logger.log(event: .error, message: log)
+                }
+                #endif
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
             }
 //        } catch let error {
