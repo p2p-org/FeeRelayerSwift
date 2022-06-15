@@ -35,9 +35,9 @@ class DestinationAnalysator {
                 let address = try await apiClient.getAssociatedSPLTokenAddress(for: userAccount.publicKey, mint: mint)
 
                 // Check destination address is exist.
-                let info: BufferInfo<AccountInfo>? = try await apiClient
+                let info: BufferInfo<AccountInfo>? = try? await apiClient
                     .getAccountInfo(account: address.base58EncodedString)
-                let needsCreateDestinationTokenAccount = info?.owner == TokenProgram.id.base58EncodedString
+                let needsCreateDestinationTokenAccount = info?.owner != TokenProgram.id.base58EncodedString
 
                 return (
                     destination: TokenAccount(address: userAccount.publicKey, mint: mint),
