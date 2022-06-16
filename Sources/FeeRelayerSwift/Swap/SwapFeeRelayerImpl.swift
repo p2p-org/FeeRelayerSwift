@@ -15,18 +15,20 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     private let orcaSwap: OrcaSwap
 
     private let swapCalculator: SwapFeeRelayerCalculator
-    private var feeRelayerCalculator: FeeRelayerCalculator!
+    private var feeRelayerCalculator: FeeRelayerCalculator
 
     public init(
         accountStorage: SolanaAccountStorage,
         feeRelayerAPIClient: FeeRelayerAPIClient,
         solanaApiClient: SolanaAPIClient,
-        orcaSwap: OrcaSwap
+        orcaSwap: OrcaSwap,
+        feeRelayerCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator()
     ) {
         self.accountStorage = accountStorage
         self.feeRelayerAPIClient = feeRelayerAPIClient
         self.solanaApiClient = solanaApiClient
         self.orcaSwap = orcaSwap
+        self.feeRelayerCalculator = feeRelayerCalculator
 
         swapCalculator = DefaultSwapFeeRelayerCalculator(
             solanaApiClient: solanaApiClient,
