@@ -169,8 +169,8 @@ public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
             throw FeeRelayerError.swapPoolsNotFound
         }
         
-        let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: 0.01)
-        let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: 0.01)
+        let transactionFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.transaction, slippage: FeeRelayerConstants.topUpSlippage)
+        let accountCreationFee = topUpPools.getInputAmount(minimumAmountOut: feeInSOL.accountBalances, slippage: FeeRelayerConstants.topUpSlippage)
                 
         return .init(transaction: transactionFee ?? 0, accountBalances: accountCreationFee ?? 0)
     }

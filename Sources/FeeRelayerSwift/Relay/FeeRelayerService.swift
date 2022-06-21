@@ -307,7 +307,7 @@ public class FeeRelayerService: FeeRelayer {
             pools: topUpPools,
             inputAmount: nil,
             minAmountOut: targetAmount,
-            slippage: 0.01,
+            slippage: FeeRelayerConstants.topUpSlippage,
             transitTokenMintPubkey: transitTokenMintPubkey,
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount == true
         )
