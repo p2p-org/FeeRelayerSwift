@@ -93,6 +93,6 @@ extension URLSession {
 @available(iOS 15, *)
 extension URLSession: NetworkManager {
     public func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
-        return try await self.data(for: request)
+        try await data(from: request)
     }
 }
