@@ -24,13 +24,15 @@ public class APIClient: FeeRelayerAPIClient {
     // MARK: - Properties
 
     public let version: Int
+    private let baseUrlString: String
     private var httpClient: HTTPClient
 
     // MARK: - Initializers
 
-    public init(httpClient: HTTPClient = FeeRelayerHTTPClient(), version: Int) {
+    public init(httpClient: HTTPClient = FeeRelayerHTTPClient(), baseUrlString: String, version: Int) {
         self.version = version
         self.httpClient = httpClient
+        self.baseUrlString = baseUrlString
     }
 
     // MARK: - Methods
@@ -38,7 +40,7 @@ public class APIClient: FeeRelayerAPIClient {
     /// Get fee payer for free transaction
     /// - Returns: Account's public key that is responsible for paying fee
     public func getFeePayerPubkey() async throws -> String {
-        var urlString = FeeRelayerConstants.p2pEndpoint
+        var urlString = baseUrlString
         if version > 1 {
             urlString += "/v\(version)"
         }
@@ -56,7 +58,7 @@ public class APIClient: FeeRelayerAPIClient {
     }
     
     public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
-        var url = FeeRelayerConstants.p2pEndpoint
+        var url = baseUrlString
         if version > 1 {
             url += "/v\(version)"
         }
@@ -113,7 +115,7 @@ public class APIClient: FeeRelayerAPIClient {
 //    }
     
     private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
-        var url = FeeRelayerConstants.p2pEndpoint
+        var url = baseUrlString
         if version > 1 {
             url += "/v\(version)"
         }
