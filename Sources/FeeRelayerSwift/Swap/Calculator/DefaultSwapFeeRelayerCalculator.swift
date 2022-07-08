@@ -38,6 +38,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         // fee for payer's signature
         expectedFee.transaction += lamportsPerSignature
 
+        // fee for owner's signature
         expectedFee.transaction += lamportsPerSignature
 
         // when source token is native SOL
