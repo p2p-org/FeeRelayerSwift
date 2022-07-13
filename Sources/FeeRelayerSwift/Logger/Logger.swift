@@ -27,7 +27,7 @@ public class Logger {
         self.loggers = loggers
     }
     
-    public static func log(event: String, message: String?, logLevel: FeeRelayerSwiftLogger = .info) {
+    public static func log(event: String, message: String?, logLevel: FeeRelayerSwiftLoggerLogLevel = .info) {
         loggers.forEach { $0.log(event: event, data: message, logLevel: logLevel) }
     }
 
