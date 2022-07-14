@@ -12,23 +12,16 @@ public protocol FeeRelayerSwiftLogger {
 }
 
 public class Logger {
-    
+
+    // MARK: -
+
     private static var loggers: [FeeRelayerSwiftLogger] = []
-    
-    // MARK: -
-    
-    static let shared = Logger()
-    
-    private init() {}
-    
-    // MARK: -
-    
+
     public static func setLoggers(_ loggers: [FeeRelayerSwiftLogger]) {
         self.loggers = loggers
     }
-    
+
     public static func log(event: String, message: String?, logLevel: FeeRelayerSwiftLoggerLogLevel = .info) {
         loggers.forEach { $0.log(event: event, data: message, logLevel: logLevel) }
     }
-
 }
