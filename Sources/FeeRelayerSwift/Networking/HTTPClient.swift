@@ -4,7 +4,6 @@
 
 import Foundation
 import SolanaSwift
-//import LoggerSwift
 
 public enum HTTPClientError: Error {
     case noResponse
