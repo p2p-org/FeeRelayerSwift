@@ -52,6 +52,7 @@ public class APIClient: FeeRelayerAPIClient {
             res = try await httpClient.sendRequest(request: request, decoder: JSONDecoder())
         } catch HTTPClientError.cantDecode(let data) {
             res = String(data: data, encoding: .utf8)
+            Logger.log(event: "FeeRelayerSwift getFeePayerPubkey", message: res, logLevel: .debug)
         }
         guard let res = res else { throw APIClientError.unknown }
         return res
@@ -69,13 +70,13 @@ public class APIClient: FeeRelayerAPIClient {
         urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        #if DEBUG
-        print(NSString(string: urlRequest.cURL()))
-        #endif
+
+        Logger.log(event: "FeeRelayerSwift requestFreeFeeLimits", message: urlRequest.cURL(), logLevel: .debug)
 
         do {
             return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeLimitForAuthorityResponse
         } catch HTTPClientError.unexpectedStatusCode(_, let data) {
+            Logger.log(event: "FeeRelayerSwift: requestFreeFeeLimits", message: String(data: data, encoding: .utf8), logLevel: .error)
             let decodedError = try JSONDecoder().decode(FeeRelayerError.self, from: data)
             throw decodedError
         }
@@ -94,9 +95,11 @@ public class APIClient: FeeRelayerAPIClient {
             guard let ret = String(data: data, encoding: .utf8) else { throw APIClientError.unknown }
             
             let signature = ret.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: "\"", with: "")
-            #if DEBUG
-            print("Transaction has been successfully sent with signature: \(signature)")
-            #endif
+            Logger.log(
+                event: "FeeRelayerSwift sendTransaction",
+                message: "Transaction has been successfully sent with signature: \(signature)",
+                logLevel: .debug
+            )
             return signature
         }
     }
@@ -125,9 +128,11 @@ public class APIClient: FeeRelayerAPIClient {
         urlRequest.httpMethod = "POST"
         urlRequest.httpBody = try requestType.getParams()
 
-        #if DEBUG
-        print(NSString(string: urlRequest.cURL()))
-        #endif
+        Logger.log(
+            event: "FeeRelayerSwift urlRequest",
+            message: urlRequest.cURL(),
+            logLevel: .debug
+        )
         return urlRequest
     }
 }
