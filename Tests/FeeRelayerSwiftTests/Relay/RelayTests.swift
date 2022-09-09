@@ -11,6 +11,10 @@ class RelayTests: XCTestCase {
     var feeRelayerAPIClient: FeeRelayerAPIClient!
     var context: FeeRelayerContext!
     
+    override func setUp() async throws {
+        Logger.setLoggers([ConsoleLogger()])
+    }
+    
     override func tearDown() async throws {
         accountStorage = nil
         solanaAPIClient = nil
@@ -82,5 +86,11 @@ struct MockAccountStorage: SolanaAccountStorage {
     
     func save(_ account: Account) throws {
         // ignore
+    }
+}
+
+struct ConsoleLogger: FeeRelayerSwiftLogger {
+    func log(event: String, data: String?, logLevel: FeeRelayerSwiftLoggerLogLevel) {
+        print("FeeRelayerLog \(logLevel) \(event)\n\(data ?? "")")
     }
 }

@@ -7,7 +7,7 @@ class RelaySwapTests: RelayTests {
     // MARK: - DirectSwap
     /// Swap from SOL to SPL
     func testTopUpAndDirectSwapFromSOL() async throws {
-        try await swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: true)
+        try await swap(testInfo: testsInfo.solToSPL!, isTransitiveSwap: false)
     }
     
     /// Swap from SPL to SOL
