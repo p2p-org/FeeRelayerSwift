@@ -2,6 +2,7 @@ import Foundation
 
 // MARK: - RelayTests
 struct RelayTestsInfo: Codable {
+    let baseUrlString: String
     let topUp: RelayTopUpTest?
     let solToSPL: RelaySwapTestInfo?
     let splToSOL: RelaySwapTestInfo?

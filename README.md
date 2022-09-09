@@ -49,8 +49,10 @@ let contextManager = FeeRelayerContextManagerImpl(
 )
 
 let orcaSwap = OrcaSwap(
-    apiClient: .init(
-        configsProvider: .init(network: "mainnet-beta")
+    apiClient: OrcaSwapSwift.APIClient(
+        configsProvider: OrcaSwapSwift.NetworkConfigsProvider(
+            network: "mainnet-beta"
+        )
     ),
     solanaClient: solanaAPIClient,
     blockchainClient: blockchainClient,
@@ -122,6 +124,7 @@ if useFeeRelayer {
 To run relay tests, create a valid file with name `relay-tests.json` inside `Tests/Resources`, contains following content (without comments):
 ```json
 {
+    "baseUrlString": <String>, // FeeRelayer's server url
     "topUp": {
         "endpoint": <String>, // Solana api endpoint
         "endpointAdditionalQuery": <String?>,
