@@ -20,6 +20,103 @@ it, simply add the following line to your Podfile:
 pod 'FeeRelayerSwift', :git => 'https://github.com/p2p-org/FeeRelayerSwift.git'
 ```
 
+## Usage
+
+```swift
+import SolanaSwift
+
+// Get token to pay fees (choose by user)
+
+let payingFeeToken = FeeRelayerSwift.TokenAccount(address: <#PublicKey#>, mint: <#PublicKey#>)
+
+// Example: SolanaAccountStorage
+
+class AccountStorage: SolanaAccountStorage {
+    ...
+}
+
+// Initialize services
+
+let accountStorage = AccountStorage()
+let solanaAPIClient = JSONRPCAPIClient(endpoint: <#APIEndPoint#>)
+let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
+let feeRelayerAPIClient = FeeRelayerSwift.APIClient(baseUrlString: <#String#>, version: 1)
+
+let contextManager = FeeRelayerContextManagerImpl(
+    accountStorage: accountStorage,
+    solanaAPIClient: solanaAPIClient,
+    feeRelayerAPIClient: feeRelayerAPIClient
+)
+
+let orcaSwap = OrcaSwap(
+    apiClient: .init(
+        configsProvider: .init(network: "mainnet-beta")
+    ),
+    solanaClient: solanaAPIClient,
+    blockchainClient: blockchainClient,
+    accountStorage: accountStorage
+)
+
+let feeRelayer = FeeRelayerService(
+    orcaSwap: orcaSwap,
+    accountStorage: accountStorage,
+    solanaApiClient: solanaAPIClient,
+    feeCalculator: DefaultFreeRelayerCalculator(),
+    feeRelayerAPIClient: feeRelayerAPIClient,
+    deviceType: .iOS,
+    buildNumber: <#String#>
+)
+
+// Load and update services
+
+let _ = try await (
+    orcaSwap.load(),
+    contextManager.update()
+)
+
+let context = try await contextManager.getCurrentContext()
+
+// Calculate the expected transaction fee
+
+let expectedTransactionFee = context.lamportsPerSignature * <#Int#> // 1 for the owner, 1 for company's FeePayer (if required) and additional signature if required 
+
+// when free transaction is not available and user is paying with sol, let him do this the normal way (don't use fee relayer)
+
+let userIsPayingWithNativeSOL = payingTokenMint == PublicKey.wrappedSOLMint.base58EncodedString
+let freeTransactionIsNotAvailable = context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: expectedFee.transaction) == false
+let ignoreFeeRelayer = userIsPayingWithNativeSOL && freeTransactionIsNotAvailable
+
+// Define fee payer and weather FeeRelayer needed or not
+
+let useFeeRelayer = !ignoreFeePayer
+let feePayer = useFeeRelayer ? contextManager: nil // feePayer == nil mean the owner has to pay the fee
+
+// Prepare transaction
+// Ex1: Sending native SOL
+
+var preparedTransaction = blockchainClient.prepareSendingNativeSOL(from: accountStorage.account, to: receiver, amount: <#Lamports#>, feePayer: feePayer)
+
+// Get recent blockhash
+
+preparedTransaction.transaction.recentBlockhash = try await solanaAPIClient.getRecentBlockhash(commitment: nil)
+
+// Relay transaction if needed
+
+if useFeeRelayer {
+    return try await feeRelayer.topUpAndRelayTransaction(
+        context,
+        preparedTransaction,
+        fee: payingFeeToken,
+        config: .init(
+            operationType: .transfer,
+            currency: <#String#>
+        ) // for analytics purpose only
+    )
+} else {
+    return try await blockchainClient.sendTransaction(preparedTransaction: preparedTransaction)
+}
+```
+
 ## Tests
 ### RelayTests
 To run relay tests, create a valid file with name `relay-tests.json` inside `Tests/Resources`, contains following content (without comments):
