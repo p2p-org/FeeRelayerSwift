@@ -53,27 +53,45 @@ class RelaySwapTests: RelayTests {
             pools = try orcaSwap.findBestPoolsPairForInputAmount(testInfo.inputAmount, from: poolPairs)!
         }
         
-        
-        
-        return try feeRelayer.prepareSwapTransaction(
-            sourceToken: .init(address: testInfo.sourceAddress, mint: testInfo.fromMint),
-            destinationTokenMint: testInfo.toMint,
-            destinationAddress: testInfo.destinationAddress,
-            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
-            swapPools: pools,
-            inputAmount: testInfo.inputAmount,
-            slippage: testInfo.slippage
+        // prepare swap transaction
+        let swapRelayService = SwapFeeRelayerImpl(
+            accountStorage: accountStorage,
+            feeRelayerAPIClient: feeRelayerAPIClient,
+            solanaApiClient: solanaAPIClient,
+            orcaSwap: orcaSwap
         )
+        
+        return try await swapRelayService
+            .prepareSwapTransaction(
+                context,
+                sourceToken: .init(
+                    address: try PublicKey(string: testInfo.sourceAddress),
+                    mint: try PublicKey(string: testInfo.fromMint)
+                ),
+                destinationTokenMint: try PublicKey(string: testInfo.toMint),
+                destinationAddress: try PublicKey(string: testInfo.destinationAddress),
+                fee: .init(
+                    address: try PublicKey(string: testInfo.payingTokenAddress),
+                    mint: try PublicKey(string: testInfo.payingTokenMint)
+                ),
+                swapPools: pools,
+                inputAmount: testInfo.inputAmount,
+                slippage: testInfo.slippage
+            )
     }
     
     private func swap(testInfo: RelaySwapTestInfo, isTransitiveSwap: Bool?) async throws {
         let txs = try await prepareTransaction(testInfo: testInfo, isTransitiveSwap: isTransitiveSwap)
   
         // send to relay service
-        let signatures = try await feeRelayer.topUpAndRelayTransactions(
-            preparedTransactions: txs.transactions,
-            payingFeeToken: .init(address: testInfo.payingTokenAddress, mint: testInfo.payingTokenMint),
-            additionalPaybackFee: txs.additionalPaybackFee
+        let signatures = try await feeRelayer.topUpAndRelayTransaction(
+            context,
+            txs.transactions,
+            fee: .init(
+                address: try PublicKey(string: testInfo.payingTokenAddress),
+                mint: try PublicKey(string: testInfo.payingTokenMint)
+            ),
+            config: .init(operationType: .swap)
         )
         
         print(signatures)

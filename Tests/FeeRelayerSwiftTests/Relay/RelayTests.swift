@@ -4,28 +4,32 @@ import SolanaSwift
 import OrcaSwapSwift
 
 class RelayTests: XCTestCase {
-    
-    
-//    var solanaClient: SolanaAPIClient!
+    var accountStorage: SolanaAccountStorage!
+    var solanaAPIClient: SolanaAPIClient!
     var orcaSwap: OrcaSwap!
     var feeRelayer: FeeRelayer!
+    var feeRelayerAPIClient: FeeRelayerAPIClient!
+    var context: FeeRelayerContext!
     
     override func tearDown() async throws {
-//        solanaClient = nil
+        accountStorage = nil
+        solanaAPIClient = nil
         orcaSwap = nil
         feeRelayer = nil
+        feeRelayerAPIClient = nil
+        context = nil
     }
     
     func loadTest(_ relayTest: RelayTestType) async throws {
         // Initialize services
         
         let network = Network.mainnetBeta
-        let accountStorage = try await MockAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
+        accountStorage = try await MockAccountStorage(seedPhrase: relayTest.seedPhrase, network: network)
         let endpoint = APIEndPoint(address: relayTest.endpoint, network: network, additionalQuery: relayTest.endpointAdditionalQuery)
         
-        let solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
+        solanaAPIClient = JSONRPCAPIClient(endpoint: endpoint)
         let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
-        let feeRelayerAPIClient = FeeRelayerSwift.APIClient(baseUrlString: testsInfo.baseUrlString, version: 1)
+        feeRelayerAPIClient = FeeRelayerSwift.APIClient(baseUrlString: testsInfo.baseUrlString, version: 1)
         
         let contextManager = FeeRelayerContextManagerImpl(
             accountStorage: accountStorage,
@@ -60,6 +64,10 @@ class RelayTests: XCTestCase {
             orcaSwap.load(),
             contextManager.update()
         )
+        
+        // Get current context
+        
+        context = try await contextManager.getCurrentContext()
     }
 }
 
