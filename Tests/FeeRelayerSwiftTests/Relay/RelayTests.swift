@@ -7,13 +7,13 @@ class RelayTests: XCTestCase {
     
     
 //    var solanaClient: SolanaAPIClient!
-//    var orcaSwap: OrcaSwapType!
-//    var relayService: FeeRelayer.Relay!
+    var orcaSwap: OrcaSwap!
+    var feeRelayer: FeeRelayer!
     
     override func tearDown() async throws {
 //        solanaClient = nil
-//        orcaSwap = nil
-//        relayService = nil
+        orcaSwap = nil
+        feeRelayer = nil
     }
     
     func loadTest(_ relayTest: RelayTestType) async throws {
@@ -33,7 +33,7 @@ class RelayTests: XCTestCase {
             feeRelayerAPIClient: feeRelayerAPIClient
         )
 
-        let orcaSwap = OrcaSwap(
+        orcaSwap = OrcaSwap(
             apiClient: OrcaSwapSwift.APIClient(
                 configsProvider: OrcaSwapSwift.NetworkConfigsProvider(
                     network: "mainnet-beta"
@@ -44,7 +44,7 @@ class RelayTests: XCTestCase {
             accountStorage: accountStorage
         )
 
-        let feeRelayer = FeeRelayerService(
+        feeRelayer = FeeRelayerService(
             orcaSwap: orcaSwap,
             accountStorage: accountStorage,
             solanaApiClient: solanaAPIClient,
