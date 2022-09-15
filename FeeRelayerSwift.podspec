@@ -39,6 +39,6 @@ TODO: Add long description of the pod here.
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
-  s.dependency 'SolanaSwift', '~> 2.1.1'
-  s.dependency 'OrcaSwapSwift', '~> 2.1.1'
+  s.dependency 'SolanaSwift', '~> 2'
+  s.dependency 'OrcaSwapSwift', '~> 2'
 end
