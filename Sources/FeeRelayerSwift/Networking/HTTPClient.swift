@@ -4,7 +4,6 @@
 
 import Foundation
 import SolanaSwift
-import LoggerSwift
 
 public enum HTTPClientError: Error {
     case noResponse
@@ -44,7 +43,7 @@ public final class FeeRelayerHTTPClient: HTTPClient {
             default:
                 #if DEBUG
                 if let log = String(data: data, encoding: .utf8) {
-                    Logger.log(event: .error, message: log)
+                    Logger.log(event: "error", message: log, logLevel: .error)
                 }
                 #endif
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
@@ -93,6 +92,6 @@ extension URLSession {
 @available(iOS 15, *)
 extension URLSession: NetworkManager {
     public func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
-        return try await self.data(for: request)
+        try await data(from: request)
     }
 }

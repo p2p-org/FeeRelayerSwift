@@ -88,16 +88,6 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
         payingFeeToken: TokenAccount?,
         swapPools: PoolsPair
     ) async throws -> TopUpAndActionPreparedParams {
-        let tradablePoolsPair: [PoolsPair]
-        if let payingFeeToken = payingFeeToken {
-            tradablePoolsPair = try await orcaSwap.getTradablePoolsPairs(
-                fromMint: payingFeeToken.mint.base58EncodedString,
-                toMint: PublicKey.wrappedSOLMint.base58EncodedString
-            )
-        } else {
-            tradablePoolsPair = []
-        }
-
         let swappingFee: FeeAmount = try await swapCalculator.calculateSwappingNetworkFees(
             context,
             swapPools: swapPools,
@@ -122,6 +112,16 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
             let expectedFee = try feeRelayerCalculator.calculateExpectedFeeForTopUp(context)
 
             // Get pools
+            let tradablePoolsPair: [PoolsPair]
+            if let payingFeeToken = payingFeeToken {
+                tradablePoolsPair = try await orcaSwap.getTradablePoolsPairs(
+                    fromMint: payingFeeToken.mint.base58EncodedString,
+                    toMint: PublicKey.wrappedSOLMint.base58EncodedString
+                )
+            } else {
+                tradablePoolsPair = []
+            }
+            
             guard let topUpPools = try orcaSwap.findBestPoolsPairForEstimatedAmount(
                 topUpAmount,
                 from: tradablePoolsPair

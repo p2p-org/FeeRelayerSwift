@@ -5,8 +5,6 @@
 import Foundation
 
 public struct FeeRelayerConstants {
-    static let p2pEndpoint = "https://fee-relayer.solana.p2p.org"
-    
     /// A default slippage value for top up operation.
     ///
     /// When user uses spl token as fee payer, fee relayer service will swap fee amount for transaction in this token to native token (SOL).
