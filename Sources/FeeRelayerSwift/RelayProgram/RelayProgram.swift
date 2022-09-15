@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 
 public enum RelayProgram {
-    static func id(network: Network) -> PublicKey {
+    static public func id(network: Network) -> PublicKey {
         switch network {
         case .mainnetBeta:
             return "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9"
@@ -15,7 +15,7 @@ public enum RelayProgram {
         }
     }
 
-    static func getUserRelayAddress(user: PublicKey, network: Network) throws -> PublicKey {
+    static public func getUserRelayAddress(user: PublicKey, network: Network) throws -> PublicKey {
         try .findProgramAddress(seeds: [user.data, "relay".data(using: .utf8)!], programId: id(network: network)).0
     }
 
