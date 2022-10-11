@@ -14,10 +14,11 @@ public class FeeRelayerService: FeeRelayer {
     public let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
-    
+
     public var account: Account {
         accountStorage.account!
     }
+
     public init(
         orcaSwap: OrcaSwap,
         accountStorage: SolanaAccountStorage,
@@ -35,11 +36,17 @@ public class FeeRelayerService: FeeRelayer {
         self.deviceType = deviceType
         self.buildNumber = buildNumber
     }
-    
+
     public func getFeePayer() async throws -> PublicKey {
         try PublicKey(string: try await feeRelayerAPIClient.getFeePayerPubkey())
     }
-    
+
+    public func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String {
+        try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
+            try .init(preparedTransaction: preparedTransaction)
+        ))
+    }
+
     public func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,
         _ transaction: PreparedTransaction,
@@ -47,9 +54,9 @@ public class FeeRelayerService: FeeRelayer {
         config: FeeRelayerConfiguration
     ) async throws -> TransactionID {
         try await topUpAndRelayTransaction(context, [transaction], fee: fee, config: config).first
-        ?! FeeRelayerError.unknown
+            ?! FeeRelayerError.unknown
     }
-    
+
     public func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,
         _ transactions: [PreparedTransaction],
@@ -60,15 +67,15 @@ public class FeeRelayerService: FeeRelayer {
         let res = try await checkAndTopUp(
             context,
             expectedFee: .init(
-                transaction: expectedFees.map {$0.transaction}.reduce(UInt64(0), +),
-                accountBalances: expectedFees.map {$0.accountBalances}.reduce(UInt64(0), +)
+                transaction: expectedFees.map { $0.transaction }.reduce(UInt64(0), +),
+                accountBalances: expectedFees.map { $0.accountBalances }.reduce(UInt64(0), +)
             ),
             payingFeeToken: fee
         )
-        
+
         do {
             var trx: [String] = []
-            
+
             for preparedTransaction in transactions {
                 let request = try await relayTransaction(
                     context,
@@ -79,25 +86,24 @@ public class FeeRelayerService: FeeRelayer {
                     operationType: config.operationType,
                     currency: config.currency
                 )
-                
+
                 trx.append(contentsOf: request)
             }
 
             return trx
-        } catch let error {
+        } catch {
             if res != nil {
                 throw FeeRelayerError.topUpSuccessButTransactionThrows
             }
             throw error
         }
     }
-    
+
     private func checkAndTopUp(
         _ context: FeeRelayerContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
-        
         // if paying fee token is solana, skip the top up
         if payingFeeToken?.mint == PublicKey.wrappedSOLMint {
             return nil
@@ -134,11 +140,12 @@ public class FeeRelayerService: FeeRelayer {
         }
         return nil
     }
+
     func prepareForTopUp(
         _ context: FeeRelayerContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
-        relayAccountStatus: RelayAccountStatus,
+        relayAccountStatus _: RelayAccountStatus,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
     ) async throws -> TopUpPreparedParams? {
         // form request
@@ -152,11 +159,11 @@ public class FeeRelayerService: FeeRelayer {
         let topUpPools: PoolsPair
         // force using transitive swap (for testing only)
         if forceUsingTransitiveSwap {
-            let pools = tradableTopUpPoolsPair.first(where: {$0.count == 2})!
+            let pools = tradableTopUpPoolsPair.first(where: { $0.count == 2 })!
             topUpPools = pools
         }
         // prefer direct swap to transitive swap
-        else if let directSwapPools = tradableTopUpPoolsPair.first(where: {$0.count == 1}) {
+        else if let directSwapPools = tradableTopUpPoolsPair.first(where: { $0.count == 1 }) {
             topUpPools = directSwapPools
         }
         // if direct swap is not available, use transitive swap
@@ -170,7 +177,7 @@ public class FeeRelayerService: FeeRelayer {
         // return needed amount and pools
         return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
     }
-    
+
     func topUp(
         _ context: FeeRelayerContext,
         needsCreateUserRelayAddress: Bool,
@@ -179,19 +186,18 @@ public class FeeRelayerService: FeeRelayer {
         topUpPools: PoolsPair,
         expectedFee: UInt64
     ) async throws -> [String] {
-        
         let transitToken = try TransitTokenAccountAnalysator.getTransitToken(
             solanaApiClient: solanaApiClient,
             orcaSwap: orcaSwap,
             account: account,
             pools: topUpPools
         )
-        
+
         let needsCreateTransitTokenAccount = try await TransitTokenAccountAnalysator.checkIfNeedsCreateTransitTokenAccount(
             solanaApiClient: solanaApiClient,
             transitToken: transitToken
         )
-        
+
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
         let minimumRelayAccountBalance = context.minimumRelayAccountBalance
         let minimumTokenAccountBalance = context.minimumTokenAccountBalance
@@ -200,7 +206,7 @@ public class FeeRelayerService: FeeRelayer {
         let freeTransactionFeeLimit = context.usageStatus
 
         // STEP 3: prepare for topUp
-        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try await self.prepareForTopUp(
+        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) = try await prepareForTopUp(
             network: solanaApiClient.endpoint.network,
             sourceToken: sourceToken,
             userAuthorityAddress: account.publicKey,
@@ -219,22 +225,22 @@ public class FeeRelayerService: FeeRelayer {
             transitTokenMintPubkey: transitToken?.mint,
             transitTokenAccountAddress: transitToken?.address
         )
-        
+
         // STEP 4: send transaction
         let signatures = topUpTransaction.preparedTransaction.transaction.signatures
         guard signatures.count >= 2 else { throw FeeRelayerError.invalidSignature }
-        
+
         // the second signature is the owner's signature
         let ownerSignature = try signatures.getSignature(index: 1)
-        
+
         // the third signature (optional) is the transferAuthority's signature
         let transferAuthoritySignature = try? signatures.getSignature(index: 2)
-        
+
         let topUpSignatures = SwapTransactionSignatures(
             userAuthoritySignature: ownerSignature,
             transferAuthoritySignature: transferAuthoritySignature
         )
-        let result = try await self.feeRelayerAPIClient.sendTransaction(
+        let result = try await feeRelayerAPIClient.sendTransaction(
             .relayTopUpWithSwap(
                 .init(
                     userSourceTokenAccount: sourceToken.address,
@@ -244,14 +250,14 @@ public class FeeRelayerService: FeeRelayer {
                     feeAmount: expectedFee,
                     signatures: topUpSignatures,
                     blockhash: blockhash,
-                    deviceType: self.deviceType,
-                    buildNumber: self.buildNumber
+                    deviceType: deviceType,
+                    buildNumber: buildNumber
                 )
             )
         )
         return [result]
     }
- 
+
     /// Prepare transaction and expected fee for a given relay transaction
     private func prepareForTopUp(
         network: Network,
@@ -267,7 +273,7 @@ public class FeeRelayerService: FeeRelayer {
         needsCreateUserRelayAccount: Bool,
         feePayerAddress: PublicKey,
         lamportsPerSignature: UInt64,
-        freeTransactionFeeLimit: UsageStatus?,
+        freeTransactionFeeLimit _: UsageStatus?,
         needsCreateTransitTokenAccount: Bool?,
         transitTokenMintPubkey: PublicKey?,
         transitTokenAccountAddress: PublicKey?
@@ -280,15 +286,15 @@ public class FeeRelayerService: FeeRelayer {
             walletAddress: feePayerAddress,
             tokenMintAddress: sourceTokenMintAddress
         ) ?! FeeRelayerError.unknown
-        
+
         guard userSourceTokenAccountAddress != associatedTokenAddress else {
             throw FeeRelayerError.unknown
         }
-        
+
         // forming transaction and count fees
         var accountCreationFee: UInt64 = 0
         var instructions = [TransactionInstruction]()
-        
+
         // create user relay account
         if needsCreateUserRelayAccount {
             instructions.append(
@@ -300,7 +306,7 @@ public class FeeRelayerService: FeeRelayer {
             )
             accountCreationFee += minimumRelayAccountBalance
         }
-        
+
         // top up swap
         let swap = try await prepareSwapData(
             network: network,
@@ -312,7 +318,7 @@ public class FeeRelayerService: FeeRelayer {
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount == true
         )
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
-        
+
         switch swap.swapData {
         case let swap as DirectSwapData:
             accountCreationFee += minimumTokenAccountBalance
@@ -328,7 +334,7 @@ public class FeeRelayerService: FeeRelayer {
                     )
                 )
             }
-            
+
             // top up
             instructions.append(
                 try Program.topUpSwapInstruction(
@@ -352,7 +358,7 @@ public class FeeRelayerService: FeeRelayer {
                     )
                 )
             }
-            
+
             // create transit token account
             if needsCreateTransitTokenAccount == true, let transitTokenAccountAddress = transitTokenAccountAddress {
                 instructions.append(
@@ -365,10 +371,10 @@ public class FeeRelayerService: FeeRelayer {
                     )
                 )
             }
-            
+
             // Destination WSOL account funding
             accountCreationFee += minimumTokenAccountBalance
-            
+
             // top up
             instructions.append(
                 try Program.topUpSwapInstruction(
@@ -382,7 +388,7 @@ public class FeeRelayerService: FeeRelayer {
         default:
             fatalError("unsupported swap type")
         }
-        
+
         // transfer
         instructions.append(
             try Program.transferSolInstruction(
@@ -392,29 +398,29 @@ public class FeeRelayerService: FeeRelayer {
                 network: network
             )
         )
-        
+
         var transaction = Transaction()
         transaction.instructions = instructions
         transaction.feePayer = feePayerAddress
         transaction.recentBlockhash = blockhash
-        
+
         // calculate fee first
         let expectedFee = FeeAmount(
             transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature),
             accountBalances: accountCreationFee
         )
-        
+
         // resign transaction
         var signers = [account]
         if let tranferAuthority = swap.transferAuthorityAccount {
             signers.append(tranferAuthority)
         }
         try transaction.sign(signers: signers)
-        
-       if let decodedTransaction = transaction.jsonString {
-           print(decodedTransaction)
-       }
-        
+
+        if let decodedTransaction = transaction.jsonString {
+            print(decodedTransaction)
+        }
+
         return (
             swapData: swap.swapData,
             preparedTransaction: .init(
@@ -424,7 +430,7 @@ public class FeeRelayerService: FeeRelayer {
             )
         )
     }
-    
+
     /// Prepare swap data from swap pools
     func prepareSwapData(
         network: Network,
@@ -437,39 +443,39 @@ public class FeeRelayerService: FeeRelayer {
         needsCreateTransitTokenAccount: Bool
     ) async throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: Account?) {
         // preconditions
-        guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayerError.swapPoolsNotFound }
+        guard pools.count > 0, pools.count <= 2 else { throw FeeRelayerError.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
-        
+
         // create transferAuthority
         let transferAuthority = try await Account(network: network)
-        
+
         // form topUp params
         if pools.count == 1 {
             let pool = pools[0]
-            
+
             guard let amountIn = try inputAmount ?? pool.getInputAmount(minimumReceiveAmount: minAmountOut!, slippage: slippage),
                   let minAmountOut = try minAmountOut ?? pool.getMinimumAmountOut(inputAmount: inputAmount!, slippage: slippage)
             else { throw FeeRelayerError.invalidAmount }
-            
+
             let directSwapData = pool.getSwapData(
-                transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: account.publicKey,
+                transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey : account.publicKey,
                 amountIn: amountIn,
                 minAmountOut: minAmountOut
             )
-            return (swapData: directSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
+            return (swapData: directSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority : nil)
         } else {
             let firstPool = pools[0]
             let secondPool = pools[1]
-            
+
             guard let transitTokenMintPubkey = transitTokenMintPubkey else {
                 throw FeeRelayerError.transitTokenMintNotFound
             }
-            
+
             // if input amount is provided
             var firstPoolAmountIn = inputAmount
             var secondPoolAmountIn: UInt64?
             var secondPoolAmountOut = minAmountOut
-            
+
             if let inputAmount = inputAmount {
                 secondPoolAmountIn = try firstPool.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage) ?? 0
                 secondPoolAmountOut = try secondPool.getMinimumAmountOut(inputAmount: secondPoolAmountIn!, slippage: slippage)
@@ -477,57 +483,57 @@ public class FeeRelayerService: FeeRelayer {
                 secondPoolAmountIn = try secondPool.getInputAmount(minimumReceiveAmount: minAmountOut, slippage: slippage) ?? 0
                 firstPoolAmountIn = try firstPool.getInputAmount(minimumReceiveAmount: secondPoolAmountIn!, slippage: slippage)
             }
-            
+
             guard let firstPoolAmountIn = firstPoolAmountIn,
                   let secondPoolAmountIn = secondPoolAmountIn,
                   let secondPoolAmountOut = secondPoolAmountOut
             else {
                 throw FeeRelayerError.invalidAmount
             }
-            
+
             let transitiveSwapData = TransitiveSwapData(
                 from: firstPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: account.publicKey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey : account.publicKey,
                     amountIn: firstPoolAmountIn,
                     minAmountOut: secondPoolAmountIn
                 ),
                 to: secondPool.getSwapData(
-                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey: account.publicKey,
+                    transferAuthorityPubkey: newTransferAuthority ? transferAuthority.publicKey : account.publicKey,
                     amountIn: secondPoolAmountIn,
                     minAmountOut: secondPoolAmountOut
                 ),
                 transitTokenMintPubkey: transitTokenMintPubkey.base58EncodedString,
                 needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
             )
-            return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil)
+            return (swapData: transitiveSwapData, transferAuthorityAccount: newTransferAuthority ? transferAuthority : nil)
         }
     }
-    
+
     func relayTransaction(
         _ context: FeeRelayerContext,
         preparedTransaction: PreparedTransaction,
         payingFeeToken: TokenAccount?,
         relayAccountStatus: RelayAccountStatus,
         additionalPaybackFee: UInt64,
-        operationType: StatsInfo.OperationType,
-        currency: String?
+        operationType _: StatsInfo.OperationType,
+        currency _: String?
     ) async throws -> [String] {
         let feePayer = context.feePayerAddress
-        
+
         // verify fee payer
         guard feePayer == preparedTransaction.transaction.feePayer else {
             throw FeeRelayerError.invalidFeePayer
         }
-        
+
         // Calculate the fee to send back to feePayer
         // Account creation fee (accountBalances) is a must-pay-back fee
         var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
-        
+
         // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
         if !context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction) {
             paybackFee += preparedTransaction.expectedFee.transaction
         }
-        
+
         // transfer sol back to feerelayer's feePayer
         var preparedTransaction = preparedTransaction
         if paybackFee > 0 {
@@ -552,21 +558,20 @@ public class FeeRelayerService: FeeRelayer {
                 )
             }
         }
-        
+
         #if DEBUG
 //        if let decodedTransaction = preparedTransaction.transaction.jsonString {
 //            Logger.log(message: decodedTransaction, event: .info)
 //        }
-        print(preparedTransaction.transaction.jsonString!)
+            print(preparedTransaction.transaction.jsonString!)
         #endif
-        
+
         // resign transaction
         try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
         return [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
             try .init(preparedTransaction: preparedTransaction)
         ))]
     }
-    
 }
 
 enum CacheKey: String {
