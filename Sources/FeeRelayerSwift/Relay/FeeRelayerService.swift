@@ -84,7 +84,8 @@ public class FeeRelayerService: FeeRelayer {
                     relayAccountStatus: context.relayAccountStatus,
                     additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
-                    currency: config.currency
+                    currency: config.currency,
+                    autoPayback: config.autoPayback
                 )
 
                 trx.append(contentsOf: request)
@@ -516,7 +517,8 @@ public class FeeRelayerService: FeeRelayer {
         relayAccountStatus: RelayAccountStatus,
         additionalPaybackFee: UInt64,
         operationType _: StatsInfo.OperationType,
-        currency _: String?
+        currency _: String?,
+        autoPayback: Bool
     ) async throws -> [String] {
         let feePayer = context.feePayerAddress
 
@@ -536,7 +538,7 @@ public class FeeRelayerService: FeeRelayer {
 
         // transfer sol back to feerelayer's feePayer
         var preparedTransaction = preparedTransaction
-        if paybackFee > 0 {
+        if autoPayback, paybackFee > 0 {
             if payingFeeToken?.mint == PublicKey.wrappedSOLMint,
                (relayAccountStatus.balance ?? 0) < paybackFee
             {
