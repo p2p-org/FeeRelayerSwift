@@ -99,7 +99,7 @@ public class FeeRelayerService: FeeRelayer {
         }
     }
 
-    private func checkAndTopUp(
+    public func checkAndTopUp(
         _ context: FeeRelayerContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?

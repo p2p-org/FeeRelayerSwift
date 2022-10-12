@@ -23,8 +23,14 @@ public struct FeeRelayerConfiguration {
 public protocol FeeRelayer {
     var feeCalculator: FeeRelayerCalculator { get }
 
+    func checkAndTopUp(
+        _ context: FeeRelayerContext,
+        expectedFee: FeeAmount,
+        payingFeeToken: TokenAccount?
+    ) async throws -> [String]?
+    
     func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String
-
+    
     func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,
         _ preparedTransaction: PreparedTransaction,
