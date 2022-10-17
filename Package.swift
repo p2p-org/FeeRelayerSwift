@@ -31,5 +31,8 @@ let package = Package(
         .testTarget(
             name: "FeeRelayerSwiftTests",
             dependencies: ["FeeRelayerSwift"]),
+        .testTarget(
+            name: "FeeRelayerSwiftUnitTests",
+            dependencies: ["FeeRelayerSwift"]),
     ]
 )

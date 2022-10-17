@@ -56,7 +56,7 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
                 try Program.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
                     .base58EncodedString
             ),
-            feeRelayerAPIClient.requestFreeFeeLimits(for: account.publicKey.base58EncodedString)
+            feeRelayerAPIClient.getFreeFeeLimits(for: account.publicKey.base58EncodedString)
                 .asUsageStatus()
         )
 
