@@ -560,8 +560,11 @@ public class FeeRelayerService: FeeRelayer {
         print(preparedTransaction.transaction.jsonString!)
         #endif
         
-        // resign transaction
-        try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+        // resign transaction if needed
+        if !preparedTransaction.signers.isEmpty {
+            try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+        }
+        
         return [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
             try .init(preparedTransaction: preparedTransaction)
         ))]
