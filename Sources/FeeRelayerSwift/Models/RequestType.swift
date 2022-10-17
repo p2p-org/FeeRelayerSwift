@@ -45,4 +45,8 @@ public struct RequestType {
     public static func relayTransaction(_ params: RelayTransactionParam) -> RequestType {
         .init(path: "/relay_transaction", params: params)
     }
+    
+    public static func signRelayTransaction(_ params: RelayTransactionParam) -> RequestType {
+        .init(path: "/sign_relay_transaction", params: params)
+    }
 }

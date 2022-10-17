@@ -38,5 +38,19 @@ public protocol FeeRelayer {
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
     
+    func topUpAndSignRelayTransaction(
+        _ context: FeeRelayerContext,
+        _ preparedTransaction: PreparedTransaction,
+        fee payingFeeToken: TokenAccount?,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> TransactionID
+    
+    func topUpAndSignRelayTransaction(
+        _ context: FeeRelayerContext,
+        _ preparedTransaction: [PreparedTransaction],
+        fee payingFeeToken: TokenAccount?,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> [TransactionID]
+    
     func getFeePayer() async throws -> PublicKey
 }
