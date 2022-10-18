@@ -108,16 +108,17 @@ public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
                 // if relayAccountBalance has enough balance to cover transaction fee
                 if relayAccountBalance >= neededAmount.transaction {
                     
+                    relayAccountBalance -= neededAmount.transaction
                     neededAmount.transaction = 0
                     
                     // if relayAccountBalance has enough balance to cover accountBalances fee too
-                    if relayAccountBalance - neededAmount.transaction >= neededAmount.accountBalances {
+                    if relayAccountBalance >= neededAmount.accountBalances {
                         neededAmount.accountBalances = 0
                     }
                     
                     // Relay account balance can cover part of account creation fee
                     else {
-                        neededAmount.accountBalances -= (relayAccountBalance - neededAmount.transaction)
+                        neededAmount.accountBalances -= relayAccountBalance
                     }
                 }
                 // if not, relayAccountBalance can cover part of transaction fee
