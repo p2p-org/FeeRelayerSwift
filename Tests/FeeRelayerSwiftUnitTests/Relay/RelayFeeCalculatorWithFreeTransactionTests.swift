@@ -4,12 +4,12 @@ import OrcaSwapSwift
 import SolanaSwift
 @testable import FeeRelayerSwift
 
-class RelayTopUpFeeCalculatorTests: XCTestCase {
+class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     
     let calculator = DefaultFreeRelayerCalculator()
     
     // MARK: - TopUp
-    func testCalculateNeededTopUpAmountWhenRelayAccountIsNotYetCreated() async throws {
+    func testWhenRelayAccountIsNotYetCreated() async throws {
         let expectedTxFee = FeeAmount(
             transaction: UInt64.random(in: 1...2) * lamportsPerSignature,
             accountBalances: UInt64.random(in: 1...2) * minimumTokenAccountBalance
@@ -46,7 +46,7 @@ class RelayTopUpFeeCalculatorTests: XCTestCase {
         )
     }
     
-    func testFeeCalculatorWhenRelayAccountHasAlreadyBeenCreated() async throws {
+    func testWhenRelayAccountHasAlreadyBeenCreated() async throws {
         // TO KEEP RELAY ACCOUNT ALIVE, WE MUST ALWAYS KEEPS minimumRelayAccountBalance (890880 LAMPORTS AT THE MOMENT) IN THIS ACCOUNT
         // AFTER ANY TRANSACTION
         
@@ -125,8 +125,32 @@ class RelayTopUpFeeCalculatorTests: XCTestCase {
         )
     }
     
-    func testFeeCalculatorWhenTopUpAmountIsTooSmall() throws {
+    func testWhenTopUpAmountIsTooSmall() async throws {
+        let expectedTxFee = FeeAmount(
+            transaction: UInt64.random(in: 1...2) * lamportsPerSignature,
+            accountBalances: UInt64.random(in: 1...2) * minimumTokenAccountBalance
+        )
+        var currentRelayAccountBalance: UInt64 = 0
         
+        // CASE 1: currentRelayAccountBalance is already more than minimumRelayAccountBalance
+        // and the amount left can cover big part of expected account creation fee
+        
+        currentRelayAccountBalance = minimumRelayAccountBalance
+        currentRelayAccountBalance += expectedTxFee.accountBalances - UInt64.random(in: 0..<1000)
+        
+        let case3 = try await calculator.calculateNeededTopUpAmount(
+            getContext(
+                relayAccountStatus: .created(balance: currentRelayAccountBalance),
+                exceededFreeTransactionLimit: false
+            ),
+            expectedFee: expectedTxFee,
+            payingTokenMint: .usdtMint
+        )
+        
+        let amountLeft = expectedTxFee.accountBalances - (currentRelayAccountBalance - minimumRelayAccountBalance)
+        XCTAssertTrue(amountLeft < 1000)
+        
+        XCTAssertEqual(case3.total, 1000)
     }
     
     private func getContext(
