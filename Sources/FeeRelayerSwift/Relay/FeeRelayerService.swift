@@ -40,6 +40,12 @@ public class FeeRelayerService: FeeRelayer {
     public func getFeePayer() async throws -> PublicKey {
         try PublicKey(string: try await feeRelayerAPIClient.getFeePayerPubkey())
     }
+    
+    public func getFeeTokenData(
+        mint: String
+    ) async throws -> FeeTokenData {
+        try await feeRelayerAPIClient.feeTokenData(mint: mint)
+    }
 
     public func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String {
         try await feeRelayerAPIClient.sendTransaction(.relayTransaction(

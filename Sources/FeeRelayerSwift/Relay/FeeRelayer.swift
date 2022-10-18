@@ -39,7 +39,13 @@ public protocol FeeRelayer {
         payingFeeToken: TokenAccount?
     ) async throws -> [String]?
 
-    func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String
+    func getFeeTokenData(
+        mint: String
+    ) async throws -> FeeTokenData
+    
+    func relayTransaction(
+        _ preparedTransaction: PreparedTransaction
+    ) async throws -> String
 
     func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,
