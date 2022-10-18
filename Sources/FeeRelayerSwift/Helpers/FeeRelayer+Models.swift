@@ -5,8 +5,8 @@ import OrcaSwapSwift
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
 public struct FeeTokenData: Codable, Equatable {
-    let name, code, mint, account: String
-    let exchangeRate: Double
+    public let name, code, mint, account: String
+    public let exchangeRate: Double
 
     enum CodingKeys: String, CodingKey {
         case name, code, mint, account
