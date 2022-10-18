@@ -9,7 +9,7 @@ import SolanaSwift
 public class FeeRelayerService: FeeRelayer {
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
-    private(set) var orcaSwap: OrcaSwap
+    private(set) var orcaSwap: OrcaSwapType
     private(set) var accountStorage: SolanaAccountStorage
     public let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
@@ -19,7 +19,7 @@ public class FeeRelayerService: FeeRelayer {
         accountStorage.account!
     }
     public init(
-        orcaSwap: OrcaSwap,
+        orcaSwap: OrcaSwapType,
         accountStorage: SolanaAccountStorage,
         solanaApiClient: SolanaAPIClient,
         feeCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator(),

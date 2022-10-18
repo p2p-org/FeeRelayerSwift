@@ -9,7 +9,7 @@ import OrcaSwapSwift
 class TransitTokenAccountAnalysator {
     internal static func getTransitToken(
         solanaApiClient: SolanaAPIClient,
-        orcaSwap: OrcaSwap,
+        orcaSwap: OrcaSwapType,
         account: Account,
         pools: PoolsPair
     ) throws -> TokenAccount? {
@@ -27,7 +27,7 @@ class TransitTokenAccountAnalysator {
         )
     }
 
-    internal static func getTransitTokenMintPubkey(orcaSwap: OrcaSwap, pools: PoolsPair) throws -> PublicKey? {
+    internal static func getTransitTokenMintPubkey(orcaSwap: OrcaSwapType, pools: PoolsPair) throws -> PublicKey? {
         guard pools.count == 2 else { return nil }
         let interTokenName = pools[0].tokenBName
         return try PublicKey(string: orcaSwap.getMint(tokenName: interTokenName))
