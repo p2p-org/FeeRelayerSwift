@@ -18,8 +18,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         // user is paying with SOL, relay account creation is not needed
         let case1 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .notYetCreated,
-                exceededFreeTransactionLimit: false // always false when relay account is not yet created
+                relayAccountStatus: .notYetCreated
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .wrappedSOLMint
@@ -33,8 +32,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         // user is paying with another token, relay account creation is required
         let case2 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .notYetCreated,
-                exceededFreeTransactionLimit: false // always false when relay account is not yet created
+                relayAccountStatus: .notYetCreated
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
@@ -64,8 +62,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         let case1 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .created(balance: currentRelayAccountBalance),
-                exceededFreeTransactionLimit: false
+                relayAccountStatus: .created(balance: currentRelayAccountBalance)
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
@@ -87,8 +84,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         let case2 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .created(balance: currentRelayAccountBalance),
-                exceededFreeTransactionLimit: false
+                relayAccountStatus: .created(balance: currentRelayAccountBalance)
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
@@ -112,8 +108,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         let case3 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .created(balance: currentRelayAccountBalance),
-                exceededFreeTransactionLimit: false
+                relayAccountStatus: .created(balance: currentRelayAccountBalance)
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
@@ -140,8 +135,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         let case3 = try await calculator.calculateNeededTopUpAmount(
             getContext(
-                relayAccountStatus: .created(balance: currentRelayAccountBalance),
-                exceededFreeTransactionLimit: false
+                relayAccountStatus: .created(balance: currentRelayAccountBalance)
             ),
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
@@ -154,8 +148,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     }
     
     private func getContext(
-        relayAccountStatus: RelayAccountStatus,
-        exceededFreeTransactionLimit: Bool
+        relayAccountStatus: RelayAccountStatus
     ) -> FeeRelayerContext {
         FeeRelayerContext(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -165,7 +158,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
             relayAccountStatus: relayAccountStatus,
             usageStatus: .init(
                 maxUsage: 10000000,
-                currentUsage: exceededFreeTransactionLimit ? 10000000: 0,
+                currentUsage: 0,
                 maxAmount: 10000000,
                 amountUsed: 0
             )

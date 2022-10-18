@@ -8,7 +8,11 @@ class RelayFeeCalculatorWithoutFreeTransactionTests: XCTestCase {
     
     let calculator = DefaultFreeRelayerCalculator()
     
-    func testWhenRelayAccountHasAlreadyBeenCreated() async throws {
+    func testWhenUserHasFreeTopUpTransactionButHaveToPayTheTransactionFee() async throws {
+        
+    }
+    
+    func testWhenUserTotallyHasNoFreeTransactionLeft() async throws {
         // TO KEEP RELAY ACCOUNT ALIVE, WE MUST ALWAYS KEEPS minimumRelayAccountBalance (890880 LAMPORTS AT THE MOMENT) IN THIS ACCOUNT
         // AFTER ANY TRANSACTION
         
