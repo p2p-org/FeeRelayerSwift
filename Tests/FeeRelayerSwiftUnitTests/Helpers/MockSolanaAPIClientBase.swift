@@ -2,6 +2,8 @@ import SolanaSwift
 import Foundation
 
 class MockSolanaAPIClientBase: SolanaAPIClient {
+    let endpoint: SolanaSwift.APIEndPoint = .init(address: "https://api.mainnet-beta.solana.com", network: .mainnetBeta)
+    
     func request<Entity>(method: String, params: [Encodable]) async throws -> Entity where Entity : Decodable {
         fatalError()
     }
@@ -9,8 +11,6 @@ class MockSolanaAPIClientBase: SolanaAPIClient {
     func getRecentBlockhash(commitment: SolanaSwift.Commitment?) async throws -> String {
         fatalError()
     }
-    
-    let endpoint: SolanaSwift.APIEndPoint = .init(address: "https://api.mainnet-beta.solana.com", network: .mainnetBeta)
     
     func getAccountInfo<T>(account: String) async throws -> SolanaSwift.BufferInfo<T>? where T : SolanaSwift.BufferLayout {
         fatalError()

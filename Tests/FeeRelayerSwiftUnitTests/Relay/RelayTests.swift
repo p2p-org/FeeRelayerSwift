@@ -84,16 +84,3 @@ class RelayActionTests: XCTestCase {
 //                count: 2
 //            )
 //        )
-
-private class MockAccountStorage: SolanaAccountStorage {
-    let account: SolanaSwift.Account?
-    
-    init() async throws {
-        account = try await Account(
-            phrase: "miracle pizza supply useful steak border same again youth silver access hundred".components(separatedBy: " "),
-            network: .mainnetBeta
-        )
-    }
-    
-    func save(_ account: SolanaSwift.Account) throws {}
-}
