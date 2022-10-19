@@ -51,7 +51,7 @@ final class RelayProgramTests: XCTestCase {
         XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "0020a107000000000020a1070000000000")
         XCTAssertEqual(instruction.keys, [
-            .init(publicKey: "So11111111111111111111111111111111111111112", isSigner: false, isWritable: false),
+            .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
             .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
             .init(publicKey: "DBbMbfcZWcgiT7oftRPaNoW5noruSmVoLYCXqkcBVvtB", isSigner: false, isWritable: true),
@@ -88,7 +88,7 @@ final class RelayProgramTests: XCTestCase {
         XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "0120a107000000000020a107000000000020a1070000000000")
         XCTAssertEqual(instruction.keys, [
-            .init(publicKey: "So11111111111111111111111111111111111111112", isSigner: false, isWritable: false),
+            .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
             .init(publicKey: userAuthorityAddress, isSigner: true, isWritable: false),
             .init(publicKey: "13DeafU3s4PoEUoDgyeNYZMqZWmgyN8fn3U5HrYxxXwQ", isSigner: false, isWritable: true),
