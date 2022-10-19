@@ -157,19 +157,65 @@ final class RelayProgramTests: XCTestCase {
             .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false)
         ])
     }
-}
-
-private func createRelayDirectSwapParams(index: Int) -> DirectSwapData {
-    .init(
-        programId: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-        accountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
-        authorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-        transferAuthorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-        sourcePubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
-        destinationPubkey: "CRh\(index+1)jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX",
-        poolTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
-        poolFeeAccountPubkey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3",
-        amountIn: 500000,
-        minimumAmountOut: 500000
-    )
+    
+    func testCreateRelaySwapInstruction() throws {
+        let sourceAddressPubkey: PublicKey = "9GQV3bQP9tv7m6XgGMaixxEeEdxtFhwgABw2cxCFZoch"
+        let transitTokenAccount: PublicKey = "29TwF9mm2ZfrcjRiV3PCRQmgYzL95HJJhaUairYmWLJC"
+        let destinationAddressPubkey: PublicKey = "2vouHuf5TJToiEfMT5pPtirjrs2iDm14yrq9wgMZkrdE"
+        let transitTokenMint: PublicKey = "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
+        let instruction = try Program.createRelaySwapInstruction(
+            transitiveSwap: .init(
+                from: createRelayDirectSwapParams(index: 0),
+                to: createRelayDirectSwapParams(index: 1),
+                transitTokenMintPubkey: transitTokenMint.base58EncodedString,
+                needsCreateTransitTokenAccount: false
+            ),
+            userAuthorityAddressPubkey: userAuthorityAddress,
+            sourceAddressPubkey: sourceAddressPubkey,
+            transitTokenAccount: transitTokenAccount,
+            destinationAddressPubkey: destinationAddressPubkey,
+            feePayerPubkey: feePayerAddress,
+            network: .mainnetBeta
+        )
+        
+        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.data.toHexString(), "0420a107000000000020a107000000000020a1070000000000")
+        XCTAssertEqual(instruction.keys, [
+            .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
+            .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
+            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
+            .init(publicKey: sourceAddressPubkey, isSigner: false, isWritable: true),
+            .init(publicKey: transitTokenAccount, isSigner: false, isWritable: true),
+            .init(publicKey: destinationAddressPubkey, isSigner: false, isWritable: true),
+            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
+            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
+            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
+            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
+            .init(publicKey: "CRh1jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
+            .init(publicKey: transitTokenMint, isSigner: false, isWritable: true),
+            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true),
+            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
+            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
+            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
+            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
+            .init(publicKey: "CRh2jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
+            .init(publicKey: transitTokenMint, isSigner: false, isWritable: true),
+            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true)
+        ])
+    }
+    
+    private func createRelayDirectSwapParams(index: Int) -> DirectSwapData {
+        .init(
+            programId: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
+            accountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
+            authorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
+            transferAuthorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
+            sourcePubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
+            destinationPubkey: "CRh\(index+1)jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX",
+            poolTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+            poolFeeAccountPubkey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3",
+            amountIn: 500000,
+            minimumAmountOut: 500000
+        )
+    }
 }

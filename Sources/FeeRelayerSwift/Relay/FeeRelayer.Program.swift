@@ -109,7 +109,7 @@ public enum Program {
                 .readonly(publicKey: userAuthorityAddress, isSigner: true),
                 .writable(publicKey: try getUserRelayAddress(user: userAuthorityAddress, network: network), isSigner: false),
                 .writable(publicKey: recipient, isSigner: false),
-                .readonly(publicKey: .programId, isSigner: false),
+                .readonly(publicKey: SystemProgram.id, isSigner: false),
             ],
             programId: id(network: network),
             data: [
@@ -132,9 +132,9 @@ public enum Program {
                 .readonly(publicKey: transitTokenMint, isSigner: false),
                 .writable(publicKey: userAuthority, isSigner: true),
                 .readonly(publicKey: feePayer, isSigner: true),
-                .readonly(publicKey: .tokenProgramId, isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false),
                 .readonly(publicKey: .sysvarRent, isSigner: false),
-                .readonly(publicKey: .programId, isSigner: false)
+                .readonly(publicKey: SystemProgram.id, isSigner: false)
             ],
             programId: id(network: network),
             data: [
@@ -227,7 +227,7 @@ public enum Program {
                 .writable(publicKey: feePayer, isSigner: true),
                 .readonly(publicKey: userAuthority, isSigner: true),
                 .writable(publicKey: userRelayAccount, isSigner: false),
-                .readonly(publicKey: .tokenProgramId, isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false),
                 .readonly(publicKey: swapProgramId, isSigner: false),
                 .readonly(publicKey: swapAccount, isSigner: false),
                 .readonly(publicKey: swapAuthority, isSigner: false),
@@ -239,7 +239,7 @@ public enum Program {
                 .writable(publicKey: poolTokenMint, isSigner: false),
                 .writable(publicKey: poolFeeAccount, isSigner: false),
                 .readonly(publicKey: .sysvarRent, isSigner: false),
-                .readonly(publicKey: .programId, isSigner: false)
+                .readonly(publicKey: SystemProgram.id, isSigner: false)
             ],
             programId: id(network: network),
             data: [
@@ -283,7 +283,7 @@ public enum Program {
                 .writable(publicKey: feePayer, isSigner: true),
                 .readonly(publicKey: userAuthority, isSigner: true),
                 .writable(publicKey: userRelayAccount, isSigner: false),
-                .readonly(publicKey: .tokenProgramId, isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false),
                 .readonly(publicKey: userTransferAuthority, isSigner: true),
                 .writable(publicKey: userSourceTokenAccount, isSigner: false),
                 .writable(publicKey: try getTransitTokenAccountAddress(user: userAuthority, transitTokenMint: transitTokenMint, network: network), isSigner: false),
@@ -303,7 +303,7 @@ public enum Program {
                 .writable(publicKey: swapToPoolTokenMint, isSigner: false),
                 .writable(publicKey: swapToPoolFeeAccount, isSigner: false),
                 .readonly(publicKey: .sysvarRent, isSigner: false),
-                .readonly(publicKey: .programId, isSigner: false)
+                .readonly(publicKey: SystemProgram.id, isSigner: false)
             ],
             programId: id(network: network),
             data: [
@@ -345,7 +345,7 @@ public enum Program {
         .init(
             keys: [
                 .writable(publicKey: feePayer, isSigner: true),
-                .readonly(publicKey: .tokenProgramId, isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false),
                 .readonly(publicKey: userTransferAuthority, isSigner: true),
                 .writable(publicKey: userSourceTokenAccount, isSigner: false),
                 .writable(publicKey: userTransitTokenAccount, isSigner: false),
