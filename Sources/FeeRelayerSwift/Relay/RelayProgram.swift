@@ -1,8 +1,11 @@
 import Foundation
 import SolanaSwift
 
-public enum Program {
-    static func id(network: Network) -> PublicKey {
+@available(*, deprecated, renamed: "RelayProgram")
+public typealias Program = RelayProgram
+
+public enum RelayProgram {
+    public static func id(network: Network) -> PublicKey {
         switch network {
         case .mainnetBeta:
             return "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9"
@@ -13,21 +16,21 @@ public enum Program {
         }
     }
     
-    static func getUserRelayAddress(
+    public static func getUserRelayAddress(
         user: PublicKey,
         network: Network
     ) throws -> PublicKey {
         try .findProgramAddress(seeds: [user.data, "relay".data(using: .utf8)!], programId: id(network: network)).0
     }
     
-    static func getUserTemporaryWSOLAddress(
+    public static func getUserTemporaryWSOLAddress(
         user: PublicKey,
         network: Network
     ) throws -> PublicKey {
         try .findProgramAddress(seeds: [user.data, "temporary_wsol".data(using: .utf8)!], programId: id(network: network)).0
     }
     
-    static func getTransitTokenAccountAddress(
+    public static func getTransitTokenAccountAddress(
         user: PublicKey,
         transitTokenMint: PublicKey,
         network: Network
@@ -35,7 +38,7 @@ public enum Program {
         try .findProgramAddress(seeds: [user.data, transitTokenMint.data, "transit".data(using: .utf8)!], programId: id(network: network)).0
     }
     
-    static func topUpSwapInstruction(
+    public static func topUpSwapInstruction(
         network: Network,
         topUpSwap: FeeRelayerRelaySwapType,
         userAuthorityAddress: PublicKey,
@@ -119,7 +122,7 @@ public enum Program {
         )
     }
     
-    static func createTransitTokenAccountInstruction(
+    public static func createTransitTokenAccountInstruction(
         feePayer: PublicKey,
         userAuthority: PublicKey,
         transitTokenAccount: PublicKey,
@@ -143,7 +146,7 @@ public enum Program {
         )
     }
     
-    static func createRelaySwapInstruction(
+    public static func createRelaySwapInstruction(
         transitiveSwap: TransitiveSwapData,
         userAuthorityAddressPubkey: PublicKey,
         sourceAddressPubkey: PublicKey,

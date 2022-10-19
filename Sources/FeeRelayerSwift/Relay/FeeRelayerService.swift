@@ -331,7 +331,7 @@ public class FeeRelayerService: FeeRelayer {
             
             // top up
             instructions.append(
-                try Program.topUpSwapInstruction(
+                try RelayProgram.topUpSwapInstruction(
                     network: network,
                     topUpSwap: swap,
                     userAuthorityAddress: userAuthorityAddress,
@@ -356,7 +356,7 @@ public class FeeRelayerService: FeeRelayer {
             // create transit token account
             if needsCreateTransitTokenAccount == true, let transitTokenAccountAddress = transitTokenAccountAddress {
                 instructions.append(
-                    try Program.createTransitTokenAccountInstruction(
+                    try RelayProgram.createTransitTokenAccountInstruction(
                         feePayer: feePayerAddress,
                         userAuthority: userAuthorityAddress,
                         transitTokenAccount: transitTokenAccountAddress,
@@ -371,7 +371,7 @@ public class FeeRelayerService: FeeRelayer {
             
             // top up
             instructions.append(
-                try Program.topUpSwapInstruction(
+                try RelayProgram.topUpSwapInstruction(
                     network: network,
                     topUpSwap: swap,
                     userAuthorityAddress: userAuthorityAddress,
@@ -385,7 +385,7 @@ public class FeeRelayerService: FeeRelayer {
         
         // transfer
         instructions.append(
-            try Program.transferSolInstruction(
+            try RelayProgram.transferSolInstruction(
                 userAuthorityAddress: userAuthorityAddress,
                 recipient: feePayerAddress,
                 lamports: expectedFee,
@@ -543,7 +543,7 @@ public class FeeRelayerService: FeeRelayer {
                 )
             } else {
                 preparedTransaction.transaction.instructions.append(
-                    try Program.transferSolInstruction(
+                    try RelayProgram.transferSolInstruction(
                         userAuthorityAddress: account.publicKey,
                         recipient: feePayer,
                         lamports: paybackFee,

@@ -53,7 +53,7 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
             solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
             feeRelayerAPIClient.getFeePayerPubkey(),
             solanaAPIClient.getRelayAccountStatus(
-                try Program.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
+                try RelayProgram.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
                     .base58EncodedString
             ),
             feeRelayerAPIClient.getFreeFeeLimits(for: account.publicKey.base58EncodedString)

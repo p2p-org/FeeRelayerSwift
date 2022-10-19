@@ -52,7 +52,7 @@ extension SwapTransactionBuilder {
             
             // create transit token account
             let transitTokenMint = try PublicKey(string: swap.transitTokenMintPubkey)
-            let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+            let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
                 user: context.config.userAccount.publicKey,
                 transitTokenMint: transitTokenMint,
                 network: context.solanaApiClient.endpoint.network
@@ -60,7 +60,7 @@ extension SwapTransactionBuilder {
             
             if context.env.needsCreateTransitTokenAccount == true {
                 context.env.instructions.append(
-                    try Program.createTransitTokenAccountInstruction(
+                    try RelayProgram.createTransitTokenAccountInstruction(
                         feePayer: context.feeRelayerContext.feePayerAddress,
                         userAuthority: context.config.userAccount.publicKey,
                         transitTokenAccount: transitTokenAccountAddress,
@@ -72,7 +72,7 @@ extension SwapTransactionBuilder {
             
             // relay swap
             context.env.instructions.append(
-                try Program.createRelaySwapInstruction(
+                try RelayProgram.createRelaySwapInstruction(
                     transitiveSwap: swap,
                     userAuthorityAddressPubkey: context.config.userAccount.publicKey,
                     sourceAddressPubkey: context.env.userSource!,

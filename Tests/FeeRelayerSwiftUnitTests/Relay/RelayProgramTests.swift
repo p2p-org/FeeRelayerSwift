@@ -48,13 +48,13 @@ final class RelayProgramTests: XCTestCase {
 
     func testConstants() throws {
         // id
-        XCTAssertEqual(Program.id(network: .mainnetBeta), "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
-        XCTAssertEqual(Program.id(network: .devnet), "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k")
-        XCTAssertEqual(Program.id(network: .testnet), "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k")
+        XCTAssertEqual(RelayProgram.id(network: .mainnetBeta), "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
+        XCTAssertEqual(RelayProgram.id(network: .devnet), "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k")
+        XCTAssertEqual(RelayProgram.id(network: .testnet), "6xKJFyuM6UHCT8F5SBxnjGt6ZrZYjsVfnAnAeHPU775k")
     }
     
     func testGetUserRelayAddress() throws {
-        let relayAddress = try Program.getUserRelayAddress(
+        let relayAddress = try RelayProgram.getUserRelayAddress(
             user: userAuthorityAddress,
             network: .mainnetBeta
         )
@@ -62,7 +62,7 @@ final class RelayProgramTests: XCTestCase {
     }
     
     func testGetUserTemporaryWSOLAddress() throws {
-        let address = try Program.getUserTemporaryWSOLAddress(
+        let address = try RelayProgram.getUserTemporaryWSOLAddress(
             user: userAuthorityAddress,
             network: .mainnetBeta
         )
@@ -70,7 +70,7 @@ final class RelayProgramTests: XCTestCase {
     }
     
     func testGetTransitTokenAccountAddress() throws {
-        let address = try Program.getTransitTokenAccountAddress(
+        let address = try RelayProgram.getTransitTokenAccountAddress(
             user: userAuthorityAddress,
             transitTokenMint: .usdcMint,
             network: .mainnetBeta
@@ -81,7 +81,7 @@ final class RelayProgramTests: XCTestCase {
     func testTopUpDirectSwapInstruction() throws {
         let userSourceTokenAccountAddress: PublicKey = "DMuFEzSiYAyWw5bDBaDSnksTUBghTAPZ7Ptn89fJZK9h"
         
-        let instruction = try Program.topUpSwapInstruction(
+        let instruction = try RelayProgram.topUpSwapInstruction(
             network: .mainnetBeta,
             topUpSwap: createRelayDirectSwapParams(index: 0),
             userAuthorityAddress: userAuthorityAddress,
@@ -89,7 +89,7 @@ final class RelayProgramTests: XCTestCase {
             feePayerAddress: feePayerAddress
         )
         
-        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.programId, RelayProgram.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "00102700000000000050c3000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
@@ -115,7 +115,7 @@ final class RelayProgramTests: XCTestCase {
     func testTopUpTransitiveSwapInstruction() throws {
         let userSourceTokenAccountAddress: PublicKey = "DMuFEzSiYAyWw5bDBaDSnksTUBghTAPZ7Ptn89fJZK9h"
         let transitTokenMint = PublicKey.usdcMint
-        let instruction = try Program.topUpSwapInstruction(
+        let instruction = try RelayProgram.topUpSwapInstruction(
             network: .mainnetBeta,
             topUpSwap: TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
@@ -128,7 +128,7 @@ final class RelayProgramTests: XCTestCase {
             feePayerAddress: feePayerAddress
         )
         
-        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.programId, RelayProgram.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "01102700000000000050c30000000000003075000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
@@ -160,18 +160,18 @@ final class RelayProgramTests: XCTestCase {
     }
     
     func testTransferSOLInstruction() throws {
-        let instruction = try Program.transferSolInstruction(
+        let instruction = try RelayProgram.transferSolInstruction(
             userAuthorityAddress: userAuthorityAddress,
             recipient: feePayerAddress,
             lamports: 2039280, // expected fee
             network: .mainnetBeta
         )
         
-        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.programId, RelayProgram.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "02f01d1f0000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: userAuthorityAddress, isSigner: true, isWritable: false),
-            .init(publicKey: try Program.getUserRelayAddress(user: userAuthorityAddress, network: .mainnetBeta), isSigner: false, isWritable: true),
+            .init(publicKey: try RelayProgram.getUserRelayAddress(user: userAuthorityAddress, network: .mainnetBeta), isSigner: false, isWritable: true),
             .init(publicKey: feePayerAddress, isSigner: false, isWritable: true),
             .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false)
         ])
@@ -180,7 +180,7 @@ final class RelayProgramTests: XCTestCase {
     func testCreateTransitAccountInstruction() throws {
         let transitTokenAccount: PublicKey = "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3"
         let transitTokenMint: PublicKey = .usdcMint
-        let instruction = try Program.createTransitTokenAccountInstruction(
+        let instruction = try RelayProgram.createTransitTokenAccountInstruction(
             feePayer: feePayerAddress,
             userAuthority: userAuthorityAddress,
             transitTokenAccount: transitTokenAccount,
@@ -188,7 +188,7 @@ final class RelayProgramTests: XCTestCase {
             network: .mainnetBeta
         )
         
-        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.programId, RelayProgram.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "03")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: transitTokenAccount, isSigner: false, isWritable: true),
@@ -206,7 +206,7 @@ final class RelayProgramTests: XCTestCase {
         let transitTokenAccount: PublicKey = "29TwF9mm2ZfrcjRiV3PCRQmgYzL95HJJhaUairYmWLJC"
         let destinationAddressPubkey: PublicKey = "2vouHuf5TJToiEfMT5pPtirjrs2iDm14yrq9wgMZkrdE"
         let transitTokenMint: PublicKey = "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC"
-        let instruction = try Program.createRelaySwapInstruction(
+        let instruction = try RelayProgram.createRelaySwapInstruction(
             transitiveSwap: .init(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
@@ -221,7 +221,7 @@ final class RelayProgramTests: XCTestCase {
             network: .mainnetBeta
         )
         
-        XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
+        XCTAssertEqual(instruction.programId, RelayProgram.id(network: .mainnetBeta))
         XCTAssertEqual(instruction.data.toHexString(), "04102700000000000050c30000000000003075000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
