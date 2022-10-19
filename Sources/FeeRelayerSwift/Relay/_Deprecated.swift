@@ -9,8 +9,8 @@ public typealias FeeRelayerCalculator = RelayFeeCalculator
 @available(*, deprecated, renamed: "DefaultRelayFeeCalculator")
 public typealias DefaultFreeRelayerCalculator = DefaultRelayFeeCalculator
 
-@available(*, deprecated, renamed: "RelayServiceType")
-public typealias FeeRelayer = RelayServiceType
+@available(*, deprecated, renamed: "RelayService")
+public typealias FeeRelayer = RelayService
 
 @available(*, deprecated, renamed: "RelayContext")
 public typealias FeeRelayerContext = RelayContext

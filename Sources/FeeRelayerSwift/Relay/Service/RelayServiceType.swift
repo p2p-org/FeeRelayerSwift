@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 
 /// The service that allows users to do gas-less transactions.
-public protocol RelayServiceType {
+public protocol RelayService {
     
     var feeCalculator: RelayFeeCalculator { get }
     

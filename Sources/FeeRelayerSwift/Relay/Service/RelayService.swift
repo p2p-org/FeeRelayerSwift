@@ -6,7 +6,7 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-public class RelayService: RelayServiceType {
+public class RelayServiceImpl: RelayService {
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
     private(set) var orcaSwap: OrcaSwapType
