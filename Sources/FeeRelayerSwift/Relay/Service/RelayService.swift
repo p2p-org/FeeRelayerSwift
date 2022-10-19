@@ -6,12 +6,12 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-public class FeeRelayerService: FeeRelayer {
+public class RelayService: RelayServiceType {
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
     private(set) var orcaSwap: OrcaSwapType
     private(set) var accountStorage: SolanaAccountStorage
-    public let feeCalculator: FeeRelayerCalculator
+    public let feeCalculator: RelayFeeCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
     
@@ -22,7 +22,7 @@ public class FeeRelayerService: FeeRelayer {
         orcaSwap: OrcaSwapType,
         accountStorage: SolanaAccountStorage,
         solanaApiClient: SolanaAPIClient,
-        feeCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator(),
+        feeCalculator: RelayFeeCalculator = DefaultRelayFeeCalculator(),
         feeRelayerAPIClient: FeeRelayerAPIClient,
         deviceType: StatsInfo.DeviceType,
         buildNumber: String?
@@ -41,7 +41,7 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     public func topUpAndRelayTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         _ transaction: PreparedTransaction,
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
@@ -51,7 +51,7 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     public func topUpAndRelayTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         _ transactions: [PreparedTransaction],
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
@@ -93,7 +93,7 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     private func checkAndTopUp(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
@@ -135,7 +135,7 @@ public class FeeRelayerService: FeeRelayer {
         return nil
     }
     func prepareForTopUp(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
         relayAccountStatus: RelayAccountStatus,
@@ -172,7 +172,7 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     func topUp(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         needsCreateUserRelayAddress: Bool,
         sourceToken: TokenAccount,
         targetAmount: UInt64,
@@ -504,7 +504,7 @@ public class FeeRelayerService: FeeRelayer {
     }
     
     func relayTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         preparedTransaction: PreparedTransaction,
         payingFeeToken: TokenAccount?,
         relayAccountStatus: RelayAccountStatus,

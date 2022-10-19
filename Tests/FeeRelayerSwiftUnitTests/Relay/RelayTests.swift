@@ -1,28 +1,75 @@
-//
-//  File.swift
-//  
-//
-//  Created by Chung Tran on 18/10/2022.
-//
-
 import Foundation
 import SolanaSwift
-//    var service: FeeRelayerService!
+@testable import FeeRelayerSwift
+import XCTest
+
+class RelayActionTests: XCTestCase {
+    fileprivate var accountStorage: MockAccountStorage!
+
+    override func setUp() async throws {
+        accountStorage = try await MockAccountStorage()
+    }
+
+    override func tearDown() async throws {
+        accountStorage = nil
+    }
+
+    func testCreateFreeRenBTCAccount() async throws {
+//        // Mock services
+//        private class MockOrcaSwap: MockOrcaSwapBase {
 //
-//    override func setUp() async throws {
-//        service = .init(
+//        }
+//
+        class MockSolanaAPIClient: MockSolanaAPIClientBase {
+
+        }
+
+        class MockFeeRelayerAPIClient: MockFeeRelayerAPIClientBase {
+
+        }
+        
+        class CreateRenBTCFeeCalculator: FeeCalculator {
+            func calculateNetworkFee(transaction: Transaction) throws -> FeeAmount {
+                .zero
+            }
+        }
+//
+//        // form service
+//        let service = FeeRelayerService(
 //            orcaSwap: MockOrcaSwap(),
-//            accountStorage: try await MockAccountStorage(),
+//            accountStorage: accountStorage,
 //            solanaApiClient: MockSolanaAPIClient(),
 //            feeRelayerAPIClient: MockFeeRelayerAPIClient(),
 //            deviceType: .iOS,
 //            buildNumber: "1.0.0"
 //        )
-//    }
+        
+//        let solanaAPIClient = MockSolanaAPIClient()
+//        let feeRelayerAPIClient = MockFeeRelayerAPIClient()
+//        
+//        // get properties
+//        let feePayer = try await feeRelayerAPIClient.getFeePayerPubkey()
+//        
+//        // form transaction
+//        let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
+//        let preparedTransaction = try await blockchainClient.prepareTransaction(
+//            instructions: [
+//                AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+//                    mint: .renBTCMint,
+//                    owner: accountStorage.account!.publicKey,
+//                    payer: try PublicKey(string: feePayer)
+//                )
+//            ],
+//            signers: [],
+//            feePayer: try PublicKey(string: feePayer),
+//            feeCalculator: CreateRenBTCFeeCalculator()
+//        )
 //
-//    override func tearDown() async throws {
-//        service = nil
-//    }
+//        XCTAssertEqual(preparedTransaction.expectedFee.total, .zero)
+    }
+}
+
+
 
 //        let freeTransactionFeeLimit = FeeLimitForAuthorityResponse(
 //            authority: [],
@@ -38,10 +85,6 @@ import SolanaSwift
 //            )
 //        )
 
-private class MockOrcaSwap: MockOrcaSwapBase {
-    
-}
-
 private class MockAccountStorage: SolanaAccountStorage {
     let account: SolanaSwift.Account?
     
@@ -53,12 +96,4 @@ private class MockAccountStorage: SolanaAccountStorage {
     }
     
     func save(_ account: SolanaSwift.Account) throws {}
-}
-
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
-    
-}
-
-private class MockFeeRelayerAPIClient: MockFeeRelayerAPIClientBase {
-    
 }

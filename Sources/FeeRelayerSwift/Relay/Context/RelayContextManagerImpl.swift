@@ -5,12 +5,12 @@
 import Foundation
 import SolanaSwift
 
-public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
+public actor RelayContextManagerImpl: RelayContextManager {
     private let accountStorage: SolanaAccountStorage
     private let solanaAPIClient: SolanaAPIClient
     private let feeRelayerAPIClient: FeeRelayerAPIClient
     
-    private var context: FeeRelayerContext?
+    private var context: RelayContext?
     
     public init(
         accountStorage: SolanaAccountStorage,
@@ -22,9 +22,9 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
         self.feeRelayerAPIClient = feeRelayerAPIClient
     }
     
-    public func getCurrentContext() async throws -> FeeRelayerContext {
+    public func getCurrentContext() async throws -> RelayContext {
         if context == nil { try await update() }
-        guard let context = context else { throw FeeRelayerContextManagerError.invalidContext }
+        guard let context = context else { throw RelayContextManagerError.invalidContext }
         return context;
     }
     
@@ -37,7 +37,7 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
         return newContext == context
     }
     
-    private func loadNewContext() async throws -> FeeRelayerContext {
+    private func loadNewContext() async throws -> RelayContext {
         guard let account = accountStorage.account else { throw FeeRelayerError.unauthorized }
         
         let (
@@ -60,7 +60,7 @@ public actor FeeRelayerContextManagerImpl: FeeRelayerContextManager {
                 .asUsageStatus()
         )
 
-        return FeeRelayerContext(
+        return RelayContext(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,
             feePayerAddress: try PublicKey(string: feePayerAddress),

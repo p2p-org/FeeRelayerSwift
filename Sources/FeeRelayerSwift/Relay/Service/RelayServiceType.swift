@@ -5,34 +5,20 @@
 import Foundation
 import SolanaSwift
 
-/// A fee relayer configuration.
-public struct FeeRelayerConfiguration {
-    let additionalPaybackFee: UInt64
-    
-    let operationType: StatsInfo.OperationType
-    let currency: String?
-
-    public init(additionalPaybackFee: UInt64 = 0, operationType: StatsInfo.OperationType, currency: String? = nil) {
-        self.additionalPaybackFee = additionalPaybackFee
-        self.operationType = operationType
-        self.currency = currency
-    }
-}
-
 /// The service that allows users to do gas-less transactions.
-public protocol FeeRelayer {
+public protocol RelayServiceType {
     
-    var feeCalculator: FeeRelayerCalculator { get }
+    var feeCalculator: RelayFeeCalculator { get }
     
     func topUpAndRelayTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         _ preparedTransaction: PreparedTransaction,
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> TransactionID
 
     func topUpAndRelayTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         _ preparedTransaction: [PreparedTransaction],
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration

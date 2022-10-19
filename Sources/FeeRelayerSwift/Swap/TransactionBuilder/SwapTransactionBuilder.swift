@@ -66,7 +66,7 @@ internal enum SwapTransactionBuilder {
     }
     
     internal static func makeTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         instructions: [TransactionInstruction],
         signers: [Account],
         blockhash: String,

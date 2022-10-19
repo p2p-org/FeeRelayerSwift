@@ -8,7 +8,7 @@ import OrcaSwapSwift
 
 extension SwapTransactionBuilder {
     struct BuildContext {
-        let feeRelayerContext: FeeRelayerContext
+        let feeRelayerContext: RelayContext
         let solanaApiClient: SolanaAPIClient
         let orcaSwap: OrcaSwap
 

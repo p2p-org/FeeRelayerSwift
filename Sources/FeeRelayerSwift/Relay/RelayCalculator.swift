@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-public protocol FeeRelayerCalculator {
+public protocol RelayFeeCalculator {
     /// Calculate a top up amount for user's relayer account.
     ///
     /// The user's relayer account will be used as fee payer address.
@@ -17,12 +17,12 @@ public protocol FeeRelayerCalculator {
     /// - Returns: Fee amount in SOL
     /// - Throws:
     func calculateNeededTopUpAmount(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
     ) async throws -> FeeAmount
 
-    func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64
+    func calculateExpectedFeeForTopUp(_ context: RelayContext) throws -> UInt64
 
     /// Convert fee amount into spl value.
     ///
@@ -39,11 +39,11 @@ public protocol FeeRelayerCalculator {
     ) async throws -> FeeAmount?
 }
 
-public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
+public class DefaultRelayFeeCalculator: RelayFeeCalculator {
     public init() {}
     
     public func calculateNeededTopUpAmount(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
     ) async throws -> FeeAmount {
@@ -63,7 +63,7 @@ public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
     }
     
     private func calculateMinTopUpAmount(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
     ) -> FeeAmount {
@@ -138,7 +138,7 @@ public class DefaultFreeRelayerCalculator: FeeRelayerCalculator {
         return neededAmount
     }
     
-    public func calculateExpectedFeeForTopUp(_ context: FeeRelayerContext) throws -> UInt64 {
+    public func calculateExpectedFeeForTopUp(_ context: RelayContext) throws -> UInt64 {
         var expectedFee: UInt64 = 0
         if context.relayAccountStatus == .notYetCreated {
             expectedFee += context.minimumRelayAccountBalance

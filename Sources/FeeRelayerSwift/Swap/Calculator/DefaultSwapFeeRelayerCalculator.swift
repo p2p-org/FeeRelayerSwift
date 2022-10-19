@@ -18,7 +18,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     }
     
     public func calculateSwappingNetworkFees(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         swapPools: PoolsPair?,
         sourceTokenMint: PublicKey,
         destinationTokenMint: PublicKey,

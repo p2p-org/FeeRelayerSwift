@@ -6,7 +6,7 @@ import SolanaSwift
 
 class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     
-    let calculator = DefaultFreeRelayerCalculator()
+    let calculator = DefaultRelayFeeCalculator()
     
     // MARK: - TopUp
     func testWhenRelayAccountIsNotYetCreated() async throws {
@@ -149,8 +149,8 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     
     private func getContext(
         relayAccountStatus: RelayAccountStatus
-    ) -> FeeRelayerContext {
-        FeeRelayerContext(
+    ) -> RelayContext {
+        RelayContext(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,
             feePayerAddress: .feePayerAddress,

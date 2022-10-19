@@ -4,12 +4,12 @@
 
 import Foundation
 
-public protocol FeeRelayerContextManager: AnyObject {
-    func getCurrentContext() async throws -> FeeRelayerContext
+public protocol RelayContextManager: AnyObject {
+    func getCurrentContext() async throws -> RelayContext
     func update() async throws
     func validate() async throws -> Bool
 }
 
-public enum FeeRelayerContextManagerError: Swift.Error {
+public enum RelayContextManagerError: Swift.Error {
     case invalidContext
 }

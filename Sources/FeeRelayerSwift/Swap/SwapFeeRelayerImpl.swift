@@ -15,14 +15,14 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     private let orcaSwap: OrcaSwap
 
     private let swapCalculator: SwapFeeRelayerCalculator
-    private var feeRelayerCalculator: FeeRelayerCalculator
+    private var feeRelayerCalculator: RelayFeeCalculator
 
     public init(
         accountStorage: SolanaAccountStorage,
         feeRelayerAPIClient: FeeRelayerAPIClient,
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwap,
-        feeRelayerCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator()
+        feeRelayerCalculator: RelayFeeCalculator = DefaultRelayFeeCalculator()
     ) {
         self.accountStorage = accountStorage
         self.feeRelayerAPIClient = feeRelayerAPIClient
@@ -39,7 +39,7 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     public var calculator: SwapFeeRelayerCalculator { swapCalculator }
     
     public func prepareSwapTransaction(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         sourceToken: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,
@@ -81,7 +81,7 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     }
 
     func prepareForTopUpAndSwap(
-        _ context: FeeRelayerContext,
+        _ context: RelayContext,
         source: TokenAccount,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?,

@@ -6,7 +6,7 @@ import SolanaSwift
 
 class RelayFeeCalculatorWithoutFreeTransactionTests: XCTestCase {
     
-    let calculator = DefaultFreeRelayerCalculator()
+    let calculator = DefaultRelayFeeCalculator()
     
     func testWhenUserHasFreeTopUpTransactionButHaveToPayTheTransactionFee() async throws {
         // TO KEEP RELAY ACCOUNT ALIVE, WE MUST ALWAYS KEEPS minimumRelayAccountBalance (890880 LAMPORTS AT THE MOMENT) IN THIS ACCOUNT
@@ -187,8 +187,8 @@ class RelayFeeCalculatorWithoutFreeTransactionTests: XCTestCase {
     private func getContext(
         relayAccountStatus: RelayAccountStatus,
         freeAmountLeft: UInt64
-    ) -> FeeRelayerContext {
-        FeeRelayerContext(
+    ) -> RelayContext {
+        RelayContext(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,
             feePayerAddress: .feePayerAddress,

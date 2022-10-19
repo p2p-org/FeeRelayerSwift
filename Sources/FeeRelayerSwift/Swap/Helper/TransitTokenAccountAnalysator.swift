@@ -15,7 +15,7 @@ class TransitTokenAccountAnalysator {
     ) throws -> TokenAccount? {
         guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(orcaSwap: orcaSwap, pools: pools) else { return nil }
 
-        let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+        let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
             user: account.publicKey,
             transitTokenMint: transitTokenMintPubkey,
             network: solanaApiClient.endpoint.network

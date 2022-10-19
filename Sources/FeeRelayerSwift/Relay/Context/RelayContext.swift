@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-public struct FeeRelayerContext: Hashable {
+public struct RelayContext: Hashable {
     public let minimumTokenAccountBalance: UInt64
     public let minimumRelayAccountBalance: UInt64
     public let feePayerAddress: PublicKey
@@ -36,7 +36,7 @@ public struct FeeRelayerContext: Hashable {
         hasher.combine(lamportsPerSignature)
     }
     
-    public static func ==(lhs: FeeRelayerContext, rhs: FeeRelayerContext) -> Bool {
+    public static func ==(lhs: RelayContext, rhs: RelayContext) -> Bool {
         if lhs.minimumTokenAccountBalance != rhs.minimumTokenAccountBalance { return false }
         if lhs.minimumRelayAccountBalance != rhs.minimumRelayAccountBalance { return false }
         if lhs.feePayerAddress != rhs.feePayerAddress { return false }

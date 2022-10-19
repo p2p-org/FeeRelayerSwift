@@ -1,9 +1,6 @@
 import Foundation
 import SolanaSwift
 
-@available(*, deprecated, renamed: "RelayProgram")
-public typealias Program = RelayProgram
-
 public enum RelayProgram {
     public static func id(network: Network) -> PublicKey {
         switch network {
@@ -368,7 +365,7 @@ public enum RelayProgram {
                 .writable(publicKey: swapToPoolTokenMint, isSigner: false),
                 .writable(publicKey: swapToPoolFeeAccount, isSigner: false),
             ],
-            programId: Program.id(network: network),
+            programId: id(network: network),
             data: [
                 UInt8(4),
                 amountIn,
