@@ -20,10 +20,7 @@ final class RelayProgramTests: XCTestCase {
         "DjVXmFGH9TK3bybDn2cztrSky4TaczSrjquce3G6rgZX",
         "3WqcT3GLHk8WEmPTriJuX9GskWjhXJGnH5XsYhMRogNJ"
     ]
-    var swapTransferAuthorities: [PublicKey] = [
-        "NY4z68djHpoNZvzTWNxxb1hMZy5weMyf9hf2wiL2nFk",
-        "3a17jDaeJrCYtaeXZnpH3AmdVHySCYGEsfaZ7nAKvcga"
-    ]
+    var swapTransferAuthority: PublicKey = "NY4z68djHpoNZvzTWNxxb1hMZy5weMyf9hf2wiL2nFk"
     var swapSourceAddresses: [PublicKey] = [
         "2v1o9vQ6T8Mtaf7VwvW3F82WU6yVXKatbTiyCXF5yXhj",
         "2HWPtmPQwukqppAkxMNzkz8YetFYCXVSCzyBCUHbukyP"
@@ -103,7 +100,7 @@ final class RelayProgramTests: XCTestCase {
             .init(publicKey: swapProgramIds[0], isSigner: false, isWritable: false),
             .init(publicKey: swapAccounts[0], isSigner: false, isWritable: false),
             .init(publicKey: swapAuthorities[0], isSigner: false, isWritable: false),
-            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
+            .init(publicKey: swapTransferAuthority, isSigner: true, isWritable: false),
             .init(publicKey: userSourceTokenAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: userTemporaryWSOLAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: swapSourceAddresses[0], isSigner: false, isWritable: true),
@@ -139,7 +136,7 @@ final class RelayProgramTests: XCTestCase {
             .init(publicKey: userAuthorityAddress, isSigner: true, isWritable: false),
             .init(publicKey: relayAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
-            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
+            .init(publicKey: swapTransferAuthority, isSigner: true, isWritable: false),
             .init(publicKey: userSourceTokenAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: transitTokenAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: userTemporaryWSOLAccountAddress, isSigner: false, isWritable: true),
@@ -229,7 +226,7 @@ final class RelayProgramTests: XCTestCase {
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
             .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
-            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
+            .init(publicKey: swapTransferAuthority, isSigner: true, isWritable: false),
             .init(publicKey: sourceAddressPubkey, isSigner: false, isWritable: true),
             .init(publicKey: transitTokenAccount, isSigner: false, isWritable: true),
             .init(publicKey: destinationAddressPubkey, isSigner: false, isWritable: true),
@@ -255,7 +252,7 @@ final class RelayProgramTests: XCTestCase {
             programId: swapProgramIds[index].base58EncodedString,
             accountPubkey: swapAccounts[index].base58EncodedString,
             authorityPubkey: swapAuthorities[index].base58EncodedString,
-            transferAuthorityPubkey: swapTransferAuthorities[index].base58EncodedString,
+            transferAuthorityPubkey: swapTransferAuthority.base58EncodedString,
             sourcePubkey: swapSourceAddresses[index].base58EncodedString,
             destinationPubkey: swapDestinationAddresses[index].base58EncodedString,
             poolTokenMintPubkey: swapPoolTokenMints[index].base58EncodedString,
