@@ -6,6 +6,48 @@ final class RelayProgramTests: XCTestCase {
     let userAuthorityAddress: PublicKey = "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm"
     let feePayerAddress: PublicKey = "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu"
     let relayAccountAddress: PublicKey = "13DeafU3s4PoEUoDgyeNYZMqZWmgyN8fn3U5HrYxxXwQ"
+    let userTemporaryWSOLAccountAddress: PublicKey = "FMRxGTeTANuERNfCW4zLBgTDDH4aMkHhPfzYGXVf27Rj"
+    let transitTokenAccountAddress: PublicKey = "JhhACrqV4LhpZY7ogW9Gy2MRLVanXXFxyiW548dsjBp"
+    var swapProgramIds: [PublicKey] = [
+        "HGeQ9fjhqKHeaSJr9pWBYSG1UWx3X9Jdx8nXX2immPDU",
+        "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK"
+    ]
+    var swapAccounts: [PublicKey] = [
+        "9zrZuvGCmvR5Kke6jv6Vr4YjsAN7UNaBF6sfX2uUpuFE",
+        "3YAaP5VXsi89AmBmuf7Wi42V1rPSQTB33yym62U4RGvF"
+    ]
+    var swapAuthorities: [PublicKey] = [
+        "DjVXmFGH9TK3bybDn2cztrSky4TaczSrjquce3G6rgZX",
+        "3WqcT3GLHk8WEmPTriJuX9GskWjhXJGnH5XsYhMRogNJ"
+    ]
+    var swapTransferAuthorities: [PublicKey] = [
+        "NY4z68djHpoNZvzTWNxxb1hMZy5weMyf9hf2wiL2nFk",
+        "3a17jDaeJrCYtaeXZnpH3AmdVHySCYGEsfaZ7nAKvcga"
+    ]
+    var swapSourceAddresses: [PublicKey] = [
+        "2v1o9vQ6T8Mtaf7VwvW3F82WU6yVXKatbTiyCXF5yXhj",
+        "2HWPtmPQwukqppAkxMNzkz8YetFYCXVSCzyBCUHbukyP"
+    ]
+    var swapDestinationAddresses: [PublicKey] = [
+        "6pNNcF513AbYmD358jMJGwGykbqaK9WYmvipsiS1MrnG",
+        "2x5kSEGhsmkXyzJWUnaNE95az1ZfzBwAECGPXYHoo6As"
+    ]
+    var swapPoolTokenMints: [PublicKey] = [
+        "6QScGEUjKqBwMcQ66KU4z5zGkYFY2Fhss3EbH1KUdVqi",
+        "75cjTPrKw42sgU9uUNVb4sHDWDwvaeowYFFxf2otmwJE"
+    ]
+    var swapPoolFeeAccounts: [PublicKey] = [
+        "9BKpfmJeVV1VrBGBZZR5buC6aLsTpFf7JxgWCnRW2WXk",
+        "Agv4JisteCzLUYsBgEtnyEcbz2tG7duok7ebaGAwDpft"
+    ]
+    var amountIns: [UInt64] = [
+        10000,
+        50000
+    ]
+    var amountOuts: [UInt64] = [
+        50000,
+        30000
+    ]
 
     func testConstants() throws {
         // id
@@ -23,94 +65,98 @@ final class RelayProgramTests: XCTestCase {
     }
     
     func testGetUserTemporaryWSOLAddress() throws {
-        let tempWSOLAddress = try Program.getUserTemporaryWSOLAddress(
+        let address = try Program.getUserTemporaryWSOLAddress(
             user: userAuthorityAddress,
             network: .mainnetBeta
         )
-        XCTAssertEqual(tempWSOLAddress.base58EncodedString, "FMRxGTeTANuERNfCW4zLBgTDDH4aMkHhPfzYGXVf27Rj")
+        XCTAssertEqual(address, userTemporaryWSOLAccountAddress)
     }
     
     func testGetTransitTokenAccountAddress() throws {
-        let transitTokenAccountAddress = try Program.getTransitTokenAccountAddress(
+        let address = try Program.getTransitTokenAccountAddress(
             user: userAuthorityAddress,
             transitTokenMint: .usdcMint,
             network: .mainnetBeta
         )
-        XCTAssertEqual(transitTokenAccountAddress.base58EncodedString, "JhhACrqV4LhpZY7ogW9Gy2MRLVanXXFxyiW548dsjBp")
+        XCTAssertEqual(address, transitTokenAccountAddress)
     }
     
     func testTopUpDirectSwapInstruction() throws {
+        let userSourceTokenAccountAddress: PublicKey = "DMuFEzSiYAyWw5bDBaDSnksTUBghTAPZ7Ptn89fJZK9h"
+        
         let instruction = try Program.topUpSwapInstruction(
             network: .mainnetBeta,
             topUpSwap: createRelayDirectSwapParams(index: 0),
-            userAuthorityAddress: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
-            userSourceTokenAccountAddress: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
+            userAuthorityAddress: userAuthorityAddress,
+            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
             feePayerAddress: feePayerAddress
         )
         
         XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
-        XCTAssertEqual(instruction.data.toHexString(), "0020a107000000000020a1070000000000")
+        XCTAssertEqual(instruction.data.toHexString(), "00102700000000000050c3000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
-            .init(publicKey: "DBbMbfcZWcgiT7oftRPaNoW5noruSmVoLYCXqkcBVvtB", isSigner: false, isWritable: true),
+            .init(publicKey: userAuthorityAddress, isSigner: true, isWritable: false),
+            .init(publicKey: relayAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "HgqwRMnK59Satquv6Rv5J9K3kScMyaMeGPoSX2kksmL", isSigner: false, isWritable: true),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "CRh1jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
-            .init(publicKey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC", isSigner: false, isWritable: true),
-            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true),
+            .init(publicKey: swapProgramIds[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAccounts[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAuthorities[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
+            .init(publicKey: userSourceTokenAccountAddress, isSigner: false, isWritable: true),
+            .init(publicKey: userTemporaryWSOLAccountAddress, isSigner: false, isWritable: true),
+            .init(publicKey: swapSourceAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapDestinationAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolTokenMints[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolFeeAccounts[0], isSigner: false, isWritable: true),
             .init(publicKey: .sysvarRent, isSigner: false, isWritable: false),
             .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false)
         ])
     }
     
     func testTopUpTransitiveSwapInstruction() throws {
+        let userSourceTokenAccountAddress: PublicKey = "DMuFEzSiYAyWw5bDBaDSnksTUBghTAPZ7Ptn89fJZK9h"
+        let transitTokenMint = PublicKey.usdcMint
         let instruction = try Program.topUpSwapInstruction(
             network: .mainnetBeta,
             topUpSwap: TransitiveSwapData(
                 from: createRelayDirectSwapParams(index: 0),
                 to: createRelayDirectSwapParams(index: 1),
-                transitTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+                transitTokenMintPubkey: transitTokenMint.base58EncodedString,
                 needsCreateTransitTokenAccount: false
             ),
             userAuthorityAddress: userAuthorityAddress,
-            userSourceTokenAccountAddress: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
+            userSourceTokenAccountAddress: userSourceTokenAccountAddress,
             feePayerAddress: feePayerAddress
         )
         
         XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
-        XCTAssertEqual(instruction.data.toHexString(), "0120a107000000000020a107000000000020a1070000000000")
+        XCTAssertEqual(instruction.data.toHexString(), "01102700000000000050c30000000000003075000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: .wrappedSOLMint, isSigner: false, isWritable: false),
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
             .init(publicKey: userAuthorityAddress, isSigner: true, isWritable: false),
-            .init(publicKey: "13DeafU3s4PoEUoDgyeNYZMqZWmgyN8fn3U5HrYxxXwQ", isSigner: false, isWritable: true),
+            .init(publicKey: relayAccountAddress, isSigner: false, isWritable: true),
             .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "DQmptpwQifMc2a6KQLUtrKmNa26KgxTa1954rmS9zDWD", isSigner: false, isWritable: true),
-            .init(publicKey: "FMRxGTeTANuERNfCW4zLBgTDDH4aMkHhPfzYGXVf27Rj", isSigner: false, isWritable: true),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "CRh1jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
-            .init(publicKey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC", isSigner: false, isWritable: true),
-            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true),
-            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "CRh2jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
-            .init(publicKey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC", isSigner: false, isWritable: true),
-            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true),
+            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
+            .init(publicKey: userSourceTokenAccountAddress, isSigner: false, isWritable: true),
+            .init(publicKey: transitTokenAccountAddress, isSigner: false, isWritable: true),
+            .init(publicKey: userTemporaryWSOLAccountAddress, isSigner: false, isWritable: true),
+            .init(publicKey: swapProgramIds[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAccounts[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAuthorities[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapSourceAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapDestinationAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolTokenMints[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolFeeAccounts[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapProgramIds[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapAccounts[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapAuthorities[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapSourceAddresses[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapDestinationAddresses[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolTokenMints[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolFeeAccounts[1], isSigner: false, isWritable: true),
             .init(publicKey: .sysvarRent, isSigner: false, isWritable: false),
             .init(publicKey: SystemProgram.id, isSigner: false, isWritable: false)
         ])
@@ -179,43 +225,43 @@ final class RelayProgramTests: XCTestCase {
         )
         
         XCTAssertEqual(instruction.programId, Program.id(network: .mainnetBeta))
-        XCTAssertEqual(instruction.data.toHexString(), "0420a107000000000020a107000000000020a1070000000000")
+        XCTAssertEqual(instruction.data.toHexString(), "04102700000000000050c30000000000003075000000000000")
         XCTAssertEqual(instruction.keys, [
             .init(publicKey: feePayerAddress, isSigner: true, isWritable: true),
             .init(publicKey: TokenProgram.id, isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: true, isWritable: false),
+            .init(publicKey: swapTransferAuthorities[0], isSigner: true, isWritable: false),
             .init(publicKey: sourceAddressPubkey, isSigner: false, isWritable: true),
             .init(publicKey: transitTokenAccount, isSigner: false, isWritable: true),
             .init(publicKey: destinationAddressPubkey, isSigner: false, isWritable: true),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "CRh1jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
-            .init(publicKey: transitTokenMint, isSigner: false, isWritable: true),
-            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true),
-            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: false),
-            .init(publicKey: "6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D", isSigner: false, isWritable: false),
-            .init(publicKey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3", isSigner: false, isWritable: true),
-            .init(publicKey: "CRh2jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX", isSigner: false, isWritable: true),
-            .init(publicKey: transitTokenMint, isSigner: false, isWritable: true),
-            .init(publicKey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3", isSigner: false, isWritable: true)
+            .init(publicKey: swapProgramIds[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAccounts[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapAuthorities[0], isSigner: false, isWritable: false),
+            .init(publicKey: swapSourceAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapDestinationAddresses[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolTokenMints[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolFeeAccounts[0], isSigner: false, isWritable: true),
+            .init(publicKey: swapProgramIds[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapAccounts[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapAuthorities[1], isSigner: false, isWritable: false),
+            .init(publicKey: swapSourceAddresses[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapDestinationAddresses[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolTokenMints[1], isSigner: false, isWritable: true),
+            .init(publicKey: swapPoolFeeAccounts[1], isSigner: false, isWritable: true)
         ])
     }
     
     private func createRelayDirectSwapParams(index: Int) -> DirectSwapData {
         .init(
-            programId: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-            accountPubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
-            authorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-            transferAuthorityPubkey: "6Aj\(index+1)GVxoCiEhhYTk9rNySg2QTgvtqSzR\(index+1)\(index+1)9KynihWH3D",
-            sourcePubkey: "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3",
-            destinationPubkey: "CRh\(index+1)jz9Ahs4ZLdTDtsQqtTh8UWFDFre6NtvFTWXQspeX",
-            poolTokenMintPubkey: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
-            poolFeeAccountPubkey: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3",
-            amountIn: 500000,
-            minimumAmountOut: 500000
+            programId: swapProgramIds[index].base58EncodedString,
+            accountPubkey: swapAccounts[index].base58EncodedString,
+            authorityPubkey: swapAuthorities[index].base58EncodedString,
+            transferAuthorityPubkey: swapTransferAuthorities[index].base58EncodedString,
+            sourcePubkey: swapSourceAddresses[index].base58EncodedString,
+            destinationPubkey: swapDestinationAddresses[index].base58EncodedString,
+            poolTokenMintPubkey: swapPoolTokenMints[index].base58EncodedString,
+            poolFeeAccountPubkey: swapPoolFeeAccounts[index].base58EncodedString,
+            amountIn: amountIns[index],
+            minimumAmountOut: amountOuts[index]
         )
     }
 }
