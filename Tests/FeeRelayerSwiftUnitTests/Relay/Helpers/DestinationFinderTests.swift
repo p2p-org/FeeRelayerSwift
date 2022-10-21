@@ -30,7 +30,7 @@ class DestinationFinderTests: XCTestCase {
             needsCreation: true)
         )
         
-        // CASE 2: given destination is already created spl token address
+        // CASE 2: given destination is already a created spl token address
         let destination2 = try await destinationFinder.findRealDestination(
             owner: owner,
             mint: .usdcMint,
@@ -42,7 +42,7 @@ class DestinationFinderTests: XCTestCase {
             needsCreation: false)
         )
         
-        // CASE 3: given destination is nil, needs to check weather associated token address has already been created or not
+        // CASE 3: given destination is nil, need to return associated address and check for it creation
         let destination3 = try await destinationFinder.findRealDestination(
             owner: owner,
             mint: .usdcMint,
