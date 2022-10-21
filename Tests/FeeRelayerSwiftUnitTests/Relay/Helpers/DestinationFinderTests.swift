@@ -16,6 +16,7 @@ class DestinationFinderTests: XCTestCase {
     
     func testFindRealDestination() async throws {
         let owner: PublicKey = "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm"
+        let usdcAssociatedAddress: PublicKey = "9GQV3bQP9tv7m6XgGMaixxEeEdxtFhwgABw2cxCFZoch"
         
         // CASE 1: destination is wsol, needs create temporary wsol account
         let destination1 = try await destinationFinder.findRealDestination(
@@ -30,18 +31,27 @@ class DestinationFinderTests: XCTestCase {
         )
         
         // CASE 2: given destination is already created spl token address
-        let usdcAddress: PublicKey = "9GQV3bQP9tv7m6XgGMaixxEeEdxtFhwgABw2cxCFZoch"
         let destination2 = try await destinationFinder.findRealDestination(
             owner: owner,
             mint: .usdcMint,
-            givenDestination: usdcAddress
+            givenDestination: usdcAssociatedAddress
         )
         XCTAssertEqual(destination2, .init(
-            destination: .init(address: usdcAddress, mint: .usdcMint),
+            destination: .init(address: usdcAssociatedAddress, mint: .usdcMint),
             destinationOwner: owner,
             needsCreation: false)
         )
         
         // CASE 3: given destination is nil, needs to check weather associated token address has already been created or not
+        let destination3 = try await destinationFinder.findRealDestination(
+            owner: owner,
+            mint: .usdcMint,
+            givenDestination: nil
+        )
+        XCTAssertEqual(destination3, .init(
+            destination: .init(address: usdcAssociatedAddress, mint: .usdcMint),
+            destinationOwner: owner,
+            needsCreation: false)
+        )
     }
 }
