@@ -35,13 +35,4 @@ public struct RelayContext: Hashable {
         hasher.combine(feePayerAddress)
         hasher.combine(lamportsPerSignature)
     }
-    
-    public static func ==(lhs: RelayContext, rhs: RelayContext) -> Bool {
-        if lhs.minimumTokenAccountBalance != rhs.minimumTokenAccountBalance { return false }
-        if lhs.minimumRelayAccountBalance != rhs.minimumRelayAccountBalance { return false }
-        if lhs.feePayerAddress != rhs.feePayerAddress { return false }
-        if lhs.lamportsPerSignature != rhs.lamportsPerSignature { return false }
-        if lhs.relayAccountStatus != rhs.relayAccountStatus { return false }
-        return true
-    }
 }
