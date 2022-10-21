@@ -24,8 +24,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
-        let destinationInfo = try await DestinationManager.analyseDestination(
-            solanaApiClient,
+        let destinationInfo = try await DestinationFinderImpl(solanaAPIClient: solanaApiClient).findRealDestination(
             destination: destinationAddress,
             mint: destinationTokenMint,
             userAccount: userAccount

@@ -5,9 +5,22 @@
 import Foundation
 import SolanaSwift
 
-class DestinationManager {
-    static internal func analyseDestination(
-        _ apiClient: SolanaAPIClient,
+protocol DestinationFinder {
+    func findRealDestination(
+        destination: PublicKey?,
+        mint: PublicKey,
+        userAccount: Account
+    ) async throws -> (destination: TokenAccount, destinationOwner: PublicKey?, needCreateDestination: Bool)
+}
+
+class DestinationFinderImpl: DestinationFinder {
+    private let solanaAPIClient: SolanaAPIClient
+    
+    init(solanaAPIClient: SolanaAPIClient) {
+        self.solanaAPIClient = solanaAPIClient
+    }
+    
+    func findRealDestination(
         destination: PublicKey?,
         mint: PublicKey,
         userAccount: Account
@@ -32,10 +45,10 @@ class DestinationManager {
                 // User doesn't have SPL account
 
                 // Try to get associated account
-                let address = try await apiClient.getAssociatedSPLTokenAddress(for: userAccount.publicKey, mint: mint)
+                let address = try await solanaAPIClient.getAssociatedSPLTokenAddress(for: userAccount.publicKey, mint: mint)
 
                 // Check destination address is exist.
-                let info: BufferInfo<AccountInfo>? = try? await apiClient
+                let info: BufferInfo<AccountInfo>? = try? await solanaAPIClient
                     .getAccountInfo(account: address.base58EncodedString)
                 let needsCreateDestinationTokenAccount = info?.owner != TokenProgram.id.base58EncodedString
 
