@@ -41,8 +41,8 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
     
     override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
         switch account {
-        case "":
-            fatalError("TODO")
+        case "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo":
+            return nil
         default:
             fatalError()
         }
@@ -55,6 +55,15 @@ private class MockFeeRelayerAPIClient: MockFeeRelayerAPIClientBase {
     }
     
     override func getFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
-        fatalError("TODO")
+        let string: String
+        
+        switch authority {
+        case "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG":
+            string = #"{"authority":[39,247,185,4,85,137,50,166,147,184,221,75,110,103,16,222,41,94,247,132,43,62,172,243,95,204,190,143,153,16,10,197],"limits":{"use_free_fee":true,"max_amount":10000000,"max_count":100,"period":{"secs":86400,"nanos":0}},"processed_fee":{"total_amount":0,"count":0}}"#
+        default:
+            fatalError()
+        }
+        
+        return try JSONDecoder().decode(FeeLimitForAuthorityResponse.self, from: string.data(using: .utf8)!)
     }
 }
