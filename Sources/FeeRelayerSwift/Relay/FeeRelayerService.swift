@@ -50,6 +50,18 @@ public class FeeRelayerService: FeeRelayer {
     
     // MARK: - Top up and send transaction using relay_transaction method
     
+    public func getFeeTokenData(
+        mint: String
+    ) async throws -> FeeTokenData {
+        try await feeRelayerAPIClient.feeTokenData(mint: mint)
+    }
+
+    public func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String {
+        try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
+            try .init(preparedTransaction: preparedTransaction)
+        ))
+    }
+
     public func topUpAndRelayTransaction(
         _ context: FeeRelayerContext,
         _ transaction: PreparedTransaction,
@@ -87,7 +99,8 @@ public class FeeRelayerService: FeeRelayer {
                     relayAccountStatus: context.relayAccountStatus,
                     additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
-                    currency: config.currency
+                    currency: config.currency,
+                    autoPayback: config.autoPayback
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
                     try .init(preparedTransaction: preparedRelayTransaction)
@@ -144,7 +157,8 @@ public class FeeRelayerService: FeeRelayer {
                     relayAccountStatus: context.relayAccountStatus,
                     additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
-                    currency: config.currency
+                    currency: config.currency,
+                    autoPayback: config.autoPayback
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
                     try .init(preparedTransaction: preparedRelayTransaction)
@@ -163,7 +177,7 @@ public class FeeRelayerService: FeeRelayer {
     
     // MARK: - Helpers
     
-    private func checkAndTopUp(
+    public func checkAndTopUp(
         _ context: FeeRelayerContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
@@ -580,8 +594,9 @@ public class FeeRelayerService: FeeRelayer {
         payingFeeToken: TokenAccount?,
         relayAccountStatus: RelayAccountStatus,
         additionalPaybackFee: UInt64,
-        operationType: StatsInfo.OperationType,
-        currency: String?
+        operationType _: StatsInfo.OperationType,
+        currency _: String?,
+        autoPayback: Bool
     ) async throws -> PreparedTransaction {
         let feePayer = context.feePayerAddress
         
@@ -601,7 +616,7 @@ public class FeeRelayerService: FeeRelayer {
         
         // transfer sol back to feerelayer's feePayer
         var preparedTransaction = preparedTransaction
-        if paybackFee > 0 {
+        if autoPayback, paybackFee > 0 {
             if payingFeeToken?.mint == PublicKey.wrappedSOLMint,
                (relayAccountStatus.balance ?? 0) < paybackFee
             {

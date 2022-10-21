@@ -4,6 +4,16 @@ import OrcaSwapSwift
 
 public protocol FeeRelayerRelaySwapType: Encodable {}
 
+public struct FeeTokenData: Codable, Equatable {
+    public let name, code, mint, account: String
+    public let exchangeRate: Double
+
+    enum CodingKeys: String, CodingKey {
+        case name, code, mint, account
+        case exchangeRate = "exchange_rate"
+    }
+}
+
 public struct FeeLimitForAuthorityResponse: Codable {
     let authority: [Int]
     let limits: Limits
