@@ -8,40 +8,40 @@ final class RelayProgramTests: XCTestCase {
     let relayAccountAddress: PublicKey = "13DeafU3s4PoEUoDgyeNYZMqZWmgyN8fn3U5HrYxxXwQ"
     let userTemporaryWSOLAccountAddress: PublicKey = "FMRxGTeTANuERNfCW4zLBgTDDH4aMkHhPfzYGXVf27Rj"
     let transitTokenAccountAddress: PublicKey = "JhhACrqV4LhpZY7ogW9Gy2MRLVanXXFxyiW548dsjBp"
-    var swapProgramIds: [PublicKey] = [
+    let swapProgramIds: [PublicKey] = [
         "HGeQ9fjhqKHeaSJr9pWBYSG1UWx3X9Jdx8nXX2immPDU",
         "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK"
     ]
-    var swapAccounts: [PublicKey] = [
+    let swapAccounts: [PublicKey] = [
         "9zrZuvGCmvR5Kke6jv6Vr4YjsAN7UNaBF6sfX2uUpuFE",
         "3YAaP5VXsi89AmBmuf7Wi42V1rPSQTB33yym62U4RGvF"
     ]
-    var swapAuthorities: [PublicKey] = [
+    let swapAuthorities: [PublicKey] = [
         "DjVXmFGH9TK3bybDn2cztrSky4TaczSrjquce3G6rgZX",
         "3WqcT3GLHk8WEmPTriJuX9GskWjhXJGnH5XsYhMRogNJ"
     ]
-    var swapTransferAuthority: PublicKey = "NY4z68djHpoNZvzTWNxxb1hMZy5weMyf9hf2wiL2nFk"
-    var swapSourceAddresses: [PublicKey] = [
+    let swapTransferAuthority: PublicKey = "NY4z68djHpoNZvzTWNxxb1hMZy5weMyf9hf2wiL2nFk"
+    let swapSourceAddresses: [PublicKey] = [
         "2v1o9vQ6T8Mtaf7VwvW3F82WU6yVXKatbTiyCXF5yXhj",
         "2HWPtmPQwukqppAkxMNzkz8YetFYCXVSCzyBCUHbukyP"
     ]
-    var swapDestinationAddresses: [PublicKey] = [
+    let swapDestinationAddresses: [PublicKey] = [
         "6pNNcF513AbYmD358jMJGwGykbqaK9WYmvipsiS1MrnG",
         "2x5kSEGhsmkXyzJWUnaNE95az1ZfzBwAECGPXYHoo6As"
     ]
-    var swapPoolTokenMints: [PublicKey] = [
+    let swapPoolTokenMints: [PublicKey] = [
         "6QScGEUjKqBwMcQ66KU4z5zGkYFY2Fhss3EbH1KUdVqi",
         "75cjTPrKw42sgU9uUNVb4sHDWDwvaeowYFFxf2otmwJE"
     ]
-    var swapPoolFeeAccounts: [PublicKey] = [
+    let swapPoolFeeAccounts: [PublicKey] = [
         "9BKpfmJeVV1VrBGBZZR5buC6aLsTpFf7JxgWCnRW2WXk",
         "Agv4JisteCzLUYsBgEtnyEcbz2tG7duok7ebaGAwDpft"
     ]
-    var amountIns: [UInt64] = [
+    let amountIns: [UInt64] = [
         10000,
         50000
     ]
-    var amountOuts: [UInt64] = [
+    let amountOuts: [UInt64] = [
         50000,
         30000
     ]
