@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-class TransitTokenAccountAnalysator {
+class TransitTokenAccountManager {
     internal static func getTransitToken(
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwapType,

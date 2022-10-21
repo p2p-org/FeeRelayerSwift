@@ -180,14 +180,14 @@ public class RelayServiceImpl: RelayService {
         expectedFee: UInt64
     ) async throws -> [String] {
         
-        let transitToken = try TransitTokenAccountAnalysator.getTransitToken(
+        let transitToken = try TransitTokenAccountManager.getTransitToken(
             solanaApiClient: solanaApiClient,
             orcaSwap: orcaSwap,
             account: account,
             pools: topUpPools
         )
         
-        let needsCreateTransitTokenAccount = try await TransitTokenAccountAnalysator.checkIfNeedsCreateTransitTokenAccount(
+        let needsCreateTransitTokenAccount = try await TransitTokenAccountManager.checkIfNeedsCreateTransitTokenAccount(
             solanaApiClient: solanaApiClient,
             transitToken: transitToken
         )

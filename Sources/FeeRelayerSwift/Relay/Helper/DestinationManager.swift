@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-class DestinationAnalysator {
+class DestinationManager {
     static internal func analyseDestination(
         _ apiClient: SolanaAPIClient,
         destination: PublicKey?,
