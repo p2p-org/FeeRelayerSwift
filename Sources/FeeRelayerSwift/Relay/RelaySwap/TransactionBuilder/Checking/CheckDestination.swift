@@ -13,9 +13,9 @@ extension  SwapTransactionBuilder {
         let destinationManager = DestinationFinderImpl(solanaAPIClient: context.solanaApiClient)
         
         let destinationInfo = try await destinationManager.findRealDestination(
-            destination: context.config.destinationAddress,
+            owner: context.config.userAccount.publicKey,
             mint: context.config.destinationTokenMint,
-            userAccount: context.config.userAccount
+            givenDestination: context.config.destinationAddress
         )
         
         var userDestinationTokenAccountAddress = destinationInfo.destination.address
