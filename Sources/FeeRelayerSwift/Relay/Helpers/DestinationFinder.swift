@@ -5,6 +5,13 @@
 import Foundation
 import SolanaSwift
 
+/// Destination finder result
+struct DestinationFinderResult: Equatable {
+    let destination: TokenAccount
+    let destinationOwner: PublicKey?
+    let needsCreation: Bool
+}
+
 /// Destination finding service
 protocol DestinationFinder {
     /// User may give SOL address or SPL token address as destination,
@@ -19,7 +26,7 @@ protocol DestinationFinder {
         owner: PublicKey,
         mint: PublicKey,
         givenDestination: PublicKey?
-    ) async throws -> (destination: TokenAccount, destinationOwner: PublicKey?, needCreateDestination: Bool)
+    ) async throws -> DestinationFinderResult
 }
 
 class DestinationFinderImpl: DestinationFinder {
@@ -33,26 +40,32 @@ class DestinationFinderImpl: DestinationFinder {
         owner: PublicKey,
         mint: PublicKey,
         givenDestination: PublicKey?
-    ) async throws -> (destination: TokenAccount, destinationOwner: PublicKey?, needCreateDestination: Bool) {
+    ) async throws -> DestinationFinderResult {
+        // Destination is wsol, wsol temporary account creation is needed
         if PublicKey.wrappedSOLMint == mint {
             // Target is SOL Token
-            return (
+            return .init(
                 destination: TokenAccount(address: owner, mint: mint),
                 destinationOwner: owner,
-                needCreateDestination: true
+                needsCreation: true
             )
-        } else {
-            // Target is SPL Token
+        }
+        
+        // Destination is SPL token
+        else {
+            
+            // Given destination is a created SPL Token address
             if let givenDestination = givenDestination {
                 // User already has SPL account
-                return (
+                return .init(
                     destination: TokenAccount(address: givenDestination, mint: mint),
                     destinationOwner: owner,
-                    needCreateDestination: false
+                    needsCreation: false
                 )
-            } else {
-                // User doesn't have SPL account
-
+            }
+            
+            // Given destination is nil, need to double check its existence by sending request to solana api client
+            else {
                 // Try to get associated account
                 let address = try await solanaAPIClient.getAssociatedSPLTokenAddress(for: owner, mint: mint)
 
@@ -61,10 +74,10 @@ class DestinationFinderImpl: DestinationFinder {
                     .getAccountInfo(account: address.base58EncodedString)
                 let needsCreateDestinationTokenAccount = info?.owner != TokenProgram.id.base58EncodedString
 
-                return (
+                return .init(
                     destination: TokenAccount(address: owner, mint: mint),
                     destinationOwner: nil,
-                    needCreateDestination: needsCreateDestinationTokenAccount
+                    needsCreation: needsCreateDestinationTokenAccount
                 )
             }
         }

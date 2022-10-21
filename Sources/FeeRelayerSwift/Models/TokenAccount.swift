@@ -6,7 +6,7 @@ import Foundation
 import SolanaSwift
 
 /// A basic class that represents SPL Token.
-public struct TokenAccount {
+public struct TokenAccount: Equatable {
     public init(address: PublicKey, mint: PublicKey) {
         self.address = address
         self.mint = mint

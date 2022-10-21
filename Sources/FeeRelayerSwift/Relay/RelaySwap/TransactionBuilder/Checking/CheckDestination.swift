@@ -20,7 +20,7 @@ extension  SwapTransactionBuilder {
         
         var userDestinationTokenAccountAddress = destinationInfo.destination.address
         
-        if destinationInfo.needCreateDestination {
+        if destinationInfo.needsCreation {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
                 destinationNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)

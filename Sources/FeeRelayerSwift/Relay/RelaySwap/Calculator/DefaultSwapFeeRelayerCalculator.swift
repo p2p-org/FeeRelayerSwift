@@ -47,7 +47,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         }
 
         // when needed to create destination
-        if destinationInfo.needCreateDestination, destinationTokenMint != PublicKey.wrappedSOLMint {
+        if destinationInfo.needsCreation, destinationTokenMint != PublicKey.wrappedSOLMint {
             expectedFee.accountBalances += minimumTokenAccountBalance
         }
 
