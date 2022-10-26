@@ -10,16 +10,17 @@ extension  SwapTransactionBuilder {
     internal static func checkDestination(_ context: inout BuildContext) async throws {
         var destinationNewAccount: Account?
         
-        let destinationInfo = try await DestinationManager.analyseDestination(
-            context.solanaApiClient,
-            destination: context.config.destinationAddress,
+        let destinationManager = DestinationFinderImpl(solanaAPIClient: context.solanaApiClient)
+        
+        let destinationInfo = try await destinationManager.findRealDestination(
+            owner: context.config.userAccount.publicKey,
             mint: context.config.destinationTokenMint,
-            userAccount: context.config.userAccount
+            givenDestination: context.config.destinationAddress
         )
         
         var userDestinationTokenAccountAddress = destinationInfo.destination.address
         
-        if destinationInfo.needCreateDestination {
+        if destinationInfo.needsCreation {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
                 destinationNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)

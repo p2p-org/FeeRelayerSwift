@@ -24,11 +24,11 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
-        let destinationInfo = try await DestinationManager.analyseDestination(
-            solanaApiClient,
-            destination: destinationAddress,
+        let destinationFinder = DestinationFinderImpl(solanaAPIClient: solanaApiClient)
+        let destinationInfo = try await destinationFinder.findRealDestination(
+            owner: userAccount.publicKey,
             mint: destinationTokenMint,
-            userAccount: userAccount
+            givenDestination: destinationAddress
         )
         let lamportsPerSignature = context.lamportsPerSignature
         let minimumTokenAccountBalance = context.minimumTokenAccountBalance
@@ -47,7 +47,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         }
 
         // when needed to create destination
-        if destinationInfo.needCreateDestination, destinationTokenMint != PublicKey.wrappedSOLMint {
+        if destinationInfo.needsCreation, destinationTokenMint != PublicKey.wrappedSOLMint {
             expectedFee.accountBalances += minimumTokenAccountBalance
         }
 
