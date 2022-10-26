@@ -31,6 +31,7 @@ extension SwapTransactionBuilder {
                 ),
             ])
             context.env.userSource = sourceWSOLNewAccount!.publicKey
+            context.env.additionalPaybackFee += context.feeRelayerContext.minimumTokenAccountBalance
         }
         
         context.env.sourceWSOLNewAccount = sourceWSOLNewAccount
