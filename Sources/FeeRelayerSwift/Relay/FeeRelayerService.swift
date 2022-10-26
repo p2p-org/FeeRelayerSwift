@@ -91,13 +91,13 @@ public class FeeRelayerService: FeeRelayer {
         do {
             var trx: [String] = []
             
-            for preparedTransaction in transactions {
+            for (index, preparedTransaction) in transactions.enumerated() {
                 let preparedRelayTransaction = try await prepareRelayTransaction(
                     context,
                     preparedTransaction: preparedTransaction,
                     payingFeeToken: fee,
                     relayAccountStatus: context.relayAccountStatus,
-                    additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
+                    additionalPaybackFee: index == transactions.count - 1 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
                     currency: config.currency,
                     autoPayback: config.autoPayback
