@@ -8,7 +8,7 @@ import OrcaSwapSwift
 
 extension SwapTransactionBuilder {
     static internal func checkClosingAccount(_ context: inout BuildContext) throws {
-            if let newAccount = context.env.sourceWSOLNewAccount {
+        if let newAccount = context.env.sourceWSOLNewAccount {
             context.env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
