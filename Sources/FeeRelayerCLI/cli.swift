@@ -63,16 +63,21 @@ struct CreateAccount: AsyncParsableCommand {
         let from = try PublicKey(string: wallet)
         let mint = try PublicKey(string: mint)
         let to = try PublicKey.associatedTokenAddress(walletAddress: from, tokenMintAddress: mint)
-        
+
         let transaction = Transaction(
             instructions: [
                 SystemProgram.createAccountInstruction(
-                    from: from,
+                    from: try PublicKey(string: feePayer),
                     toNewPubkey: to,
                     lamports: amount,
                     space: 165,
                     programId: TokenProgram.id
-                )
+                ),
+                SystemProgram.transferInstruction(
+                    from: try PublicKey(string: wallet),
+                    to: try PublicKey(string: feePayer),
+                    lamports: 5000
+                ),
             ],
             recentBlockhash: recentBlochHash,
             feePayer: try PublicKey(string: feePayer)
