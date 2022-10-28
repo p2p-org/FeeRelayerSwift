@@ -14,13 +14,26 @@ let package = Package(
     products: [
         .library(
             name: "FeeRelayerSwift",
-            targets: ["FeeRelayerSwift"]),
+            targets: ["FeeRelayerSwift"]
+        ),
+    .executable(
+            name: "FeeRelayerCLI",
+            targets: ["FeeRelayerCLI"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift.git", from: "2.5.2"),
-        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "2.1.1")
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "2.1.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", from: "1.1.4"),
     ],
     targets: [
+        .executableTarget(
+            name: "FeeRelayerCLI",
+            dependencies: [
+                "FeeRelayerSwift",
+                .product(name: "ArgumentParser", package: "swift-argument-parser")
+            ]
+        ),
         .target(
             name: "FeeRelayerSwift",
             dependencies: [
