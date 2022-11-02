@@ -36,7 +36,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
@@ -63,7 +64,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
@@ -90,7 +92,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
@@ -117,7 +120,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
@@ -144,7 +148,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
@@ -173,7 +178,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
@@ -200,7 +206,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
@@ -227,7 +234,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
@@ -254,7 +262,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
@@ -281,7 +290,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         )
         
         let fee = try await calculator.calculateSwappingNetworkFees(
-            createContext(),
+            lamportsPerSignature: lamportsPerSignature,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
@@ -296,24 +306,6 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         XCTAssertEqual(
             fee.accountBalances,
             0 // deposit fee has already been handled by fee relayer account
-        )
-    }
-    
-    // MARK: - Helpers
-    
-    private func createContext() -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT",
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .created(balance: 0), // not important
-            usageStatus: .init(
-                maxUsage: 100,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
         )
     }
 }

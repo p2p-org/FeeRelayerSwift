@@ -89,7 +89,8 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
         swapPools: PoolsPair
     ) async throws -> TopUpAndActionPreparedParams {
         let swappingFee: FeeAmount = try await swapCalculator.calculateSwappingNetworkFees(
-            context,
+            lamportsPerSignature: context.lamportsPerSignature,
+            minimumTokenAccountBalance: context.minimumTokenAccountBalance,
             swapPoolsCount: swapPools.count,
             sourceTokenMint: source.mint,
             destinationTokenMint: destinationTokenMint,

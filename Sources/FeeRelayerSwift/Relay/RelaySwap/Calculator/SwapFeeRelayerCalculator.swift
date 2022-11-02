@@ -8,7 +8,8 @@ import OrcaSwapSwift
 
 public protocol SwapFeeRelayerCalculator {
     func calculateSwappingNetworkFees(
-        _ context: RelayContext,
+        lamportsPerSignature: UInt64,
+        minimumTokenAccountBalance: UInt64,
         swapPoolsCount: Int,
         sourceTokenMint: PublicKey,
         destinationTokenMint: PublicKey,

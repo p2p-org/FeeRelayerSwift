@@ -18,7 +18,8 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     }
     
     public func calculateSwappingNetworkFees(
-        _ context: RelayContext,
+        lamportsPerSignature: UInt64,
+        minimumTokenAccountBalance: UInt64,
         swapPoolsCount: Int,
         sourceTokenMint: PublicKey,
         destinationTokenMint: PublicKey,
@@ -30,8 +31,6 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
             mint: destinationTokenMint,
             givenDestination: destinationAddress
         )
-        let lamportsPerSignature = context.lamportsPerSignature
-        let minimumTokenAccountBalance = context.minimumTokenAccountBalance
 
         var expectedFee = FeeAmount.zero
 
