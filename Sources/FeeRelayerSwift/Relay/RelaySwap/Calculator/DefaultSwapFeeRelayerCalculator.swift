@@ -12,7 +12,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     
     var userAccount: Account { accountStorage.account! }
 
-    init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage) {
+    public init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage) {
         self.solanaApiClient = solanaApiClient
         self.accountStorage = accountStorage
     }

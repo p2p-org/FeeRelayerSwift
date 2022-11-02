@@ -150,7 +150,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     private func getContext(
         relayAccountStatus: RelayAccountStatus
     ) -> RelayContext {
-        RelayContext(
+        .init(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,
             feePayerAddress: .feePayerAddress,
