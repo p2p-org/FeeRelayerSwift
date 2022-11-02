@@ -10,13 +10,13 @@ class TransitTokenAccountManager {
     internal static func getTransitToken(
         network: SolanaSwift.Network,
         orcaSwap: OrcaSwapType,
-        account: Account,
+        owner: PublicKey,
         pools: PoolsPair
     ) throws -> TokenAccount? {
         guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(orcaSwap: orcaSwap, pools: pools) else { return nil }
 
         let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
-            user: account.publicKey,
+            user: owner,
             transitTokenMint: transitTokenMintPubkey,
             network: network
         )

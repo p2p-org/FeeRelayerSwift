@@ -267,7 +267,7 @@ public class RelayServiceImpl: RelayService {
         let transitToken = try TransitTokenAccountManager.getTransitToken(
             network: solanaApiClient.endpoint.network,
             orcaSwap: orcaSwap,
-            account: account,
+            owner: account.publicKey,
             pools: topUpPools
         )
         

@@ -11,7 +11,7 @@ extension SwapTransactionBuilder {
         let transitToken = try? TransitTokenAccountManager.getTransitToken(
             network: context.solanaApiClient.endpoint.network,
             orcaSwap: context.orcaSwap,
-            account: context.config.userAccount,
+            owner: context.config.userAccount.publicKey,
             pools: context.config.pools
         )
         
