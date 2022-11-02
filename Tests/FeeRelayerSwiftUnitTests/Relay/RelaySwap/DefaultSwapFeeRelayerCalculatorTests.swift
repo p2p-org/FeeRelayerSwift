@@ -35,7 +35,7 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         let fee = try await calculator.calculateSwappingNetworkFees(
             createContext(),
-            swapPools: [ btcSOLPool() ],
+            swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
             destinationAddress: nil
@@ -62,7 +62,7 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         let fee = try await calculator.calculateSwappingNetworkFees(
             createContext(),
-            swapPools: [ btcSOLPool() ],
+            swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
             destinationTokenMint: btcMint, // BTC
             destinationAddress: btcAssociatedAddress
@@ -89,7 +89,7 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         let fee = try await calculator.calculateSwappingNetworkFees(
             createContext(),
-            swapPools: [ btcETHPool() ],
+            swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
             destinationAddress: nil
@@ -116,7 +116,7 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         let fee = try await calculator.calculateSwappingNetworkFees(
             createContext(),
-            swapPools: [ btcETHPool() ],
+            swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: ethMint, // BTC
             destinationAddress: ethAssociatedAddress
@@ -125,6 +125,33 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         XCTAssertEqual(
             fee.transaction,
             2 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
+            0 // account has already been created
+        )
+    }
+    
+    func testCalculateSwapingFeeFromSPLToSOL() async throws {
+        // BTC -> SOL
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 4),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 1,
+            sourceTokenMint: btcMint,
+            destinationTokenMint: .wrappedSOLMint, // BTC
+            destinationAddress: owner
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            3 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
         )
         
         XCTAssertEqual(
@@ -146,66 +173,6 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
                 maxAmount: 10000000,
                 amountUsed: 0
             )
-        )
-    }
-    
-    private func btcSOLPool() -> Pool {
-        .init(
-            account: "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u",
-            authority: "GqnLhu3bPQ46nTZYNFDnzhwm31iFoqhi3ntXMtc5DPiT",
-            nonce: 255,
-            poolTokenMint: "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe",
-            tokenAccountA: "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2",
-            tokenAccountB: "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8",
-            feeAccount: "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B",
-            hostFeeAccount: nil,
-            feeNumerator: 25,
-            feeDenominator: 10000,
-            ownerTradeFeeNumerator: 5,
-            ownerTradeFeeDenominator: 10000,
-            ownerWithdrawFeeNumerator: 0,
-            ownerWithdrawFeeDenominator: 0,
-            hostFeeNumerator: 0,
-            hostFeeDenominator: 0,
-            tokenAName: "SOL",
-            tokenBName: "BTC",
-            curveType: "ConstantProduct",
-            amp: nil,
-            programVersion: 2,
-            deprecated: nil,
-            tokenABalance: .init(amount: "715874535300", decimals: 9),
-            tokenBBalance: .init(amount: "1113617", decimals: 6),
-            isStable: nil
-        )
-    }
-    
-    private func btcETHPool() -> Pool {
-        .init(
-            account: "Fz6yRGsNiXK7hVu4D2zvbwNXW8FQvyJ5edacs3piR1P7",
-            authority: "FjRVqnmAJgzjSy2J7MtuQbbWZL3xhZUMqmS2exuy4dXF",
-            nonce: 255,
-            poolTokenMint: "8pFwdcuXM7pvHdEGHLZbUR8nNsjj133iUXWG6CgdRHk2",
-            tokenAccountA: "81w3VGbnszMKpUwh9EzAF9LpRzkKxc5XYCW64fuYk1jH",
-            tokenAccountB: "6r14WvGMaR1xGMnaU8JKeuDK38RvUNxJfoXtycUKtC7Z",
-            feeAccount: "56FGbSsbZiP2teQhTxRQGwwVSorB2LhEGdLrtUQPfFpb",
-            hostFeeAccount: nil,
-            feeNumerator: 30,
-            feeDenominator: 10000,
-            ownerTradeFeeNumerator: 0,
-            ownerTradeFeeDenominator: 0,
-            ownerWithdrawFeeNumerator: 0,
-            ownerWithdrawFeeDenominator: 0,
-            hostFeeNumerator: 0,
-            hostFeeDenominator: 0,
-            tokenAName: "BTC",
-            tokenBName: "ETH",
-            curveType: "ConstantProduct",
-            amp: nil,
-            programVersion: nil,
-            deprecated: true,
-            tokenABalance: .init(amount: "786", decimals: 6),
-            tokenBBalance: .init(amount: "9895", decimals: 6),
-            isStable: nil
         )
     }
 }

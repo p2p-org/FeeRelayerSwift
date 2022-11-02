@@ -19,7 +19,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     
     public func calculateSwappingNetworkFees(
         _ context: RelayContext,
-        swapPools: PoolsPair?,
+        swapPoolsCount: Int,
         sourceTokenMint: PublicKey,
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
@@ -57,7 +57,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         }
 
         // in transitive swap, there will be situation when swapping from SOL -> SPL that needs spliting transaction to 2 transactions
-        if swapPools?.count == 2, sourceTokenMint == PublicKey.wrappedSOLMint, destinationAddress == nil {
+        if swapPoolsCount == 2, sourceTokenMint == PublicKey.wrappedSOLMint, destinationAddress == nil {
             expectedFee.transaction += lamportsPerSignature * 2
         }
 

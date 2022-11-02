@@ -90,7 +90,7 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     ) async throws -> TopUpAndActionPreparedParams {
         let swappingFee: FeeAmount = try await swapCalculator.calculateSwappingNetworkFees(
             context,
-            swapPools: swapPools,
+            swapPoolsCount: swapPools.count,
             sourceTokenMint: source.mint,
             destinationTokenMint: destinationTokenMint,
             destinationAddress: destinationAddress
