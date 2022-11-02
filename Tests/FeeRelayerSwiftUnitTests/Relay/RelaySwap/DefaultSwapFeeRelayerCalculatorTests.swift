@@ -188,7 +188,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         
         XCTAssertEqual(
             fee.transaction,
-            5 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+            5 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature, extra feepayer's and owner's signatures for additional transaction (2 transactions required)
         )
         
         XCTAssertEqual(
