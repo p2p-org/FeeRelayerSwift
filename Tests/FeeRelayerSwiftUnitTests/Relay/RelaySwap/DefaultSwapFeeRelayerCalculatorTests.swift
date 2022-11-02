@@ -17,15 +17,17 @@ private let btcAssociatedAddress: PublicKey = "4Vfs3NZ1Bo8agrfBJhMFdesso8tBWyUZA
 private let ethMint: PublicKey = "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk"
 private let ethAssociatedAddress: PublicKey = "4Tz8MH5APRfA4rjUNxhRruqGGMNvrgji3KhWYKf54dc7"
 
-final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
+final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
 
     var calculator: DefaultSwapFeeRelayerCalculator!
     
     override func tearDown() async throws {
         calculator = nil
     }
+    
+    // MARK: - Direct Swap
 
-    func testCalculateSwappingFeeFromSOLToNonCreatedSPL() async throws {
+    func testCalculateDirectSwappingFeeFromSOLToNonCreatedSPL() async throws {
         // SOL -> New BTC
         
         calculator = .init(
@@ -48,11 +50,11 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         XCTAssertEqual(
             fee.accountBalances,
-            minimumTokenAccountBalance // fee for create SPL Token Account
+            minimumTokenAccountBalance // fee for creating SPL Token Account
         )
     }
     
-    func testCalculateSwapingFeeFromSOLToCreatedSPL() async throws {
+    func testCalculateDirectSwapingFeeFromSOLToCreatedSPL() async throws {
         // SOL -> BTC
         
         calculator = .init(
@@ -79,7 +81,7 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         )
     }
     
-    func testCalculateSwapingFeeFromSPLToNonCreatedSPL() async throws {
+    func testCalculateDirectSwapingFeeFromSPLToNonCreatedSPL() async throws {
         // BTC -> New ETH
         
         calculator = .init(
@@ -102,11 +104,11 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         XCTAssertEqual(
             fee.accountBalances,
-            minimumTokenAccountBalance // account has already been created
+            minimumTokenAccountBalance // fee for creating SPL Token Account
         )
     }
     
-    func testCalculateSwapingFeeFromSPLToCreatedSPL() async throws {
+    func testCalculateDirectSwapingFeeFromSPLToCreatedSPL() async throws {
         // BTC -> New ETH
         
         calculator = .init(
@@ -133,11 +135,11 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         )
     }
     
-    func testCalculateSwapingFeeFromSPLToSOL() async throws {
+    func testCalculateDirectSwapingFeeFromSPLToSOL() async throws {
         // BTC -> SOL
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 4),
+            solanaApiClient: MockSolanaAPIClient(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -156,9 +158,148 @@ final class DefaultDirectSwapFeeRelayerCalculatorTests: XCTestCase {
         
         XCTAssertEqual(
             fee.accountBalances,
+            0 // deposit fee has already been handled by fee relayer account
+        )
+    }
+    
+    // MARK: - Transitive Swap
+    
+    func testCalculateTransitiveSwappingFeeFromSOLToNonCreatedSPL() async throws {
+        // SOL -> New BTC
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 4),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 2,
+            sourceTokenMint: "So11111111111111111111111111111111111111112",
+            destinationTokenMint: btcMint, // BTC
+            destinationAddress: nil
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            5 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
+            minimumTokenAccountBalance // fee for creating SPL Token Account
+        )
+    }
+    
+    func testCalculateTransitiveSwapingFeeFromSOLToCreatedSPL() async throws {
+        // SOL -> BTC
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 5),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 2,
+            sourceTokenMint: "So11111111111111111111111111111111111111112",
+            destinationTokenMint: btcMint, // BTC
+            destinationAddress: btcAssociatedAddress
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            3 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
             0 // account has already been created
         )
     }
+    
+    func testCalculateTransitiveSwapingFeeFromSPLToNonCreatedSPL() async throws {
+        // BTC -> New ETH
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 6),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 2,
+            sourceTokenMint: btcMint,
+            destinationTokenMint: ethMint, // BTC
+            destinationAddress: nil
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            2 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
+            minimumTokenAccountBalance // fee for creating SPL Token Account
+        )
+    }
+    
+    func testCalculateTransitiveSwapingFeeFromSPLToCreatedSPL() async throws {
+        // BTC -> New ETH
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 7),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 2,
+            sourceTokenMint: btcMint,
+            destinationTokenMint: ethMint, // BTC
+            destinationAddress: ethAssociatedAddress
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            2 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
+            0 // account has already been created
+        )
+    }
+    
+    func testCalculateTransitiveSwapingFeeFromSPLToSOL() async throws {
+        // BTC -> SOL
+        
+        calculator = .init(
+            solanaApiClient: MockSolanaAPIClient(testCase: 0),
+            accountStorage: try await MockAccountStorage()
+        )
+        
+        let fee = try await calculator.calculateSwappingNetworkFees(
+            createContext(),
+            swapPoolsCount: 2,
+            sourceTokenMint: btcMint,
+            destinationTokenMint: .wrappedSOLMint, // BTC
+            destinationAddress: owner
+        )
+        
+        XCTAssertEqual(
+            fee.transaction,
+            3 * lamportsPerSignature // feepayer's signature, owner's signature, new wsol's signature
+        )
+        
+        XCTAssertEqual(
+            fee.accountBalances,
+            0 // deposit fee has already been handled by fee relayer account
+        )
+    }
+    
+    // MARK: - Helpers
     
     private func createContext() -> RelayContext {
         .init(
@@ -186,9 +327,9 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
 
     override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
         switch account {
-        case btcAssociatedAddress.base58EncodedString where testCase == 0:
+        case btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
             return nil
-        case btcAssociatedAddress.base58EncodedString where testCase == 1:
+        case btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
                 owner: TokenProgram.id.base58EncodedString,
@@ -197,9 +338,9 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
                 rentEpoch: 0
             )
             return info as? BufferInfo<T>
-        case ethAssociatedAddress.base58EncodedString where testCase == 2:
+        case ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
             return nil
-        case ethAssociatedAddress.base58EncodedString where testCase == 3:
+        case ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
                 owner: TokenProgram.id.base58EncodedString,
