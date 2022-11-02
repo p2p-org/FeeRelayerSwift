@@ -265,7 +265,7 @@ public class RelayServiceImpl: RelayService {
     ) async throws -> [String] {
         
         let transitToken = try TransitTokenAccountManager.getTransitToken(
-            solanaApiClient: solanaApiClient,
+            network: solanaApiClient.endpoint.network,
             orcaSwap: orcaSwap,
             account: account,
             pools: topUpPools

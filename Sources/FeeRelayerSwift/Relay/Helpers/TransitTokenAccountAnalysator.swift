@@ -8,7 +8,7 @@ import OrcaSwapSwift
 
 class TransitTokenAccountManager {
     internal static func getTransitToken(
-        solanaApiClient: SolanaAPIClient,
+        network: SolanaSwift.Network,
         orcaSwap: OrcaSwapType,
         account: Account,
         pools: PoolsPair
@@ -18,7 +18,7 @@ class TransitTokenAccountManager {
         let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
             user: account.publicKey,
             transitTokenMint: transitTokenMintPubkey,
-            network: solanaApiClient.endpoint.network
+            network: network
         )
 
         return TokenAccount(
