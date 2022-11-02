@@ -7,9 +7,9 @@ class RelayTests: XCTestCase {
     var accountStorage: SolanaAccountStorage!
     var solanaAPIClient: SolanaAPIClient!
     var orcaSwap: OrcaSwap!
-    var feeRelayer: FeeRelayer!
+    var feeRelayer: RelayService!
     var feeRelayerAPIClient: FeeRelayerAPIClient!
-    var context: FeeRelayerContext!
+    var context: RelayContext!
     
     override func setUp() async throws {
         Logger.setLoggers([ConsoleLogger()])
@@ -35,7 +35,7 @@ class RelayTests: XCTestCase {
         let blockchainClient = BlockchainClient(apiClient: solanaAPIClient)
         feeRelayerAPIClient = FeeRelayerSwift.APIClient(baseUrlString: testsInfo.baseUrlString, version: 1)
         
-        let contextManager = FeeRelayerContextManagerImpl(
+        let contextManager = RelayContextManagerImpl(
             accountStorage: accountStorage,
             solanaAPIClient: solanaAPIClient,
             feeRelayerAPIClient: feeRelayerAPIClient
@@ -52,11 +52,11 @@ class RelayTests: XCTestCase {
             accountStorage: accountStorage
         )
 
-        feeRelayer = FeeRelayerService(
+        feeRelayer = RelayServiceImpl(
             orcaSwap: orcaSwap,
             accountStorage: accountStorage,
             solanaApiClient: solanaAPIClient,
-            feeCalculator: DefaultFreeRelayerCalculator(),
+            feeCalculator: DefaultRelayFeeCalculator(),
             feeRelayerAPIClient: feeRelayerAPIClient,
             deviceType: .iOS,
             buildNumber: "UnitTest"

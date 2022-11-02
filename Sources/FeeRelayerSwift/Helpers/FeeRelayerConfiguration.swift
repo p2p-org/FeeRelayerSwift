@@ -7,9 +7,19 @@ public struct FeeRelayerConfiguration {
     let operationType: StatsInfo.OperationType
     let currency: String?
 
-    public init(additionalPaybackFee: UInt64 = 0, operationType: StatsInfo.OperationType, currency: String? = nil) {
+    /// Automatically payback to fee relay.
+    /// Set false if transaction has already pay back instruction
+    let autoPayback: Bool
+
+    public init(
+        additionalPaybackFee: UInt64 = 0,
+        operationType: StatsInfo.OperationType,
+        currency: String? = nil,
+        autoPayback: Bool = true
+    ) {
         self.additionalPaybackFee = additionalPaybackFee
         self.operationType = operationType
         self.currency = currency
+        self.autoPayback = autoPayback
     }
 }

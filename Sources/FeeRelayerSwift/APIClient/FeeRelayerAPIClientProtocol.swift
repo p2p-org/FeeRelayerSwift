@@ -14,6 +14,9 @@ public protocol FeeRelayerAPIClient {
     /// - Returns: Public key as String
     func getFeePayerPubkey() async throws -> String
     
+    /// Get fee token data
+    func feeTokenData(mint: String) async throws -> FeeTokenData
+    
     /// Get free fee limits for current user
     /// - Parameter authority: user's authority
     /// - Returns: current user's usage limit

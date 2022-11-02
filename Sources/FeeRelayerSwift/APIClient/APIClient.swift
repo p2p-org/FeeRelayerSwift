@@ -46,7 +46,7 @@ public class APIClient: FeeRelayerAPIClient {
         var res: String?
         do {
             res = try await httpClient.sendRequest(request: request, decoder: JSONDecoder())
-        } catch HTTPClientError.cantDecode(let data) {
+        } catch let HTTPClientError.cantDecode(data) {
             res = String(data: data, encoding: .utf8)
             Logger.log(event: "FeeRelayerSwift getFeePayerPubkey", message: res, logLevel: .debug)
         }
@@ -74,7 +74,7 @@ public class APIClient: FeeRelayerAPIClient {
 
         do {
             return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder()) as FeeLimitForAuthorityResponse
-        } catch HTTPClientError.unexpectedStatusCode(_, let data) {
+        } catch let HTTPClientError.unexpectedStatusCode(_, data) {
             Logger.log(event: "FeeRelayerSwift: requestFreeFeeLimits", message: String(data: data, encoding: .utf8), logLevel: .error)
             let decodedError = try JSONDecoder().decode(FeeRelayerError.self, from: data)
             throw decodedError
@@ -89,6 +89,31 @@ public class APIClient: FeeRelayerAPIClient {
         try await getFreeFeeLimits(for: authority)
     }
     
+    /// Get fee token data
+    public func feeTokenData(mint: String) async throws -> FeeTokenData {
+        var url = baseUrlString
+        if version > 1 {
+            url += "/v\(version)"
+        }
+        url += "/fee_token_data/\(mint)"
+        guard let url = URL(string: url) else { throw APIClientError.unknown }
+
+        var urlRequest: URLRequest
+        urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "GET"
+        urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        Logger.log(event: "FeeRelayerSwift getFeeTokenData", message: urlRequest.cURL(), logLevel: .debug)
+
+        do {
+            return try await httpClient.sendRequest(request: urlRequest, decoder: JSONDecoder())
+        } catch let HTTPClientError.unexpectedStatusCode(_, data) {
+            Logger.log(event: "FeeRelayerSwift: getFeeTokenData", message: String(data: data, encoding: .utf8), logLevel: .error)
+            let decodedError = try JSONDecoder().decode(FeeRelayerError.self, from: data)
+            throw decodedError
+        }
+    }
+
     /// Send transaction to fee relayer server to process
     /// - Parameter requestType: FeeRelayer's Request Type
     /// - Returns: signature, can be confirmed or signature of fee payer account that can be added to process later by client
@@ -96,7 +121,7 @@ public class APIClient: FeeRelayerAPIClient {
         do {
             let response: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
             return response
-        } catch HTTPClientError.cantDecode(let data) {
+        } catch let HTTPClientError.cantDecode(data) {
             guard let ret = String(data: data, encoding: .utf8) else { throw APIClientError.unknown }
             
             let signature = ret.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: "\"", with: "")
@@ -140,20 +165,20 @@ private extension URLRequest {
     /// Private extension for printing request
     func cURL(pretty: Bool = false) -> String {
         let newLine = pretty ? "\\\n" : ""
-        let method = (pretty ? "--request " : "-X ") + "\(self.httpMethod ?? "GET") \(newLine)"
+        let method = (pretty ? "--request " : "-X ") + "\(httpMethod ?? "GET") \(newLine)"
         let url: String = (pretty ? "--url " : "") + "\'\(self.url?.absoluteString ?? "")\' \(newLine)"
 
         var cURL = "curl "
         var header = ""
-        var data: String = ""
+        var data = ""
 
-        if let httpHeaders = self.allHTTPHeaderFields, httpHeaders.keys.count > 0 {
+        if let httpHeaders = allHTTPHeaderFields, httpHeaders.keys.count > 0 {
             for (key, value) in httpHeaders {
                 header += (pretty ? "--header " : "-H ") + "\'\(key): \(value)\' \(newLine)"
             }
         }
 
-        if let bodyData = self.httpBody, let bodyString = String(data: bodyData, encoding: .utf8), !bodyString.isEmpty {
+        if let bodyData = httpBody, let bodyString = String(data: bodyData, encoding: .utf8), !bodyString.isEmpty {
             data = "--data '\(bodyString)'"
         }
 

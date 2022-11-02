@@ -6,7 +6,9 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
+/// Default implementation of RelayService
 public class RelayServiceImpl: RelayService {
+    // MARK: - Properties
     private(set) var feeRelayerAPIClient: FeeRelayerAPIClient
     private(set) var solanaApiClient: SolanaAPIClient
     private(set) var orcaSwap: OrcaSwapType
@@ -18,6 +20,9 @@ public class RelayServiceImpl: RelayService {
     public var account: Account {
         accountStorage.account!
     }
+    
+    // MARK: - Initializer
+    
     public init(
         orcaSwap: OrcaSwapType,
         accountStorage: SolanaAccountStorage,
@@ -36,10 +41,26 @@ public class RelayServiceImpl: RelayService {
         self.buildNumber = buildNumber
     }
     
+    // MARK: - getFeePayer method
+    
     public func getFeePayer() async throws -> PublicKey {
         try PublicKey(string: try await feeRelayerAPIClient.getFeePayerPubkey())
     }
     
+    // MARK: - Top up and send transaction using relay_transaction method
+    
+    public func getFeeTokenData(
+        mint: String
+    ) async throws -> FeeTokenData {
+        try await feeRelayerAPIClient.feeTokenData(mint: mint)
+    }
+
+    public func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String {
+        try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
+            try .init(preparedTransaction: preparedTransaction)
+        ))
+    }
+
     public func topUpAndRelayTransaction(
         _ context: RelayContext,
         _ transaction: PreparedTransaction,
@@ -69,18 +90,22 @@ public class RelayServiceImpl: RelayService {
         do {
             var trx: [String] = []
             
-            for preparedTransaction in transactions {
-                let request = try await relayTransaction(
+            for (index, preparedTransaction) in transactions.enumerated() {
+                let preparedRelayTransaction = try await prepareRelayTransaction(
                     context,
                     preparedTransaction: preparedTransaction,
                     payingFeeToken: fee,
                     relayAccountStatus: context.relayAccountStatus,
-                    additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
+                    additionalPaybackFee: index == transactions.count - 1 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
-                    currency: config.currency
+                    currency: config.currency,
+                    autoPayback: config.autoPayback
                 )
+                let signatures = [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
+                    try .init(preparedTransaction: preparedRelayTransaction)
+                ))]
                 
-                trx.append(contentsOf: request)
+                trx.append(contentsOf: signatures)
             }
 
             return trx
@@ -92,7 +117,66 @@ public class RelayServiceImpl: RelayService {
         }
     }
     
-    private func checkAndTopUp(
+    // MARK: - Top up and get signature for transaction using sign_relay_transaction method
+    
+    public func topUpAndSignRelayTransaction(
+        _ context: RelayContext,
+        _ transaction: PreparedTransaction,
+        fee: TokenAccount?,
+        config: FeeRelayerConfiguration
+    ) async throws -> TransactionID {
+        try await topUpAndSignRelayTransaction(context, [transaction], fee: fee, config: config).first
+        ?! FeeRelayerError.unknown
+    }
+    
+    public func topUpAndSignRelayTransaction(
+        _ context: RelayContext,
+        _ transactions: [SolanaSwift.PreparedTransaction],
+        fee: TokenAccount?,
+        config: FeeRelayerConfiguration
+    ) async throws -> [TransactionID] {
+        let expectedFees = transactions.map { $0.expectedFee }
+        let res = try await checkAndTopUp(
+            context,
+            expectedFee: .init(
+                transaction: expectedFees.map {$0.transaction}.reduce(UInt64(0), +),
+                accountBalances: expectedFees.map {$0.accountBalances}.reduce(UInt64(0), +)
+            ),
+            payingFeeToken: fee
+        )
+        
+        do {
+            var trx: [String] = []
+            
+            for preparedTransaction in transactions {
+                let preparedRelayTransaction = try await prepareRelayTransaction(
+                    context,
+                    preparedTransaction: preparedTransaction,
+                    payingFeeToken: fee,
+                    relayAccountStatus: context.relayAccountStatus,
+                    additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
+                    operationType: config.operationType,
+                    currency: config.currency,
+                    autoPayback: config.autoPayback
+                )
+                let signatures = [try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
+                    try .init(preparedTransaction: preparedRelayTransaction)
+                ))]
+                trx.append(contentsOf: signatures)
+            }
+
+            return trx
+        } catch let error {
+            if res != nil {
+                throw FeeRelayerError.topUpSuccessButTransactionThrows
+            }
+            throw error
+        }
+    }
+    
+    // MARK: - Helpers
+    
+    public func checkAndTopUp(
         _ context: RelayContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
@@ -503,15 +587,16 @@ public class RelayServiceImpl: RelayService {
         }
     }
     
-    func relayTransaction(
+    func prepareRelayTransaction(
         _ context: RelayContext,
         preparedTransaction: PreparedTransaction,
         payingFeeToken: TokenAccount?,
         relayAccountStatus: RelayAccountStatus,
         additionalPaybackFee: UInt64,
-        operationType: StatsInfo.OperationType,
-        currency: String?
-    ) async throws -> [String] {
+        operationType _: StatsInfo.OperationType,
+        currency _: String?,
+        autoPayback: Bool
+    ) async throws -> PreparedTransaction {
         let feePayer = context.feePayerAddress
         
         // verify fee payer
@@ -530,7 +615,7 @@ public class RelayServiceImpl: RelayService {
         
         // transfer sol back to feerelayer's feePayer
         var preparedTransaction = preparedTransaction
-        if paybackFee > 0 {
+        if autoPayback, paybackFee > 0 {
             if payingFeeToken?.mint == PublicKey.wrappedSOLMint,
                (relayAccountStatus.balance ?? 0) < paybackFee
             {
@@ -560,11 +645,13 @@ public class RelayServiceImpl: RelayService {
         print(preparedTransaction.transaction.jsonString!)
         #endif
         
-        // resign transaction
-        try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
-        return [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
-            try .init(preparedTransaction: preparedTransaction)
-        ))]
+        // resign transaction if needed
+        if !preparedTransaction.signers.isEmpty {
+            try preparedTransaction.transaction.sign(signers: preparedTransaction.signers)
+        }
+        
+        // return prepared transaction
+        return preparedTransaction
     }
     
 }

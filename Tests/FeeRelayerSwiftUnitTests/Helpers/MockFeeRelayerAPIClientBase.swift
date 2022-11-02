@@ -2,6 +2,10 @@ import Foundation
 import FeeRelayerSwift
 
 class MockFeeRelayerAPIClientBase: FeeRelayerAPIClient {
+    func feeTokenData(mint: String) async throws -> FeeRelayerSwift.FeeTokenData {
+        fatalError()
+    }
+    
     var version: Int = 0
     
     func getFeePayerPubkey() async throws -> String {

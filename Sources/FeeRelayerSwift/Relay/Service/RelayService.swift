@@ -9,7 +9,20 @@ import SolanaSwift
 public protocol RelayService {
     
     var feeCalculator: RelayFeeCalculator { get }
+    func checkAndTopUp(
+        _ context: RelayContext,
+        expectedFee: FeeAmount,
+        payingFeeToken: TokenAccount?
+    ) async throws -> [String]?
+
+    func getFeeTokenData(
+        mint: String
+    ) async throws -> FeeTokenData
     
+    func relayTransaction(
+        _ preparedTransaction: PreparedTransaction
+    ) async throws -> String
+
     func topUpAndRelayTransaction(
         _ context: RelayContext,
         _ preparedTransaction: PreparedTransaction,
@@ -18,6 +31,20 @@ public protocol RelayService {
     ) async throws -> TransactionID
 
     func topUpAndRelayTransaction(
+        _ context: RelayContext,
+        _ preparedTransaction: [PreparedTransaction],
+        fee payingFeeToken: TokenAccount?,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> [TransactionID]
+    
+    func topUpAndSignRelayTransaction(
+        _ context: RelayContext,
+        _ preparedTransaction: PreparedTransaction,
+        fee payingFeeToken: TokenAccount?,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> TransactionID
+    
+    func topUpAndSignRelayTransaction(
         _ context: RelayContext,
         _ preparedTransaction: [PreparedTransaction],
         fee payingFeeToken: TokenAccount?,
