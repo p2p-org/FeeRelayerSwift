@@ -75,11 +75,6 @@
                BlueprintName = "FeeRelayerSwiftUnitTests"
                ReferencedContainer = "container:">
             </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "DestinationFinderTests">
-               </Test>
-            </SkippedTests>
          </TestableReference>
       </Testables>
    </TestAction>
