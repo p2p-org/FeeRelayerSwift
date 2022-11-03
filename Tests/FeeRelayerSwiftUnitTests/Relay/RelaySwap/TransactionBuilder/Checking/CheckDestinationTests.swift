@@ -59,11 +59,25 @@ final class CheckDestinationTests: XCTestCase {
             env: &env
         )
         
-//        XCTAssertEqual(env.instructions.count, 0)
-//        XCTAssertEqual(env.accountCreationFee, 0)
-//        XCTAssertNil(env.additionalTransaction)
-//        XCTAssertNil(env.destinationNewAccount)
-//        XCTAssertEqual(env.userDestinationTokenAccountAddress, destinationAddress)
+        let decodedInstruction = try JSONEncoder().encode(env.instructions)
+        let expectedDecodedInstruction = try JSONEncoder().encode([
+            AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                mint:  .usdcMint,
+                owner: account.publicKey,
+                payer: .feePayerAddress
+            )
+        ])
+        
+        XCTAssertEqual(decodedInstruction, expectedDecodedInstruction)
+        XCTAssertEqual(env.accountCreationFee, minimumTokenAccountBalance)
+        XCTAssertNil(env.additionalTransaction)
+        XCTAssertNil(env.destinationNewAccount)
+        
+        let associatedAddress = try PublicKey.associatedTokenAddress(
+            walletAddress: account.publicKey,
+            tokenMintAddress: .usdcMint
+        )
+        XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
     }
     
     // MARK: - Helpers
