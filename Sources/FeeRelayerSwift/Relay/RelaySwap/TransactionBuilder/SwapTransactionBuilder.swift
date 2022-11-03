@@ -20,7 +20,15 @@ internal enum SwapTransactionBuilder {
         try await checkTransitTokenAccount(&context)
         
         // check source
-        try await checkSource(&context)
+        try await checkSource(
+            owner: context.config.userAccount.publicKey,
+            sourceMint: context.config.sourceAccount.mint,
+            inputAmount: context.config.inputAmount,
+            network: context.solanaApiClient.endpoint.network,
+            feePayer: context.feeRelayerContext.feePayerAddress,
+            minimumTokenAccountBalance: context.feeRelayerContext.minimumTokenAccountBalance,
+            env: &context.env
+        )
     
         // check destination
         try await checkDestination(&context)

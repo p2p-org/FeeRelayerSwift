@@ -7,33 +7,47 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension SwapTransactionBuilder {
-    internal static func checkSource(_ context: inout BuildContext) async throws {
+    internal static func checkSource(
+        owner: PublicKey,
+        sourceMint: PublicKey,
+        inputAmount: UInt64,
+        network: SolanaSwift.Network,
+        feePayer: PublicKey,
+        minimumTokenAccountBalance: UInt64,
+        env: inout BuildContext.Environment
+    ) async throws {
         var sourceWSOLNewAccount: Account?
-        if context.config.sourceAccount.mint == PublicKey.wrappedSOLMint {
-            sourceWSOLNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)
-            context.env.instructions.append(contentsOf: [
+        
+        // Check if source token is NATIVE SOL
+        // Treat SPL SOL like another SPL Token (WSOL new account is not needed)
+        
+        if sourceMint == PublicKey.wrappedSOLMint &&
+           (env.userSource == nil || env.userSource == owner) // check for native sol
+        {
+            sourceWSOLNewAccount = try await Account(network: network)
+            env.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
-                    from: context.config.userAccount.publicKey,
-                    to: context.feeRelayerContext.feePayerAddress,
-                    lamports: context.config.inputAmount
+                    from: owner,
+                    to: feePayer,
+                    lamports: inputAmount
                 ),
                 SystemProgram.createAccountInstruction(
-                    from: context.feeRelayerContext.feePayerAddress,
+                    from: feePayer,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
-                    lamports: context.feeRelayerContext.minimumTokenAccountBalance + context.config.inputAmount,
+                    lamports: minimumTokenAccountBalance + inputAmount,
                     space: AccountInfo.BUFFER_LENGTH,
                     programId: TokenProgram.id
                 ),
                 TokenProgram.initializeAccountInstruction(
                     account: sourceWSOLNewAccount!.publicKey,
                     mint: .wrappedSOLMint,
-                    owner: context.config.userAccount.publicKey
+                    owner: owner
                 ),
             ])
-            context.env.userSource = sourceWSOLNewAccount!.publicKey
-            context.env.additionalPaybackFee += context.feeRelayerContext.minimumTokenAccountBalance
+            env.userSource = sourceWSOLNewAccount!.publicKey
+            env.additionalPaybackFee += minimumTokenAccountBalance
         }
         
-        context.env.sourceWSOLNewAccount = sourceWSOLNewAccount
+        env.sourceWSOLNewAccount = sourceWSOLNewAccount
     }
 }

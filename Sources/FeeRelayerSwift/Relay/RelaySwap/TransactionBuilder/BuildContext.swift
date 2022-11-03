@@ -10,7 +10,7 @@ extension SwapTransactionBuilder {
     struct BuildContext {
         let feeRelayerContext: RelayContext
         let solanaApiClient: SolanaAPIClient
-        let orcaSwap: OrcaSwap
+        let orcaSwap: OrcaSwapType
 
         let config: Configuration
         var env: Environment

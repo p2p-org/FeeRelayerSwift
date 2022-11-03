@@ -10,7 +10,6 @@ import XCTest
 @testable import OrcaSwapSwift
 @testable import SolanaSwift
 
-private let owner: PublicKey = "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
 private let btcMint: PublicKey = "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E"
 private let btcAssociatedAddress: PublicKey = "4Vfs3NZ1Bo8agrfBJhMFdesso8tBWyUZAPBGMoWHuNRU"
 
@@ -153,7 +152,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             swapPoolsCount: 1,
             sourceTokenMint: btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
-            destinationAddress: owner
+            destinationAddress: .owner
         )
         
         XCTAssertEqual(
@@ -295,7 +294,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             swapPoolsCount: 2,
             sourceTokenMint: btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
-            destinationAddress: owner
+            destinationAddress: .owner
         )
         
         XCTAssertEqual(
@@ -341,7 +340,7 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
                 rentEpoch: 0
             )
             return info as? BufferInfo<T>
-        case owner.base58EncodedString:
+        case PublicKey.owner.base58EncodedString:
             let info = BufferInfo<EmptyInfo>(
                 lamports: 0,
                 owner: SystemProgram.id.base58EncodedString,

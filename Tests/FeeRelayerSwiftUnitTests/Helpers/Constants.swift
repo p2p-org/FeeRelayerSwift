@@ -6,6 +6,10 @@ let lamportsPerSignature: UInt64 = 5000
 
 
 extension PublicKey {
+    static var owner: PublicKey {
+        "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
+    }
+    
     static var feePayerAddress: PublicKey {
         "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
     }
