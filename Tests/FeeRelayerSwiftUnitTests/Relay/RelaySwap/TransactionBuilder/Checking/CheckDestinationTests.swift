@@ -45,7 +45,6 @@ final class CheckDestinationTests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNonCreatedSPLToken() async throws {
-        
         var env = SwapTransactionBuilder.BuildContext.Environment()
         
         try await SwapTransactionBuilder.checkDestination(
@@ -81,7 +80,6 @@ final class CheckDestinationTests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNativeSOL() async throws {
-        
         var env = SwapTransactionBuilder.BuildContext.Environment()
         let relayContext = createContext()
         
@@ -118,6 +116,50 @@ final class CheckDestinationTests: XCTestCase {
         XCTAssertEqual(env.accountCreationFee, minimumTokenAccountBalance)
         XCTAssertNil(env.additionalTransaction)
         XCTAssertEqual(env.userDestinationTokenAccountAddress, env.destinationNewAccount?.publicKey)
+    }
+    
+    func testCheckDestinationSpecialCaseWhenSourceTokenIsNativeSOLAndDestinationIsNonCreatedSPL() async throws {
+        let sourceWSOLNewAccount = try await Account(network: .mainnetBeta)
+        var env = SwapTransactionBuilder.BuildContext.Environment(
+            sourceWSOLNewAccount: sourceWSOLNewAccount
+        )
+        
+        try await SwapTransactionBuilder.checkDestination(
+            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            owner: account,
+            destinationMint: .usdcMint,
+            destinationAddress: nil,
+            feePayerAddress: .feePayerAddress,
+            relayContext: createContext(),
+            recentBlockhash: blockhash,
+            env: &env
+        )
+        
+        // create account instruction is moved to separated instruction
+        XCTAssertEqual(env.instructions.count, 0)
+        
+        // additional transaction (on top) to create associated token is needed
+        XCTAssertNotNil(env.additionalTransaction)
+        
+        let additionalTransactionInstructionsEncoded = try JSONEncoder().encode(env.additionalTransaction!.transaction.instructions)
+        let expectedAdditionalTransactionInstructionsEncoded = try JSONEncoder().encode([
+            try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
+                mint:  .usdcMint,
+                owner: account.publicKey,
+                payer: .feePayerAddress
+            )
+        ])
+        XCTAssertEqual(additionalTransactionInstructionsEncoded, expectedAdditionalTransactionInstructionsEncoded)
+        
+        // create account instruction is moved to separated instruction so fee == 0 in this instruction
+        XCTAssertEqual(env.accountCreationFee, 0)
+        XCTAssertNil(env.destinationNewAccount)
+//
+        let associatedAddress = try PublicKey.associatedTokenAddress(
+            walletAddress: account.publicKey,
+            tokenMintAddress: .usdcMint
+        )
+        XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
     }
     
     // MARK: - Helpers
@@ -179,7 +221,7 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
                 rentEpoch: 0
             )
             return info as? BufferInfo<T>
-        case "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3" where testCase == 1:
+        case "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3" where testCase == 1 || testCase == 3:
             return nil
         default:
             return try await super.getAccountInfo(account: account)
