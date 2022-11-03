@@ -80,6 +80,46 @@ final class CheckDestinationTests: XCTestCase {
         XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
     }
     
+    func testCheckDestinationWhenDestinationIsNativeSOL() async throws {
+        
+        var env = SwapTransactionBuilder.BuildContext.Environment()
+        let relayContext = createContext()
+        
+        try await SwapTransactionBuilder.checkDestination(
+            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+            owner: account,
+            destinationMint: .wrappedSOLMint,
+            destinationAddress: account.publicKey,
+            feePayerAddress: .feePayerAddress,
+            relayContext: relayContext,
+            recentBlockhash: blockhash,
+            env: &env
+        )
+        
+        XCTAssertNotNil(env.destinationNewAccount)
+        let decodedInstruction = try JSONEncoder().encode(env.instructions)
+        let expectedInstructions = [
+            SystemProgram.createAccountInstruction(
+                from: .feePayerAddress,
+                toNewPubkey: env.destinationNewAccount!.publicKey,
+                lamports: relayContext.minimumTokenAccountBalance,
+                space: AccountInfo.BUFFER_LENGTH,
+                programId: TokenProgram.id
+            ),
+            TokenProgram.initializeAccountInstruction(
+                account: env.destinationNewAccount!.publicKey,
+                mint:  .wrappedSOLMint,
+                owner: account.publicKey
+            )
+        ]
+        let expectedDecodedInstructions = try JSONEncoder().encode(expectedInstructions)
+        
+        XCTAssertEqual(decodedInstruction, expectedDecodedInstructions)
+        XCTAssertEqual(env.accountCreationFee, minimumTokenAccountBalance)
+        XCTAssertNil(env.additionalTransaction)
+        XCTAssertEqual(env.userDestinationTokenAccountAddress, env.destinationNewAccount?.publicKey)
+    }
+    
     // MARK: - Helpers
     
     private func createContext() -> RelayContext {
@@ -144,6 +184,5 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
         default:
             return try await super.getAccountInfo(account: account)
         }
-        fatalError()
     }
 }
