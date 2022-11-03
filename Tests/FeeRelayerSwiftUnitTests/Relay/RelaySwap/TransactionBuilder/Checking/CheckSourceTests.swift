@@ -9,7 +9,7 @@ import XCTest
 @testable import FeeRelayerSwift
 import SolanaSwift
 
-final class SwapTransactionBuilderTests: XCTestCase {
+final class CheckSourceTests: XCTestCase {
     func testCheckSourceWhenSwappingFromSPLToken() async throws {
         // source token is USDC (not native SOL)
         let originalUserSource: PublicKey = "HGeQ9fjhqKHeaSJr9pWBYSG1UWx3X9Jdx8nXX2immPDU"
