@@ -31,7 +31,16 @@ internal enum SwapTransactionBuilder {
         )
     
         // check destination
-        try await checkDestination(&context)
+        try await checkDestination(
+            solanaAPIClient: context.solanaApiClient,
+            owner: context.config.userAccount,
+            destinationMint: context.config.destinationTokenMint,
+            destinationAddress: context.config.destinationAddress,
+            feePayerAddress: context.feeRelayerContext.feePayerAddress,
+            relayContext: context.feeRelayerContext,
+            recentBlockhash: context.config.blockhash,
+            env: &context.env
+        )
     
         // build swap data
         try await checkSwapData(

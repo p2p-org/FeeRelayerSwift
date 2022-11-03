@@ -7,15 +7,24 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension  SwapTransactionBuilder {
-    internal static func checkDestination(_ context: inout BuildContext) async throws {
+    internal static func checkDestination(
+        solanaAPIClient: SolanaAPIClient,
+        owner: SolanaSwift.Account,
+        destinationMint: PublicKey,
+        destinationAddress: PublicKey?,
+        feePayerAddress: PublicKey,
+        relayContext: RelayContext,
+        recentBlockhash: String,
+        env: inout BuildContext.Environment
+    ) async throws {
         var destinationNewAccount: Account?
         
-        let destinationManager = DestinationFinderImpl(solanaAPIClient: context.solanaApiClient)
+        let destinationManager = DestinationFinderImpl(solanaAPIClient: solanaAPIClient)
         
         let destinationInfo = try await destinationManager.findRealDestination(
-            owner: context.config.userAccount.publicKey,
-            mint: context.config.destinationTokenMint,
-            givenDestination: context.config.destinationAddress
+            owner: owner.publicKey,
+            mint: destinationMint,
+            givenDestination: destinationAddress
         )
         
         var userDestinationTokenAccountAddress = destinationInfo.destination.address
@@ -23,54 +32,54 @@ extension  SwapTransactionBuilder {
         if destinationInfo.needsCreation {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
-                destinationNewAccount = try await Account(network: context.solanaApiClient.endpoint.network)
-                context.env.instructions.append(contentsOf: [
+                destinationNewAccount = try await Account(network: solanaAPIClient.endpoint.network)
+                env.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
-                        from: context.feeRelayerContext.feePayerAddress,
+                        from: feePayerAddress,
                         toNewPubkey: destinationNewAccount!.publicKey,
-                        lamports: context.feeRelayerContext.minimumTokenAccountBalance,
+                        lamports: relayContext.minimumTokenAccountBalance,
                         space: AccountInfo.BUFFER_LENGTH,
                         programId: TokenProgram.id
                     ),
                     TokenProgram.initializeAccountInstruction(
                         account: destinationNewAccount!.publicKey,
                         mint:  destinationInfo.destination.mint,
-                        owner: context.config.userAccount.publicKey
+                        owner: owner.publicKey
                     ),
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey
-                context.env.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
+                env.accountCreationFee += relayContext.minimumTokenAccountBalance
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
-                    walletAddress: context.config.userAccount.publicKey,
+                    walletAddress: owner.publicKey,
                     tokenMintAddress:  destinationInfo.destination.mint
                 )
 
                 let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
                     mint:  destinationInfo.destination.mint,
-                    owner: context.config.userAccount.publicKey,
-                    payer: context.feeRelayerContext.feePayerAddress
+                    owner: owner.publicKey,
+                    payer: feePayerAddress
                 )
 
                 // SPECIAL CASE WHEN WE SWAP FROM SOL TO NON-CREATED SPL TOKEN, THEN WE NEEDS ADDITIONAL TRANSACTION BECAUSE TRANSACTION IS TOO LARGE
-                if context.env.sourceWSOLNewAccount != nil {
-                    context.env.additionalTransaction = try makeTransaction(
-                        context.feeRelayerContext,
+                if env.sourceWSOLNewAccount != nil {
+                    env.additionalTransaction = try makeTransaction(
+                        relayContext,
                         instructions: [instruction],
-                        signers: [context.config.userAccount],
-                        blockhash: context.config.blockhash,
-                        accountCreationFee: context.feeRelayerContext.minimumTokenAccountBalance
+                        signers: [owner],
+                        blockhash: recentBlockhash,
+                        accountCreationFee: relayContext.minimumTokenAccountBalance
                     )
                 } else {
-                    context.env.instructions.append(instruction)
-                    context.env.accountCreationFee += context.feeRelayerContext.minimumTokenAccountBalance
+                    env.instructions.append(instruction)
+                    env.accountCreationFee += relayContext.minimumTokenAccountBalance
                 }
                 userDestinationTokenAccountAddress = associatedAddress
             }
         }
         
-        context.env.destinationNewAccount = destinationNewAccount
-        context.env.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
+        env.destinationNewAccount = destinationNewAccount
+        env.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
     }
 }
