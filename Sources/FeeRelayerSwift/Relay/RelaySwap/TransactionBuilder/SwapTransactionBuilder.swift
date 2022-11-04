@@ -50,7 +50,11 @@ internal enum SwapTransactionBuilder {
     
         // build swap data
         try await checkSwapData(
-            context: &context,
+            network: context.solanaApiClient.endpoint.network,
+            owner: context.config.userAccount.publicKey,
+            feePayerAddress: context.feeRelayerContext.feePayerAddress,
+            poolsPair: context.config.pools,
+            env: &context.env,
             swapData: try buildSwapData(
                 userAccount: context.config.userAccount,
                 network: context.solanaApiClient.endpoint.network,
