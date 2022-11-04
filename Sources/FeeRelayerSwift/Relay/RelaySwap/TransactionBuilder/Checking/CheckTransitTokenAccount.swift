@@ -7,22 +7,28 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension SwapTransactionBuilder {
-    static func checkTransitTokenAccount(_ context: inout BuildContext) async throws {
+    static func checkTransitTokenAccount(
+        solanaAPIClient: SolanaAPIClient,
+        orcaSwap: OrcaSwapType,
+        owner: PublicKey,
+        poolsPair: PoolsPair,
+        env: inout BuildContext.Environment
+    ) async throws {
         let transitToken = try? TransitTokenAccountManager.getTransitToken(
-            network: context.solanaApiClient.endpoint.network,
-            orcaSwap: context.orcaSwap,
-            owner: context.config.userAccount.publicKey,
-            pools: context.config.pools
+            network: solanaAPIClient.endpoint.network,
+            orcaSwap: orcaSwap,
+            owner: owner,
+            pools: poolsPair
         )
         
         let needsCreateTransitTokenAccount = try await TransitTokenAccountManager
             .checkIfNeedsCreateTransitTokenAccount(
-                solanaApiClient: context.solanaApiClient,
+                solanaApiClient: solanaAPIClient,
                 transitToken: transitToken
             )
 
-        context.env.needsCreateTransitTokenAccount = needsCreateTransitTokenAccount
-        context.env.transitTokenAccountAddress = transitToken?.address
-        context.env.transitTokenMintPubkey = transitToken?.mint
+        env.needsCreateTransitTokenAccount = needsCreateTransitTokenAccount
+        env.transitTokenAccountAddress = transitToken?.address
+        env.transitTokenMintPubkey = transitToken?.mint
     }
 }

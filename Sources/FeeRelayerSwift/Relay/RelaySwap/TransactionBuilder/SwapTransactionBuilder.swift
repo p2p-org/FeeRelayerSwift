@@ -17,7 +17,13 @@ internal enum SwapTransactionBuilder {
         guard context.env.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
 
         // check transit token
-        try await checkTransitTokenAccount(&context)
+        try await checkTransitTokenAccount(
+            solanaAPIClient: context.solanaApiClient,
+            orcaSwap: context.orcaSwap,
+            owner: context.config.userAccount.publicKey,
+            poolsPair: context.config.pools,
+            env: &context.env
+        )
         
         // check source
         try await checkSource(
