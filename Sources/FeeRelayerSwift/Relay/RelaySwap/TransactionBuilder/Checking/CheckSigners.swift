@@ -9,7 +9,7 @@ extension SwapTransactionBuilder {
     static func checkSigners(
         ownerAccount: Account,
         env: inout BuildContext.Environment
-    ) throws {
+    ) {
         env.signers.append(ownerAccount)
         if let sourceWSOLNewAccount = env.sourceWSOLNewAccount { env.signers.append(sourceWSOLNewAccount) }
         if let destinationNewAccount = env.destinationNewAccount { env.signers.append(destinationNewAccount) }

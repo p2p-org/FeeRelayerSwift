@@ -80,7 +80,7 @@ internal enum SwapTransactionBuilder {
         )
         
         // check signers
-        try checkSigners(
+        checkSigners(
             ownerAccount: context.config.userAccount,
             env: &context.env
         )
