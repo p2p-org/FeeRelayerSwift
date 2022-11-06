@@ -17,7 +17,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         
         try await SwapTransactionBuilder.checkTransitTokenAccount(
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
-            orcaSwap: MockOrcaSwap(),
+            orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
             poolsPair: [solBTCPool()],
             env: &env
@@ -33,7 +33,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         
         try await SwapTransactionBuilder.checkTransitTokenAccount(
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
-            orcaSwap: MockOrcaSwap(),
+            orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
             poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
             env: &env
@@ -49,7 +49,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         
         try await SwapTransactionBuilder.checkTransitTokenAccount(
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
-            orcaSwap: MockOrcaSwap(),
+            orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
             poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
             env: &env
@@ -58,21 +58,6 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         XCTAssertEqual(env.needsCreateTransitTokenAccount, false)
         XCTAssertEqual(env.transitTokenMintPubkey, .btcMint)
         XCTAssertEqual(env.transitTokenAccountAddress, .btcTransitTokenAccountAddress)
-    }
-}
-
-private class MockOrcaSwap: MockOrcaSwapBase {
-    override func getMint(tokenName: String) -> String? {
-        switch tokenName {
-        case "BTC":
-            return PublicKey.btcMint.base58EncodedString
-        case "ETH":
-            return PublicKey.ethMint.base58EncodedString
-        case "SOL":
-            return PublicKey.wrappedSOLMint.base58EncodedString
-        default:
-            fatalError()
-        }
     }
 }
 

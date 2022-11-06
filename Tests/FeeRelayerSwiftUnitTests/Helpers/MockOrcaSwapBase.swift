@@ -5,7 +5,16 @@ class MockOrcaSwapBase: OrcaSwapType {
     func load() async throws {}
     
     func getMint(tokenName: String) -> String? {
-        fatalError()
+        switch tokenName {
+        case "BTC":
+            return PublicKey.btcMint.base58EncodedString
+        case "ETH":
+            return PublicKey.ethMint.base58EncodedString
+        case "SOL":
+            return PublicKey.wrappedSOLMint.base58EncodedString
+        default:
+            fatalError()
+        }
     }
     
     func findPosibleDestinationMints(fromMint: String) throws -> [String] {
