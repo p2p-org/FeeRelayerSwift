@@ -57,7 +57,7 @@ extension SwapTransactionBuilder {
                 )
             }
             
-            // create transit token account
+            // get transit token info
             let transitTokenMint = try PublicKey(string: swap.transitTokenMintPubkey)
             let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
                 user: owner,
@@ -65,6 +65,7 @@ extension SwapTransactionBuilder {
                 network: network
             )
             
+            // create transit token account if needed
             if env.needsCreateTransitTokenAccount == true {
                 env.instructions.append(
                     try RelayProgram.createTransitTokenAccountInstruction(
