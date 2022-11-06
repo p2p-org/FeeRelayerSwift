@@ -86,7 +86,6 @@ extension PublicKey {
     
     static var btcAssociatedAddress: PublicKey {
         "4Vfs3NZ1Bo8agrfBJhMFdesso8tBWyUZAPBGMoWHuNRU"
-        
     }
 
     static var ethMint: PublicKey {

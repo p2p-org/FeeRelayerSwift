@@ -55,7 +55,7 @@ final class BuildSwapDataTests: XCTestCase {
             inputAmount: 10000000,
             minAmountOut: nil,
             slippage: 0.01,
-            transitTokenMintPubkey: .ethMint,
+            transitTokenMintPubkey: .btcMint,
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
         )
         let encodedSwapData = try JSONEncoder().encode(swapData.swapData as! TransitiveSwapData)
@@ -85,7 +85,7 @@ final class BuildSwapDataTests: XCTestCase {
                     amountIn: 14,
                     minimumAmountOut: 171
                 ),
-                transitTokenMintPubkey: "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
+                transitTokenMintPubkey: PublicKey.btcMint.base58EncodedString,
                 needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
             )
         )
