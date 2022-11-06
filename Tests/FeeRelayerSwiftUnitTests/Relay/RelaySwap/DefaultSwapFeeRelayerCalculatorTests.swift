@@ -10,12 +10,6 @@ import XCTest
 @testable import OrcaSwapSwift
 @testable import SolanaSwift
 
-private let btcMint: PublicKey = "9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E"
-private let btcAssociatedAddress: PublicKey = "4Vfs3NZ1Bo8agrfBJhMFdesso8tBWyUZAPBGMoWHuNRU"
-
-private let ethMint: PublicKey = "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk"
-private let ethAssociatedAddress: PublicKey = "4Tz8MH5APRfA4rjUNxhRruqGGMNvrgji3KhWYKf54dc7"
-
 final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
 
     var calculator: DefaultSwapFeeRelayerCalculator!
@@ -39,7 +33,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
-            destinationTokenMint: btcMint, // BTC
+            destinationTokenMint: .btcMint, // BTC
             destinationAddress: nil
         )
         
@@ -67,8 +61,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
-            destinationTokenMint: btcMint, // BTC
-            destinationAddress: btcAssociatedAddress
+            destinationTokenMint: .btcMint, // BTC
+            destinationAddress: .btcAssociatedAddress
         )
         
         XCTAssertEqual(
@@ -94,8 +88,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
-            sourceTokenMint: btcMint,
-            destinationTokenMint: ethMint, // BTC
+            sourceTokenMint: .btcMint,
+            destinationTokenMint: .ethMint, // BTC
             destinationAddress: nil
         )
         
@@ -122,9 +116,9 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
-            sourceTokenMint: btcMint,
-            destinationTokenMint: ethMint, // BTC
-            destinationAddress: ethAssociatedAddress
+            sourceTokenMint: .btcMint,
+            destinationTokenMint: .ethMint, // BTC
+            destinationAddress: .ethAssociatedAddress
         )
         
         XCTAssertEqual(
@@ -150,7 +144,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 1,
-            sourceTokenMint: btcMint,
+            sourceTokenMint: .btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
             destinationAddress: .owner
         )
@@ -181,7 +175,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
-            destinationTokenMint: btcMint, // BTC
+            destinationTokenMint: .btcMint, // BTC
             destinationAddress: nil
         )
         
@@ -209,8 +203,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
             sourceTokenMint: "So11111111111111111111111111111111111111112",
-            destinationTokenMint: btcMint, // BTC
-            destinationAddress: btcAssociatedAddress
+            destinationTokenMint: .btcMint, // BTC
+            destinationAddress: .btcAssociatedAddress
         )
         
         XCTAssertEqual(
@@ -236,8 +230,8 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
-            sourceTokenMint: btcMint,
-            destinationTokenMint: ethMint, // BTC
+            sourceTokenMint: .btcMint,
+            destinationTokenMint: .ethMint, // BTC
             destinationAddress: nil
         )
         
@@ -264,9 +258,9 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
-            sourceTokenMint: btcMint,
-            destinationTokenMint: ethMint, // BTC
-            destinationAddress: ethAssociatedAddress
+            sourceTokenMint: .btcMint,
+            destinationTokenMint: .ethMint, // BTC
+            destinationAddress: .ethAssociatedAddress
         )
         
         XCTAssertEqual(
@@ -292,7 +286,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
             lamportsPerSignature: lamportsPerSignature,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             swapPoolsCount: 2,
-            sourceTokenMint: btcMint,
+            sourceTokenMint: .btcMint,
             destinationTokenMint: .wrappedSOLMint, // BTC
             destinationAddress: .owner
         )
@@ -318,24 +312,24 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
 
     override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
         switch account {
-        case btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
+        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
             return nil
-        case btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
+        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
                 owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
+                data: .init(mint: .btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
                 executable: false,
                 rentEpoch: 0
             )
             return info as? BufferInfo<T>
-        case ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
+        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
             return nil
-        case ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
+        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
                 owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
+                data: .init(mint: .btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
                 executable: false,
                 rentEpoch: 0
             )
