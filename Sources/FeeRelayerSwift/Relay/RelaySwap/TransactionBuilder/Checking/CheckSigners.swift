@@ -6,9 +6,12 @@ import Foundation
 import SolanaSwift
 
 extension SwapTransactionBuilder {
-    static func checkSigners(_ context: inout BuildContext) throws {
-        context.env.signers.append(context.config.userAccount)
-        if let sourceWSOLNewAccount = context.env.sourceWSOLNewAccount { context.env.signers.append(sourceWSOLNewAccount) }
-        if let destinationNewAccount = context.env.destinationNewAccount { context.env.signers.append(destinationNewAccount) }
+    static func checkSigners(
+        ownerAccount: Account,
+        env: inout BuildContext.Environment
+    ) throws {
+        env.signers.append(ownerAccount)
+        if let sourceWSOLNewAccount = env.sourceWSOLNewAccount { env.signers.append(sourceWSOLNewAccount) }
+        if let destinationNewAccount = env.destinationNewAccount { env.signers.append(destinationNewAccount) }
     }
 }

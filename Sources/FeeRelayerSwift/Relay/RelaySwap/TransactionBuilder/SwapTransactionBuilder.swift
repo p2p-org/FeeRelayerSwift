@@ -80,7 +80,10 @@ internal enum SwapTransactionBuilder {
         )
         
         // check signers
-        try checkSigners(&context)
+        try checkSigners(
+            ownerAccount: context.config.userAccount,
+            env: &context.env
+        )
     
         var transactions: [PreparedTransaction] = []
         
