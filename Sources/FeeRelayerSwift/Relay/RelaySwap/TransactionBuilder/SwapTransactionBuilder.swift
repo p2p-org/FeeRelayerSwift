@@ -49,22 +49,25 @@ internal enum SwapTransactionBuilder {
         )
     
         // build swap data
-        try await checkSwapData(
+        let swapData = try await buildSwapData(
+            userAccount: context.config.userAccount,
+            network: context.solanaApiClient.endpoint.network,
+            pools: context.config.pools,
+            inputAmount: context.config.inputAmount,
+            minAmountOut: nil,
+            slippage: context.config.slippage,
+            transitTokenMintPubkey: context.env.transitTokenMintPubkey,
+            needsCreateTransitTokenAccount: context.env.needsCreateTransitTokenAccount == true
+        )
+        
+        // check swap data
+        try checkSwapData(
             network: context.solanaApiClient.endpoint.network,
             owner: context.config.userAccount.publicKey,
             feePayerAddress: context.feeRelayerContext.feePayerAddress,
             poolsPair: context.config.pools,
             env: &context.env,
-            swapData: try buildSwapData(
-                userAccount: context.config.userAccount,
-                network: context.solanaApiClient.endpoint.network,
-                pools: context.config.pools,
-                inputAmount: context.config.inputAmount,
-                minAmountOut: nil,
-                slippage: context.config.slippage,
-                transitTokenMintPubkey: context.env.transitTokenMintPubkey,
-                needsCreateTransitTokenAccount: context.env.needsCreateTransitTokenAccount == true
-            )
+            swapData: swapData
         )
     
         // closing accounts
