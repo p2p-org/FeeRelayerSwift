@@ -77,7 +77,20 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
             env: .init()
         )
         
-        return try await SwapTransactionBuilder.prepareSwapTransaction(&buildContext)
+        return try await SwapTransactionBuilder.prepareSwapTransaction(
+            userAccount: buildContext.config.userAccount,
+            sourceTokenAccount: buildContext.config.sourceAccount,
+            destinationTokenMint: buildContext.config.destinationTokenMint,
+            destinationAddress: buildContext.config.destinationAddress,
+            poolsPair: buildContext.config.pools,
+            inputAmount: buildContext.config.inputAmount,
+            slippage: buildContext.config.slippage,
+            solanaAPIClient: buildContext.solanaApiClient,
+            orcaSwap: buildContext.orcaSwap,
+            relayContext: buildContext.feeRelayerContext,
+            blockhash: buildContext.config.blockhash,
+            env: &buildContext.env
+        )
     }
 
     func prepareForTopUpAndSwap(

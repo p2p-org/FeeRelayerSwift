@@ -7,101 +7,114 @@ import OrcaSwapSwift
 import SolanaSwift
 
 internal enum SwapTransactionBuilder {
-    internal static func prepareSwapTransaction(_ context: inout BuildContext) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
-        context.env.userSource = context.config.sourceAccount.address
+    internal static func prepareSwapTransaction(
+        userAccount: Account,
+        sourceTokenAccount: TokenAccount,
+        destinationTokenMint: PublicKey,
+        destinationAddress: PublicKey?,
+        poolsPair: PoolsPair,
+        inputAmount: UInt64,
+        slippage: Double,
+        solanaAPIClient: SolanaAPIClient,
+        orcaSwap: OrcaSwapType,
+        relayContext: RelayContext,
+        blockhash: String,
+        env: inout BuildContext.Environment
+    ) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
+        env.userSource = sourceTokenAccount.address
         
         let associatedToken = try PublicKey.associatedTokenAddress(
-            walletAddress: context.feeRelayerContext.feePayerAddress,
-            tokenMintAddress: context.config.sourceAccount.mint
+            walletAddress: relayContext.feePayerAddress,
+            tokenMintAddress: sourceTokenAccount.mint
         )
-        guard context.env.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
+        guard env.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
 
         // check transit token
         try await checkTransitTokenAccount(
-            solanaAPIClient: context.solanaApiClient,
-            orcaSwap: context.orcaSwap,
-            owner: context.config.userAccount.publicKey,
-            poolsPair: context.config.pools,
-            env: &context.env
+            solanaAPIClient: solanaAPIClient,
+            orcaSwap: orcaSwap,
+            owner: userAccount.publicKey,
+            poolsPair: poolsPair,
+            env: &env
         )
         
         // check source
         try await checkSource(
-            owner: context.config.userAccount.publicKey,
-            sourceMint: context.config.sourceAccount.mint,
-            inputAmount: context.config.inputAmount,
-            network: context.solanaApiClient.endpoint.network,
-            feePayer: context.feeRelayerContext.feePayerAddress,
-            minimumTokenAccountBalance: context.feeRelayerContext.minimumTokenAccountBalance,
-            env: &context.env
+            owner: userAccount.publicKey,
+            sourceMint: sourceTokenAccount.mint,
+            inputAmount: inputAmount,
+            network: solanaAPIClient.endpoint.network,
+            feePayer: relayContext.feePayerAddress,
+            minimumTokenAccountBalance: relayContext.minimumTokenAccountBalance,
+            env: &env
         )
     
         // check destination
         try await checkDestination(
-            solanaAPIClient: context.solanaApiClient,
-            owner: context.config.userAccount,
-            destinationMint: context.config.destinationTokenMint,
-            destinationAddress: context.config.destinationAddress,
-            feePayerAddress: context.feeRelayerContext.feePayerAddress,
-            relayContext: context.feeRelayerContext,
-            recentBlockhash: context.config.blockhash,
-            env: &context.env
+            solanaAPIClient: solanaAPIClient,
+            owner: userAccount,
+            destinationMint: destinationTokenMint,
+            destinationAddress: destinationAddress,
+            feePayerAddress: relayContext.feePayerAddress,
+            relayContext: relayContext,
+            recentBlockhash: blockhash,
+            env: &env
         )
     
         // build swap data
         let swapData = try await buildSwapData(
-            userAccount: context.config.userAccount,
-            network: context.solanaApiClient.endpoint.network,
-            pools: context.config.pools,
-            inputAmount: context.config.inputAmount,
+            userAccount: userAccount,
+            network: solanaAPIClient.endpoint.network,
+            pools: poolsPair,
+            inputAmount: inputAmount,
             minAmountOut: nil,
-            slippage: context.config.slippage,
-            transitTokenMintPubkey: context.env.transitTokenMintPubkey,
-            needsCreateTransitTokenAccount: context.env.needsCreateTransitTokenAccount == true
+            slippage: slippage,
+            transitTokenMintPubkey: env.transitTokenMintPubkey,
+            needsCreateTransitTokenAccount: env.needsCreateTransitTokenAccount == true
         )
         
         // check swap data
         try checkSwapData(
-            network: context.solanaApiClient.endpoint.network,
-            owner: context.config.userAccount.publicKey,
-            feePayerAddress: context.feeRelayerContext.feePayerAddress,
-            poolsPair: context.config.pools,
-            env: &context.env,
+            network: solanaAPIClient.endpoint.network,
+            owner: userAccount.publicKey,
+            feePayerAddress: relayContext.feePayerAddress,
+            poolsPair: poolsPair,
+            env: &env,
             swapData: swapData
         )
     
         // closing accounts
         try checkClosingAccount(
-            owner: context.config.userAccount.publicKey,
-            feePayer: context.feeRelayerContext.feePayerAddress,
-            destinationTokenMint: context.config.destinationTokenMint,
-            minimumTokenAccountBalance: context.feeRelayerContext.minimumTokenAccountBalance,
-            env: &context.env
+            owner: userAccount.publicKey,
+            feePayer: relayContext.feePayerAddress,
+            destinationTokenMint: destinationTokenMint,
+            minimumTokenAccountBalance: relayContext.minimumTokenAccountBalance,
+            env: &env
         )
         
         // check signers
         checkSigners(
-            ownerAccount: context.config.userAccount,
-            env: &context.env
+            ownerAccount: userAccount,
+            env: &env
         )
     
         var transactions: [PreparedTransaction] = []
         
         // include additional transaciton
-        if let additionalTransaction = context.env.additionalTransaction { transactions.append(additionalTransaction) }
+        if let additionalTransaction = env.additionalTransaction { transactions.append(additionalTransaction) }
         
         // make primary transaction
         transactions.append(
             try makeTransaction(
-                context.feeRelayerContext,
-                instructions: context.env.instructions,
-                signers: context.env.signers,
-                blockhash: context.config.blockhash,
-                accountCreationFee: context.env.accountCreationFee
+                relayContext,
+                instructions: env.instructions,
+                signers: env.signers,
+                blockhash: blockhash,
+                accountCreationFee: env.accountCreationFee
             )
         )
         
-        return (transactions: transactions, additionalPaybackFee: context.env.additionalPaybackFee)
+        return (transactions: transactions, additionalPaybackFee: env.additionalPaybackFee)
     }
     
     internal static func makeTransaction(
