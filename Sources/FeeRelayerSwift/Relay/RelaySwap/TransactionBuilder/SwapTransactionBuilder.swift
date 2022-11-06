@@ -71,7 +71,13 @@ internal enum SwapTransactionBuilder {
         )
     
         // closing accounts
-        try checkClosingAccount(&context)
+        try checkClosingAccount(
+            owner: context.config.userAccount.publicKey,
+            feePayer: context.feeRelayerContext.feePayerAddress,
+            destinationTokenMint: context.config.destinationTokenMint,
+            minimumTokenAccountBalance: context.feeRelayerContext.minimumTokenAccountBalance,
+            env: &context.env
+        )
         
         // check signers
         try checkSigners(&context)

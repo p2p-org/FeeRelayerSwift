@@ -7,31 +7,37 @@ import SolanaSwift
 import OrcaSwapSwift
 
 extension SwapTransactionBuilder {
-    static internal func checkClosingAccount(_ context: inout BuildContext) throws {
-        if let newAccount = context.env.sourceWSOLNewAccount {
-            context.env.instructions.append(contentsOf: [
+    static internal func checkClosingAccount(
+        owner: PublicKey,
+        feePayer: PublicKey,
+        destinationTokenMint: PublicKey,
+        minimumTokenAccountBalance: UInt64,
+        env: inout BuildContext.Environment
+    ) throws {
+        if let newAccount = env.sourceWSOLNewAccount {
+            env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
-                    destination: context.config.userAccount.publicKey,
-                    owner: context.config.userAccount.publicKey
+                    destination: owner,
+                    owner: owner
                 )
             ])
         }
         // close destination
-        if let newAccount = context.env.destinationNewAccount, context.config.destinationTokenMint == .wrappedSOLMint {
-            context.env.instructions.append(contentsOf: [
+        if let newAccount = env.destinationNewAccount, destinationTokenMint == .wrappedSOLMint {
+            env.instructions.append(contentsOf: [
                 TokenProgram.closeAccountInstruction(
                     account: newAccount.publicKey,
-                    destination: context.config.userAccount.publicKey,
-                    owner: context.config.userAccount.publicKey
+                    destination: owner,
+                    owner: owner
                 ),
                 SystemProgram.transferInstruction(
-                    from: context.config.userAccount.publicKey,
-                    to: context.feeRelayerContext.feePayerAddress,
-                    lamports: context.feeRelayerContext.minimumTokenAccountBalance
+                    from: owner,
+                    to: feePayer,
+                    lamports: minimumTokenAccountBalance
                 )
             ])
-            context.env.accountCreationFee -= context.feeRelayerContext.minimumTokenAccountBalance
+            env.accountCreationFee -= minimumTokenAccountBalance
         }
     }
 }
