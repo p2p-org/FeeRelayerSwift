@@ -56,9 +56,20 @@ public class FeeRelayerService: FeeRelayer {
         try await feeRelayerAPIClient.feeTokenData(mint: mint)
     }
 
-    public func relayTransaction(_ preparedTransaction: PreparedTransaction) async throws -> String {
+    public func relayTransaction(
+        _ preparedTransaction: PreparedTransaction,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> String {
         try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
-            try .init(preparedTransaction: preparedTransaction)
+            try .init(
+                preparedTransaction: preparedTransaction,
+                statsInfo: .init(
+                    operationType: configuration.operationType,
+                    deviceType: deviceType,
+                    currency: configuration.currency,
+                    build: buildNumber
+                )
+            )
         ))
     }
 
@@ -103,7 +114,15 @@ public class FeeRelayerService: FeeRelayer {
                     autoPayback: config.autoPayback
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
-                    try .init(preparedTransaction: preparedRelayTransaction)
+                    try .init(
+                        preparedTransaction: preparedRelayTransaction,
+                        statsInfo: .init(
+                            operationType: config.operationType,
+                            deviceType: deviceType,
+                            currency: config.currency,
+                            build: buildNumber
+                        )
+                    )
                 ))]
                 
                 trx.append(contentsOf: signatures)
@@ -161,7 +180,15 @@ public class FeeRelayerService: FeeRelayer {
                     autoPayback: config.autoPayback
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
-                    try .init(preparedTransaction: preparedRelayTransaction)
+                    try .init(
+                        preparedTransaction: preparedRelayTransaction,
+                        statsInfo: .init(
+                            operationType: config.operationType,
+                            deviceType: deviceType,
+                            currency: config.currency,
+                            build: buildNumber
+                        )
+                    )
                 ))]
                 trx.append(contentsOf: signatures)
             }
@@ -182,7 +209,6 @@ public class FeeRelayerService: FeeRelayer {
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
-        
         // if paying fee token is solana, skip the top up
         if payingFeeToken?.mint == PublicKey.wrappedSOLMint {
             return nil
@@ -264,7 +290,6 @@ public class FeeRelayerService: FeeRelayer {
         topUpPools: PoolsPair,
         expectedFee: UInt64
     ) async throws -> [String] {
-        
         let transitToken = try TransitTokenAccountAnalysator.getTransitToken(
             solanaApiClient: solanaApiClient,
             orcaSwap: orcaSwap,
