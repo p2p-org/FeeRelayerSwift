@@ -11,16 +11,25 @@ import XCTest
 @testable import SolanaSwift
 
 final class CheckTransitTokenAccount2Tests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
 
     func testDirectSwapWithNoTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
+        swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [solBTCPool()],
-            env: &env
+            output: &env
         )
         
         XCTAssertNil(env.needsCreateTransitTokenAccount)
@@ -29,14 +38,18 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
     }
     
     func testTransitiveSwapWithNonCreatedTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
+        swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.needsCreateTransitTokenAccount, true)
@@ -45,14 +58,18 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
     }
     
     func testTransitiveSwapWithCreatedTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
+        swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.needsCreateTransitTokenAccount, false)

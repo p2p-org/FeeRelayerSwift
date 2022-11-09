@@ -10,14 +10,28 @@ import SolanaSwift
 @testable import FeeRelayerSwift
 
 final class CheckClosingAccount2Tests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func setUp() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+    }
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testClosingAccountWithSourceWSOL() async throws {
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: newWSOL
         )
         
-        try SwapTransactionBuilder.checkClosingAccount(
+        try swapTransactionBuilder.checkClosingAccount(
             owner: owner.publicKey,
             feePayer: .feePayerAddress,
             destinationTokenMint: .btcMint,
@@ -39,12 +53,12 @@ final class CheckClosingAccount2Tests: XCTestCase {
     func testSignersWithDestinationWSOL() async throws {
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             destinationNewAccount: newWSOL,
             accountCreationFee: minimumTokenAccountBalance
         )
         
-        try SwapTransactionBuilder.checkClosingAccount(
+        try swapTransactionBuilder.checkClosingAccount(
             owner: owner.publicKey,
             feePayer: .feePayerAddress,
             destinationTokenMint: .wrappedSOLMint,

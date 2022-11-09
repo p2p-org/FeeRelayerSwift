@@ -8,13 +8,11 @@ import OrcaSwapSwift
 
 extension SwapTransactionBuilderImpl {
      func checkSwapData(
-        network: SolanaSwift.Network,
         owner: PublicKey,
-        feePayerAddress: PublicKey,
         poolsPair: PoolsPair,
         env: inout SwapTransactionBuilderOutput,
         swapData: SwapData
-     ) throws {
+     ) async throws {
         let userTransferAuthority = swapData.transferAuthorityAccount?.publicKey
         switch swapData.swapData {
         case let swap as DirectSwapData:
@@ -62,18 +60,18 @@ extension SwapTransactionBuilderImpl {
             let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
                 user: owner,
                 transitTokenMint: transitTokenMint,
-                network: network
+                network: solanaAPIClient.endpoint.network
             )
             
             // create transit token account if needed
             if env.needsCreateTransitTokenAccount == true {
                 env.instructions.append(
                     try RelayProgram.createTransitTokenAccountInstruction(
-                        feePayer: feePayerAddress,
+                        feePayer: try await relayContextManager.getCurrentContext().feePayerAddress,
                         userAuthority: owner,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: transitTokenMint,
-                        network: network
+                        network: solanaAPIClient.endpoint.network
                     )
                 )
             }
@@ -86,8 +84,8 @@ extension SwapTransactionBuilderImpl {
                     sourceAddressPubkey: env.userSource!,
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: env.userDestinationTokenAccountAddress!,
-                    feePayerPubkey: feePayerAddress,
-                    network: network
+                    feePayerPubkey: try await relayContextManager.getCurrentContext().feePayerAddress,
+                    network: solanaAPIClient.endpoint.network
                 )
             )
         default:

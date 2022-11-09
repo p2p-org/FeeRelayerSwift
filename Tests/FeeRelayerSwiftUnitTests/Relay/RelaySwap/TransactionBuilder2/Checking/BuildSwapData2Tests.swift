@@ -6,20 +6,26 @@ import SolanaSwift
 final class BuildSwapData2Tests: XCTestCase {
     private var accountStorage: MockAccountStorage!
     var account: SolanaSwift.Account { accountStorage.account! }
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
     
     override func setUp() async throws {
         accountStorage = try await .init()
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
     }
     
     override func tearDown() async throws {
         accountStorage = nil
+        swapTransactionBuilder = nil
     }
 
     func testBuildDirectSwapData() async throws {
         // SOL -> BTC
-        let swapData = try await SwapTransactionBuilder.buildSwapData(
+        let swapData = try await swapTransactionBuilder.buildSwapData(
             userAccount: account,
-            network: .mainnetBeta,
             pools: [solBTCPool()],
             inputAmount: 10000,
             minAmountOut: 100,
@@ -48,9 +54,8 @@ final class BuildSwapData2Tests: XCTestCase {
         // SOL -> BTC -> ETH
         let needsCreateTransitTokenAccount = Bool.random()
         
-        let swapData = try await SwapTransactionBuilder.buildSwapData(
+        let swapData = try await swapTransactionBuilder.buildSwapData(
             userAccount: account,
-            network: .mainnetBeta,
             pools: [solBTCPool(), btcETHPool()],
             inputAmount: 10000000,
             minAmountOut: nil,

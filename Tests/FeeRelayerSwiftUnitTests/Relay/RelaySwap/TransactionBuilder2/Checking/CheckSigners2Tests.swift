@@ -10,14 +10,26 @@ import SolanaSwift
 @testable import FeeRelayerSwift
 
 final class CheckSigners2Tests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testSignersWithSourceWSOL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+        
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: newWSOL
         )
         
-        SwapTransactionBuilder.checkSigners(
+        swapTransactionBuilder.checkSigners(
             ownerAccount: owner,
             env: &env
         )
@@ -27,13 +39,19 @@ final class CheckSigners2Tests: XCTestCase {
     }
     
     func testSignersWithDestinationWSOL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManagerBase()
+        )
+        
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             destinationNewAccount: newWSOL
         )
         
-        SwapTransactionBuilder.checkSigners(
+        swapTransactionBuilder.checkSigners(
             ownerAccount: owner,
             env: &env
         )

@@ -11,6 +11,7 @@ import XCTest
 
 final class CheckDestination2Tests: XCTestCase {
     private var accountStorage: MockAccountStorage!
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
     var account: SolanaSwift.Account { accountStorage.account! }
     
     override func setUp() async throws {
@@ -19,22 +20,26 @@ final class CheckDestination2Tests: XCTestCase {
     
     override func tearDown() async throws {
         accountStorage = nil
+        swapTransactionBuilder = nil
     }
     
     func testCheckDestinationWhenDestinationIsCreatedSPLToken() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
         let destinationAddress: PublicKey = "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK"
         
-        var env = SwapTransactionBuilder.BuildContext.Environment()
+        var env = SwapTransactionBuilderOutput()
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: destinationAddress,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.instructions.count, 0)
@@ -45,17 +50,20 @@ final class CheckDestination2Tests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNonCreatedSPLToken() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkDestination(
+        swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: nil,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         let decodedInstruction = try JSONEncoder().encode(env.instructions)
@@ -80,18 +88,20 @@ final class CheckDestination2Tests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNativeSOL() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        let relayContext = createContext()
-        
-        try await SwapTransactionBuilder.checkDestination(
+        swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .wrappedSOLMint,
             destinationAddress: account.publicKey,
-            feePayerAddress: .feePayerAddress,
-            relayContext: relayContext,
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         XCTAssertNotNil(env.destinationNewAccount)
@@ -100,7 +110,7 @@ final class CheckDestination2Tests: XCTestCase {
             SystemProgram.createAccountInstruction(
                 from: .feePayerAddress,
                 toNewPubkey: env.destinationNewAccount!.publicKey,
-                lamports: relayContext.minimumTokenAccountBalance,
+                lamports: minimumTokenAccountBalance,
                 space: AccountInfo.BUFFER_LENGTH,
                 programId: TokenProgram.id
             ),
@@ -119,20 +129,23 @@ final class CheckDestination2Tests: XCTestCase {
     }
     
     func testCheckDestinationSpecialCaseWhenSourceTokenIsNativeSOLAndDestinationIsNonCreatedSPL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
         let sourceWSOLNewAccount = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: sourceWSOLNewAccount
         )
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: nil,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         // create account instruction is moved to separated instruction
@@ -161,10 +174,10 @@ final class CheckDestination2Tests: XCTestCase {
         )
         XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
     }
-    
-    // MARK: - Helpers
-    
-    private func createContext() -> RelayContext {
+}
+
+private class MockRelayContextManager: MockRelayContextManagerBase {
+    override func getCurrentContext() async throws -> RelayContext {
         .init(
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             minimumRelayAccountBalance: minimumRelayAccountBalance,

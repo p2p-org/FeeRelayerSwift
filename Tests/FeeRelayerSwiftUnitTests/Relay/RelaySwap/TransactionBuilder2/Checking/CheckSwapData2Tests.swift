@@ -11,6 +11,20 @@ import XCTest
 import SolanaSwift
 
 final class CheckSwapData2Tests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func setUp() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+    }
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testCheckDirectSwapData() async throws {
         // BTC -> ETH
         let swapData = DirectSwapData(
@@ -26,15 +40,13 @@ final class CheckSwapData2Tests: XCTestCase {
             minimumAmountOut: 171
         )
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: .btcAssociatedAddress,
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try SwapTransactionBuilder.checkSwapData(
-            network: .mainnetBeta,
+        try await swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            feePayerAddress: .feePayerAddress,
             poolsPair: [btcETHPool()],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
@@ -90,16 +102,14 @@ final class CheckSwapData2Tests: XCTestCase {
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
         )
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo",
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try SwapTransactionBuilder.checkSwapData(
-            network: .mainnetBeta,
+        try await swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            feePayerAddress: .feePayerAddress,
             poolsPair: [btcETHPool()],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
@@ -150,5 +160,23 @@ final class CheckSwapData2Tests: XCTestCase {
 
         XCTAssertEqual(swapInstruction.programId, "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
         XCTAssertEqual(swapInstruction.data, [UInt8]([4, 128, 150, 152, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 171, 0, 0, 0, 0, 0, 0, 0]))
+    }
+}
+
+private class MockRelayContextManager: MockRelayContextManagerBase {
+    override func getCurrentContext() async throws -> RelayContext {
+        .init(
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            minimumRelayAccountBalance: minimumRelayAccountBalance,
+            feePayerAddress: .feePayerAddress,
+            lamportsPerSignature: lamportsPerSignature,
+            relayAccountStatus: .created(balance: 0),
+            usageStatus: .init(
+                maxUsage: 10000000,
+                currentUsage: 0,
+                maxAmount: 10000000,
+                amountUsed: 0
+            )
+        )
     }
 }

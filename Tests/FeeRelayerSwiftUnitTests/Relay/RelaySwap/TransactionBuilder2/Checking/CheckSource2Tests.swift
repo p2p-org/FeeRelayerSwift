@@ -10,22 +10,31 @@ import XCTest
 import SolanaSwift
 
 final class CheckSource2Tests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testCheckSourceWhenSwappingFromSPLToken() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
         // source token is USDC (not native SOL)
         let originalUserSource: PublicKey = "HGeQ9fjhqKHeaSJr9pWBYSG1UWx3X9Jdx8nXX2immPDU"
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: originalUserSource
         )
         
-        try await SwapTransactionBuilder.checkSource(
+        try await swapTransactionBuilder.checkSource(
             owner: .owner,
             sourceMint: .usdcMint,
             inputAmount: 1000,
-            network: .mainnetBeta,
-            feePayer: "HkLNnxTFst1oLrKAJc3w6Pq8uypRnqLMrC68iBP6qUPu",
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.instructions.count, 0)
@@ -34,21 +43,24 @@ final class CheckSource2Tests: XCTestCase {
     }
     
     func testCheckSourceWhenSwappingFromNativeSOL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
         // source token is NativeSOL
         let inputAmount: UInt64 = 1000
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: .owner
         )
         
-        try await SwapTransactionBuilder.checkSource(
+        try await swapTransactionBuilder.checkSource(
             owner: .owner,
             sourceMint: .wrappedSOLMint,
             inputAmount: inputAmount,
-            network: .mainnetBeta,
-            feePayer: .feePayerAddress,
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            env: &env
+            output: &env
         )
         
         let codedInstructions = try JSONEncoder().encode(env.instructions)
@@ -78,21 +90,24 @@ final class CheckSource2Tests: XCTestCase {
     }
     
     func testCheckSourceWhenSwappingFromSPLSOL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClientBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            relayContextManager: MockRelayContextManager()
+        )
+        
         // source token is SPL SOL
         let originalUserSource: PublicKey = "HGeQ9fjhqKHeaSJr9pWBYSG1UWx3X9Jdx8nXX2immPDU"
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: originalUserSource
         )
         
-        try await SwapTransactionBuilder.checkSource(
+        try await swapTransactionBuilder.checkSource(
             owner: .owner,
             sourceMint: .wrappedSOLMint,
             inputAmount: 1000,
-            network: .mainnetBeta,
-            feePayer: .feePayerAddress,
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.instructions.count, 0)
@@ -100,4 +115,22 @@ final class CheckSource2Tests: XCTestCase {
         XCTAssertNil(env.sourceWSOLNewAccount)
     }
 
+}
+
+private class MockRelayContextManager: MockRelayContextManagerBase {
+    override func getCurrentContext() async throws -> RelayContext {
+        .init(
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            minimumRelayAccountBalance: minimumRelayAccountBalance,
+            feePayerAddress: .feePayerAddress,
+            lamportsPerSignature: lamportsPerSignature,
+            relayAccountStatus: .created(balance: 0),
+            usageStatus: .init(
+                maxUsage: 10000000,
+                currentUsage: 0,
+                maxAmount: 10000000,
+                amountUsed: 0
+            )
+        )
+    }
 }

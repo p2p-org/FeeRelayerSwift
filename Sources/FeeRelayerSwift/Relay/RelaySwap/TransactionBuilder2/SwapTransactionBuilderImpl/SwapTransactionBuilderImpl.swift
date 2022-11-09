@@ -60,7 +60,6 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         // build swap data
         let swapData = try await buildSwapData(
             userAccount: input.userAccount,
-            network: solanaAPIClient.endpoint.network,
             pools: input.pools,
             inputAmount: input.inputAmount,
             minAmountOut: nil,
@@ -70,10 +69,8 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         )
         
         // check swap data
-        try checkSwapData(
-            network: solanaAPIClient.endpoint.network,
+        try await checkSwapData(
             owner: input.userAccount.publicKey,
-            feePayerAddress: relayContext.feePayerAddress,
             poolsPair: input.pools,
             env: &output,
             swapData: swapData

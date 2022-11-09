@@ -17,7 +17,6 @@ extension SwapTransactionBuilderImpl {
     
     func buildSwapData(
         userAccount: Account,
-        network: Network,
         pools: PoolsPair,
         inputAmount: UInt64?,
         minAmountOut: UInt64?,
@@ -31,7 +30,7 @@ extension SwapTransactionBuilderImpl {
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try await Account(network: network)
+        let transferAuthority = try await Account(network: solanaAPIClient.endpoint.network)
         
         // form topUp params
         if pools.count == 1 {
