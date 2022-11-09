@@ -44,7 +44,17 @@ class APIClientTests: XCTestCase {
         )
         
         let txs = try await feeRelayerAPIClient.sendTransaction(
-            .relayTransaction(.init(preparedTransaction: mockedTransaction))
+            .relayTransaction(
+                .init(
+                    preparedTransaction: mockedTransaction,
+                    statsInfo: .init(
+                        operationType: .transfer,
+                        deviceType: .iOS,
+                        currency: "SOL",
+                        build: "2.0.0"
+                    )
+                )
+            )
         )
         XCTAssertEqual(txs, "39ihraT1nDRgJbg8owTukvoqJ2cqb84qXGdkjtLbpGuGrgyCpr4F2v57XpvNaJxysEpGWatMFG6zQi6rc91689P2")
     }
