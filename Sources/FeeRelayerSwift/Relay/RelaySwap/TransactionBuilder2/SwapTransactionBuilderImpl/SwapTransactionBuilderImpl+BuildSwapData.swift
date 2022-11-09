@@ -1,18 +1,21 @@
-// Copyright 2022 P2P Validator Authors. All rights reserved.
-// Use of this source code is governed by a MIT-style license that can be
-// found in the LICENSE file.
+//
+//  File.swift
+//  
+//
+//  Created by Chung Tran on 09/11/2022.
+//
 
 import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-extension SwapTransactionBuilder {
-    internal struct SwapData {
+extension SwapTransactionBuilderImpl {
+    struct SwapData {
         let swapData: FeeRelayerRelaySwapType
         let transferAuthorityAccount: Account?
     }
     
-    static func buildSwapData(
+    func buildSwapData(
         userAccount: Account,
         network: Network,
         pools: PoolsPair,
@@ -91,5 +94,26 @@ extension SwapTransactionBuilder {
                 transferAuthorityAccount: newTransferAuthority ? transferAuthority: nil
             )
         }
+    }
+}
+
+extension Pool {
+    func getSwapData(
+        transferAuthorityPubkey: PublicKey,
+        amountIn: UInt64,
+        minAmountOut: UInt64
+    ) -> DirectSwapData {
+        .init(
+            programId: swapProgramId.base58EncodedString,
+            accountPubkey: account,
+            authorityPubkey: authority,
+            transferAuthorityPubkey: transferAuthorityPubkey.base58EncodedString,
+            sourcePubkey: tokenAccountA,
+            destinationPubkey: tokenAccountB,
+            poolTokenMintPubkey: poolTokenMint,
+            poolFeeAccountPubkey: feeAccount,
+            amountIn: amountIn,
+            minimumAmountOut: minAmountOut
+        )
     }
 }

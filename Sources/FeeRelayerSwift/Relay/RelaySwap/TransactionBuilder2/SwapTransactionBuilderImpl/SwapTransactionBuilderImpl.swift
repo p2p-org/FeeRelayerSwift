@@ -18,7 +18,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         self.relayContextManager = relayContextManager
     }
     
-    func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> SwapTransactionBuilderOutput {
+    func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         // get context
         let relayContext = try await relayContextManager.getCurrentContext()
         
@@ -56,6 +56,60 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
             recentBlockhash: input.blockhash,
             output: &output
         )
+        
+        // build swap data
+        let swapData = try await buildSwapData(
+            userAccount: input.userAccount,
+            network: solanaAPIClient.endpoint.network,
+            pools: input.pools,
+            inputAmount: input.inputAmount,
+            minAmountOut: nil,
+            slippage: input.slippage,
+            transitTokenMintPubkey: output.transitTokenMintPubkey,
+            needsCreateTransitTokenAccount: output.needsCreateTransitTokenAccount == true
+        )
+        
+        // check swap data
+        try checkSwapData(
+            network: solanaAPIClient.endpoint.network,
+            owner: input.userAccount.publicKey,
+            feePayerAddress: relayContext.feePayerAddress,
+            poolsPair: input.pools,
+            env: &output,
+            swapData: swapData
+        )
+        
+        // closing accounts
+        try checkClosingAccount(
+            owner: input.userAccount.publicKey,
+            feePayer: relayContext.feePayerAddress,
+            destinationTokenMint: input.destinationTokenMint,
+            minimumTokenAccountBalance: relayContext.minimumTokenAccountBalance,
+            env: &output
+        )
+        
+        // check signers
+        checkSigners(
+            ownerAccount: input.userAccount,
+            env: &output
+        )
+        
+        var transactions: [PreparedTransaction] = []
+        
+        // include additional transaciton
+        if let additionalTransaction = output.additionalTransaction { transactions.append(additionalTransaction) }
+        
+        // make primary transaction
+        transactions.append(
+            try await makeTransaction(
+                instructions: output.instructions,
+                signers: output.signers,
+                blockhash: input.blockhash,
+                accountCreationFee: output.accountCreationFee
+            )
+        )
+        
+        return (transactions: transactions, additionalPaybackFee: output.additionalPaybackFee)
         
 //        fatalError()
     }
