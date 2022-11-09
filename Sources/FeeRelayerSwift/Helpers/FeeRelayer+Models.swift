@@ -165,8 +165,17 @@ public struct RelayTransactionParam: Codable {
     let signatures: [String: String]
     let pubkeys: [String]
     let blockhash: String
+    let statsInfo: StatsInfo
     
-    public init(preparedTransaction: PreparedTransaction) throws {
+    enum CodingKeys: String, CodingKey {
+        case instructions
+        case signatures
+        case pubkeys
+        case blockhash
+        case statsInfo = "info"
+    }
+    
+    public init(preparedTransaction: PreparedTransaction, statsInfo: StatsInfo) throws {
         guard let recentBlockhash = preparedTransaction.transaction.recentBlockhash
         else {throw FeeRelayerError.unknown}
         
@@ -202,6 +211,7 @@ public struct RelayTransactionParam: Codable {
             }
         }
         self.signatures = signatures
+        self.statsInfo = statsInfo
     }
 }
 

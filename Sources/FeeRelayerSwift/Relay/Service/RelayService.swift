@@ -20,7 +20,8 @@ public protocol RelayService {
     ) async throws -> FeeTokenData
     
     func relayTransaction(
-        _ preparedTransaction: PreparedTransaction
+        _ preparedTransaction: PreparedTransaction,
+        config configuration: FeeRelayerConfiguration
     ) async throws -> String
 
     func topUpAndRelayTransaction(

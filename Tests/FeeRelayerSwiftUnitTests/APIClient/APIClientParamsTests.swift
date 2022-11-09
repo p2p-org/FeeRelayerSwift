@@ -116,12 +116,20 @@ class APIClientParamsTests: XCTestCase {
             expectedFee: .init(transaction: 0, accountBalances: 0)
         )
         
-        let params = try RelayTransactionParam(preparedTransaction: preparedTransaction)
+        let params = try RelayTransactionParam(
+            preparedTransaction: preparedTransaction,
+            statsInfo: .init(
+                operationType: .transfer,
+                deviceType: .iOS,
+                currency: "SOL",
+                build: "2.0.0"
+            )
+        )
         
         let data = try JSONEncoder().encode(params)
         let string = String(data: data, encoding: .utf8)
         
-        XCTAssertEqual(string, #"{"signatures":{"0":"5uvRMZRq2HopDZQx3pwgAn6WEUr1ETECm565EdyG5xwXtowpnetxdJzzSo6NEF1LffzwNMRaCByUhArMv23u3SJN"},"pubkeys":["Gd24j8rZNEZYQnnDEHrzzNW5KnyP9JCe4wpC2otNWt7z","6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D","11111111111111111111111111111111"],"instructions":[{"accounts":[{"is_signer":true,"is_writable":true,"pubkey":0},{"is_signer":false,"is_writable":true,"pubkey":1}],"data":[2,0,0,0,80,195,0,0,0,0,0,0],"program_id":2}],"blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"}"#)
+        XCTAssertEqual(string, #"{"signatures":{"0":"5uvRMZRq2HopDZQx3pwgAn6WEUr1ETECm565EdyG5xwXtowpnetxdJzzSo6NEF1LffzwNMRaCByUhArMv23u3SJN"},"pubkeys":["Gd24j8rZNEZYQnnDEHrzzNW5KnyP9JCe4wpC2otNWt7z","6Aj2GVxoCiEhhYTk9rNySg2QTgvtqSzR229KynihWH3D","11111111111111111111111111111111"],"info":{"build":"2.0.0","currency":"SOL","operation_type":"Transfer","device_type":"Ios"},"instructions":[{"accounts":[{"is_signer":true,"is_writable":true,"pubkey":0},{"is_signer":false,"is_writable":true,"pubkey":1}],"data":[2,0,0,0,80,195,0,0,0,0,0,0],"program_id":2}],"blockhash":"FyGp8WQvMAMiXs1E3YHRPhQ9KeNquTGu9NdnnKudrF7S"}"#)
     }
 }
 
