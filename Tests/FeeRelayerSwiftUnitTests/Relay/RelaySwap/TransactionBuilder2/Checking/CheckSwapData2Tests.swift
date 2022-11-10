@@ -47,7 +47,7 @@ final class CheckSwapData2Tests: XCTestCase {
         
         try await swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )
@@ -110,7 +110,7 @@ final class CheckSwapData2Tests: XCTestCase {
         
         try await swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )

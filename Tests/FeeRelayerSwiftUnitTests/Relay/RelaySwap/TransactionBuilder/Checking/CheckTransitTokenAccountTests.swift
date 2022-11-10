@@ -19,7 +19,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
-            poolsPair: [solBTCPool()],
+            poolsPair: [.solBTC],
             env: &env
         )
         
@@ -35,7 +35,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
-            poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
+            poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
             env: &env
         )
         
@@ -51,7 +51,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
             owner: .owner,
-            poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
+            poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
             env: &env
         )
         

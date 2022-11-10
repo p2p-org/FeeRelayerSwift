@@ -20,7 +20,7 @@ final class BuildSwapDataTests: XCTestCase {
         let swapData = try await SwapTransactionBuilder.buildSwapData(
             userAccount: account,
             network: .mainnetBeta,
-            pools: [solBTCPool()],
+            pools: [.solBTC],
             inputAmount: 10000,
             minAmountOut: 100,
             slippage: 0.01,
@@ -51,7 +51,7 @@ final class BuildSwapDataTests: XCTestCase {
         let swapData = try await SwapTransactionBuilder.buildSwapData(
             userAccount: account,
             network: .mainnetBeta,
-            pools: [solBTCPool(), btcETHPool()],
+            pools: [.solBTC, .btcETH],
             inputAmount: 10000000,
             minAmountOut: nil,
             slippage: 0.01,

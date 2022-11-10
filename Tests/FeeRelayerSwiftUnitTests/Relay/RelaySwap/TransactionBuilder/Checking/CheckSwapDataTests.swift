@@ -35,7 +35,7 @@ final class CheckSwapDataTests: XCTestCase {
             network: .mainnetBeta,
             owner: .owner,
             feePayerAddress: .feePayerAddress,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )
@@ -100,7 +100,7 @@ final class CheckSwapDataTests: XCTestCase {
             network: .mainnetBeta,
             owner: .owner,
             feePayerAddress: .feePayerAddress,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )

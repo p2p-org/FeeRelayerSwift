@@ -28,7 +28,7 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         
         try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
-            poolsPair: [solBTCPool()],
+            poolsPair: [.solBTC],
             output: &env
         )
         
@@ -48,7 +48,7 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         
         try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
-            poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
+            poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
             output: &env
         )
         
@@ -68,7 +68,7 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         
         try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
-            poolsPair: [solBTCPool(), btcETHPool()], // SOL -> BTC -> ETH
+            poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
             output: &env
         )
         
