@@ -143,4 +143,8 @@ class MockSolanaAPIClientBase: SolanaAPIClient {
     func observeSignatureStatus(signature: String, timeout: Int, delay: Int) -> AsyncStream<SolanaSwift.TransactionStatus> {
         fatalError()
     }
+    
+    func getRecentPerformanceSamples(limit: [UInt]) async throws -> [SolanaSwift.PerfomanceSamples] {
+        fatalError()
+    }
 }
