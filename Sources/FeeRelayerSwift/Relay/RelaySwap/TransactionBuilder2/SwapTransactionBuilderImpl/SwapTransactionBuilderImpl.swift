@@ -6,29 +6,32 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
     
     let solanaAPIClient: SolanaAPIClient
     let orcaSwap: OrcaSwapType
-    let relayContextManager: RelayContextManager
+    let feePayerAddress: PublicKey
+    let minimumTokenAccountBalance: UInt64
+    let lamportsPerSignature: UInt64
     
     init(
         solanaAPIClient: SolanaAPIClient,
         orcaSwap: OrcaSwapType,
-        relayContextManager: RelayContextManager
+        feePayerAddress: PublicKey,
+        minimumTokenAccountBalance: UInt64,
+        lamportsPerSignature: UInt64
     ) {
         self.solanaAPIClient = solanaAPIClient
         self.orcaSwap = orcaSwap
-        self.relayContextManager = relayContextManager
+        self.feePayerAddress = feePayerAddress
+        self.minimumTokenAccountBalance = minimumTokenAccountBalance
+        self.lamportsPerSignature = lamportsPerSignature
     }
     
     func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
-        // get context
-        let relayContext = try await relayContextManager.getCurrentContext()
-        
         // form output
         var output = SwapTransactionBuilderOutput()
         output.userSource = input.sourceTokenAccount.address
         
         // assert userSource
         let associatedToken = try PublicKey.associatedTokenAddress(
-            walletAddress: relayContext.feePayerAddress,
+            walletAddress: feePayerAddress,
             tokenMintAddress: input.sourceTokenAccount.mint
         )
         guard output.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
@@ -69,7 +72,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         )
         
         // check swap data
-        try await checkSwapData(
+        try checkSwapData(
             owner: input.userAccount.publicKey,
             poolsPair: input.pools,
             env: &output,
@@ -79,9 +82,9 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         // closing accounts
         try checkClosingAccount(
             owner: input.userAccount.publicKey,
-            feePayer: relayContext.feePayerAddress,
+            feePayer: feePayerAddress,
             destinationTokenMint: input.destinationTokenMint,
-            minimumTokenAccountBalance: relayContext.minimumTokenAccountBalance,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
             env: &output
         )
         
@@ -98,7 +101,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         
         // make primary transaction
         transactions.append(
-            try await makeTransaction(
+            try makeTransaction(
                 instructions: output.instructions,
                 signers: output.signers,
                 blockhash: input.blockhash,
@@ -116,19 +119,17 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         signers: [Account],
         blockhash: String,
         accountCreationFee: UInt64
-    ) async throws -> PreparedTransaction {
-        let context = try await relayContextManager.getCurrentContext()
-        
+    ) throws -> PreparedTransaction {
         var transaction = Transaction()
         transaction.instructions = instructions
         transaction.recentBlockhash = blockhash
-        transaction.feePayer = context.feePayerAddress
+        transaction.feePayer = feePayerAddress
     
         try transaction.sign(signers: signers)
         
         // calculate fee first
         let expectedFee = FeeAmount(
-            transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: context.lamportsPerSignature),
+            transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: lamportsPerSignature),
             accountBalances: accountCreationFee
         )
         

@@ -9,9 +9,6 @@ extension SwapTransactionBuilderImpl {
         inputAmount: UInt64,
         output: inout SwapTransactionBuilderOutput
     ) async throws {
-        let relayContext = try await relayContextManager.getCurrentContext()
-        let feePayer = relayContext.feePayerAddress
-        let minimumTokenAccountBalance = relayContext.minimumTokenAccountBalance
         
         var sourceWSOLNewAccount: Account?
         
@@ -25,11 +22,11 @@ extension SwapTransactionBuilderImpl {
             output.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
                     from: owner,
-                    to: feePayer,
+                    to: feePayerAddress,
                     lamports: inputAmount
                 ),
                 SystemProgram.createAccountInstruction(
-                    from: feePayer,
+                    from: feePayerAddress,
                     toNewPubkey: sourceWSOLNewAccount!.publicKey,
                     lamports: minimumTokenAccountBalance + inputAmount,
                     space: AccountInfo.BUFFER_LENGTH,

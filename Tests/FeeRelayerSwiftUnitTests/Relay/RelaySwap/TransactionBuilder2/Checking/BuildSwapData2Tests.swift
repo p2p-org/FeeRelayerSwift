@@ -13,7 +13,9 @@ final class BuildSwapData2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
     }
     

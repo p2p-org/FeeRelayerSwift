@@ -27,7 +27,9 @@ final class CheckDestination2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         let destinationAddress: PublicKey = "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK"
@@ -53,7 +55,9 @@ final class CheckDestination2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         var env = SwapTransactionBuilderOutput()
@@ -91,7 +95,9 @@ final class CheckDestination2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         var env = SwapTransactionBuilderOutput()
@@ -132,7 +138,9 @@ final class CheckDestination2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 3),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         let sourceWSOLNewAccount = try await Account(network: .mainnetBeta)
@@ -173,24 +181,6 @@ final class CheckDestination2Tests: XCTestCase {
             tokenMintAddress: .usdcMint
         )
         XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
-    }
-}
-
-private class MockRelayContextManager: MockRelayContextManagerBase {
-    override func getCurrentContext() async throws -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: .feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .created(balance: 0),
-            usageStatus: .init(
-                maxUsage: 10000000,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
-        )
     }
 }
 

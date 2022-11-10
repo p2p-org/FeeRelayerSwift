@@ -17,7 +17,9 @@ final class CheckSwapData2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
     }
     
@@ -45,7 +47,7 @@ final class CheckSwapData2Tests: XCTestCase {
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try await swapTransactionBuilder.checkSwapData(
+        try swapTransactionBuilder.checkSwapData(
             owner: .owner,
             poolsPair: [.btcETH],
             env: &env,
@@ -108,7 +110,7 @@ final class CheckSwapData2Tests: XCTestCase {
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try await swapTransactionBuilder.checkSwapData(
+        try swapTransactionBuilder.checkSwapData(
             owner: .owner,
             poolsPair: [.btcETH],
             env: &env,
@@ -160,23 +162,5 @@ final class CheckSwapData2Tests: XCTestCase {
 
         XCTAssertEqual(swapInstruction.programId, "12YKFL4mnZz6CBEGePrf293mEzueQM3h8VLPUJsKpGs9")
         XCTAssertEqual(swapInstruction.data, [UInt8]([4, 128, 150, 152, 0, 0, 0, 0, 0, 14, 0, 0, 0, 0, 0, 0, 0, 171, 0, 0, 0, 0, 0, 0, 0]))
-    }
-}
-
-private class MockRelayContextManager: MockRelayContextManagerBase {
-    override func getCurrentContext() async throws -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: .feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .created(balance: 0),
-            usageStatus: .init(
-                maxUsage: 10000000,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
-        )
     }
 }

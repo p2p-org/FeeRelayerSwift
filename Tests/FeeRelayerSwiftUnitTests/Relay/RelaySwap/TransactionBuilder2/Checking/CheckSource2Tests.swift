@@ -20,7 +20,9 @@ final class CheckSource2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         // source token is USDC (not native SOL)
@@ -46,7 +48,9 @@ final class CheckSource2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         // source token is NativeSOL
@@ -93,7 +97,9 @@ final class CheckSource2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         // source token is SPL SOL
@@ -115,22 +121,4 @@ final class CheckSource2Tests: XCTestCase {
         XCTAssertNil(env.sourceWSOLNewAccount)
     }
 
-}
-
-private class MockRelayContextManager: MockRelayContextManagerBase {
-    override func getCurrentContext() async throws -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: .feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .created(balance: 0),
-            usageStatus: .init(
-                maxUsage: 10000000,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
-        )
-    }
 }

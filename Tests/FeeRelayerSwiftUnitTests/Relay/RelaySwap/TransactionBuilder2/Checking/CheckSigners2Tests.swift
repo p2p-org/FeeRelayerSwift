@@ -20,7 +20,9 @@ final class CheckSigners2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         let owner = try await Account(network: .mainnetBeta)
@@ -42,7 +44,9 @@ final class CheckSigners2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClientBase(),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         let owner = try await Account(network: .mainnetBeta)

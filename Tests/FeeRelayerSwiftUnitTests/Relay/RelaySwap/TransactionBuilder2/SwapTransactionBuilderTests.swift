@@ -22,7 +22,9 @@ final class SwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManager()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         let inputAmount: UInt64 = 1000000
@@ -162,23 +164,5 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
         default:
             fatalError()
         }
-    }
-}
-
-private class MockRelayContextManager: MockRelayContextManagerBase {
-    override func getCurrentContext() async throws -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: .feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .notYetCreated, // not important
-            usageStatus: .init( // not important
-                maxUsage: 10000000,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
-        )
     }
 }

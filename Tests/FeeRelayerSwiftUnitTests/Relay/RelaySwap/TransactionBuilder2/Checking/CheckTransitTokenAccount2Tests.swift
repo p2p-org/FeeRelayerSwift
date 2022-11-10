@@ -21,7 +21,9 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         var env = SwapTransactionBuilderOutput()
@@ -41,7 +43,9 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         var env = SwapTransactionBuilderOutput()
@@ -61,7 +65,9 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
         swapTransactionBuilder = .init(
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
-            relayContextManager: MockRelayContextManagerBase()
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
         )
         
         var env = SwapTransactionBuilderOutput()

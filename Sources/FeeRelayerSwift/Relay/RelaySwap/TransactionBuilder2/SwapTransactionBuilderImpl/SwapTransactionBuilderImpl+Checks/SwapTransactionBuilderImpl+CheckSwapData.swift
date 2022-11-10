@@ -12,7 +12,7 @@ extension SwapTransactionBuilderImpl {
         poolsPair: PoolsPair,
         env: inout SwapTransactionBuilderOutput,
         swapData: SwapData
-     ) async throws {
+     ) throws {
         let userTransferAuthority = swapData.transferAuthorityAccount?.publicKey
         switch swapData.swapData {
         case let swap as DirectSwapData:
@@ -67,7 +67,7 @@ extension SwapTransactionBuilderImpl {
             if env.needsCreateTransitTokenAccount == true {
                 env.instructions.append(
                     try RelayProgram.createTransitTokenAccountInstruction(
-                        feePayer: try await relayContextManager.getCurrentContext().feePayerAddress,
+                        feePayer: feePayerAddress,
                         userAuthority: owner,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: transitTokenMint,
@@ -84,7 +84,7 @@ extension SwapTransactionBuilderImpl {
                     sourceAddressPubkey: env.userSource!,
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: env.userDestinationTokenAccountAddress!,
-                    feePayerPubkey: try await relayContextManager.getCurrentContext().feePayerAddress,
+                    feePayerPubkey: feePayerAddress,
                     network: solanaAPIClient.endpoint.network
                 )
             )

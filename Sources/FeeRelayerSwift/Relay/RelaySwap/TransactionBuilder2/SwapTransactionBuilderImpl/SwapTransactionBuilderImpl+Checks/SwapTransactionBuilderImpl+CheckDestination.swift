@@ -10,8 +10,6 @@ extension SwapTransactionBuilderImpl {
         recentBlockhash: String,
         output: inout SwapTransactionBuilderOutput
     ) async throws {
-        let relayContext = try await relayContextManager.getCurrentContext()
-        
         var destinationNewAccount: Account?
         
         let destinationManager = DestinationFinderImpl(solanaAPIClient: solanaAPIClient)
@@ -30,9 +28,9 @@ extension SwapTransactionBuilderImpl {
                 destinationNewAccount = try await Account(network: solanaAPIClient.endpoint.network)
                 output.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
-                        from: relayContext.feePayerAddress,
+                        from: feePayerAddress,
                         toNewPubkey: destinationNewAccount!.publicKey,
-                        lamports: relayContext.minimumTokenAccountBalance,
+                        lamports: minimumTokenAccountBalance,
                         space: AccountInfo.BUFFER_LENGTH,
                         programId: TokenProgram.id
                     ),
@@ -43,7 +41,7 @@ extension SwapTransactionBuilderImpl {
                     ),
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey
-                output.accountCreationFee += relayContext.minimumTokenAccountBalance
+                output.accountCreationFee += minimumTokenAccountBalance
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
@@ -54,20 +52,20 @@ extension SwapTransactionBuilderImpl {
                 let instruction = try AssociatedTokenProgram.createAssociatedTokenAccountInstruction(
                     mint:  destinationInfo.destination.mint,
                     owner: owner.publicKey,
-                    payer: relayContext.feePayerAddress
+                    payer: feePayerAddress
                 )
 
                 // SPECIAL CASE WHEN WE SWAP FROM SOL TO NON-CREATED SPL TOKEN, THEN WE NEEDS ADDITIONAL TRANSACTION BECAUSE TRANSACTION IS TOO LARGE
                 if output.sourceWSOLNewAccount != nil {
-                    output.additionalTransaction = try await makeTransaction(
+                    output.additionalTransaction = try makeTransaction(
                         instructions: [instruction],
                         signers: [owner],
                         blockhash: recentBlockhash,
-                        accountCreationFee: relayContext.minimumTokenAccountBalance
+                        accountCreationFee: minimumTokenAccountBalance
                     )
                 } else {
                     output.instructions.append(instruction)
-                    output.accountCreationFee += relayContext.minimumTokenAccountBalance
+                    output.accountCreationFee += minimumTokenAccountBalance
                 }
                 userDestinationTokenAccountAddress = associatedAddress
             }
