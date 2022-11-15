@@ -46,6 +46,10 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                     Logger.log(event: "error", message: log, logLevel: .error)
                 }
                 #endif
+                if let solanaRE = try? JSONDecoder().decode(SolanaSwift.ResponseError.self, from: data)
+                {
+                    throw SolanaError.invalidResponse(solanaRE)
+                }
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
             }
 //        } catch let error {
