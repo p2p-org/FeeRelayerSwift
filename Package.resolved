@@ -23,9 +23,9 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
-          "branch": null,
-          "revision": "596dab76f1e82f8e6c5d6b64534d989b2ba47f69",
-          "version": "2.5.2"
+          "branch": "feature/universal-add-signature",
+          "revision": "9ffd12fcadba74cfd795f10a6f47a4df74864367",
+          "version": null
         }
       },
       {

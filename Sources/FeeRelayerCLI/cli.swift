@@ -110,6 +110,9 @@ struct RelaySend: AsyncParsableCommand {
     @Option(help: "Source address")
     var from: String = "5bYReP8iw5UuLVS5wmnXfEfrYCKdiQ1FFAZQao8JqY7V"
 
+    @Option(help: "Source address")
+    var seedPhrase: String?
+
     @Option(help: "Destination address")
     var to: String = "9zRnk58ydEKxQ4BKyETG8uQQecppcxMvQaJWLkjocvPm"
 
@@ -144,7 +147,7 @@ struct RelaySend: AsyncParsableCommand {
             recentBlochHash = try await solana.getRecentBlockhash()
         }
 
-        let transaction = Transaction(
+        var transaction = Transaction(
             instructions: [
                 SystemProgram.transferInstruction(
                     from: try PublicKey(string: from),
@@ -155,10 +158,19 @@ struct RelaySend: AsyncParsableCommand {
             recentBlockhash: recentBlochHash,
             feePayer: try PublicKey(string: feePayer)
         )
+        
+        
+
+        var signers: [Account] = []
+        if let seedPhrase = seedPhrase {
+            let account = try await Account(phrase: seedPhrase.components(separatedBy: " "), network: .mainnetBeta, derivablePath: .default)
+            try transaction.sign(signers: [account])
+            signers.append(account)
+        }
 
         let preparedTransaction = PreparedTransaction(
             transaction: transaction,
-            signers: [],
+            signers: signers,
             expectedFee: .init(transaction: lamportPerSignature, accountBalances: rentExemption)
         )
 
@@ -170,7 +182,8 @@ struct RelaySend: AsyncParsableCommand {
         let apiClient = FeeRelayerSwift.APIClient(httpClient: httpClient, baseUrlString: feeRelayerEndpoint, version: 1)
         do {
             let result = try await apiClient.sendTransaction(.signRelayTransaction(.init(preparedTransaction: preparedTransaction)))
-            print(result)
+            try transaction.addSignature(.init(signature: Data(base64Encoded: result), publicKey: try .init(string: feePayer)))
+            print(try transaction.serialize().base64EncodedString())
         } catch is CURLHTTPClient.Error {
             return
         } catch {
