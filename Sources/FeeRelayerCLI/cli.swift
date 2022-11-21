@@ -126,7 +126,7 @@ struct RelaySend: AsyncParsableCommand {
     var feePayer: String = "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
 
     @Option(help: "Lamport per signature")
-    var lamportPerSignature: UInt64 = 5000
+    var lamportPerSignature: UInt64 = 10000
 
     @Option(help: "Lamport per signature")
     var rentExemption: UInt64 = 0
@@ -151,7 +151,7 @@ struct RelaySend: AsyncParsableCommand {
             instructions: [
                 SystemProgram.transferInstruction(
                     from: try PublicKey(string: from),
-                    to: try PublicKey(string: from),
+                    to: try PublicKey(string: to),
                     lamports: amount
                 ),
             ],
@@ -182,7 +182,10 @@ struct RelaySend: AsyncParsableCommand {
         let apiClient = FeeRelayerSwift.APIClient(httpClient: httpClient, baseUrlString: feeRelayerEndpoint, version: 1)
         do {
             let result = try await apiClient.sendTransaction(.signRelayTransaction(.init(preparedTransaction: preparedTransaction)))
-            try transaction.addSignature(.init(signature: Data(base64Encoded: result), publicKey: try .init(string: feePayer)))
+            try transaction.addSignature(.init(signature: Data(Base58.decode(result)), publicKey: try .init(string: feePayer)))
+            
+            print(transaction.jsonString)
+            print(Base58.encode(try transaction.serialize(requiredAllSignatures: true, verifySignatures: true)))
             print(try transaction.serialize().base64EncodedString())
         } catch is CURLHTTPClient.Error {
             return
