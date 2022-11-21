@@ -184,8 +184,8 @@ struct RelaySend: AsyncParsableCommand {
             let result = try await apiClient.sendTransaction(.signRelayTransaction(.init(preparedTransaction: preparedTransaction)))
             try transaction.addSignature(.init(signature: Data(Base58.decode(result)), publicKey: try .init(string: feePayer)))
             
-            print(transaction.jsonString)
-            print(Base58.encode(try transaction.serialize(requiredAllSignatures: true, verifySignatures: true)))
+            // print(transaction.jsonString)
+            // print(Base58.encode(try transaction.serialize(requiredAllSignatures: true, verifySignatures: true)))
             print(try transaction.serialize().base64EncodedString())
         } catch is CURLHTTPClient.Error {
             return
