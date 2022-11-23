@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import FeeRelayerSwift
 @testable import SolanaSwift
-import OrcaSwapSwift
+@testable import OrcaSwapSwift
 
 final class DirectSwapTransactionBuilderTests: XCTestCase {
     var swapTransactionBuilder: SwapTransactionBuilderImpl!
@@ -252,7 +252,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             )
         )
         
-        XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL created
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
         XCTAssertEqual(output.transactions.count, 1)
         // - Swap transaction
         let swapTransaction = output.transactions[0]
@@ -323,7 +323,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             )
         )
         
-        XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL created
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
         XCTAssertEqual(output.transactions.count, 1)
         // - Swap transaction
         let swapTransaction = output.transactions[0]
@@ -380,7 +380,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             )
         )
         
-        XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL created
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
         XCTAssertEqual(output.transactions.count, 1)
         // - Swap transaction
         let swapTransaction = output.transactions[0]
@@ -408,6 +408,82 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
+    }
+    
+    func testBuildDirectSwapToSOL() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 5),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        let inputAmount: UInt64 = 1000000
+        let slippage: Double = 0.1
+        
+        let output = try await swapTransactionBuilder.prepareSwapTransaction(
+            input: .init(
+                userAccount: accountStorage.account!,
+                pools: [.solBTC.reversed],
+                inputAmount: inputAmount,
+                slippage: slippage,
+                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationTokenMint: .wrappedSOLMint,
+                destinationTokenAddress: .owner,
+                blockhash: blockhash
+            )
+        )
+        
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
+        XCTAssertEqual(output.transactions.count, 1)
+        // - Swap transaction
+        let swapTransaction = output.transactions[0]
+        XCTAssertEqual(swapTransaction.signers.count, 2) // owner, destination wsol
+        XCTAssertEqual(swapTransaction.signers[0], accountStorage.account)
+        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 15000, accountBalances: 0)) // payer's, owner's, destination wsol's signatures
+        XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
+        XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
+        XCTAssertEqual(swapTransaction.transaction.instructions.count, 5) // transfer
+        
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init( // create destination wsol
+            keys: [
+                .writable(publicKey: .feePayerAddress, isSigner: true),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: true)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.create.bytes + minimumTokenAccountBalance.bytes + UInt64(165).bytes + TokenProgram.id.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init( // initialize wsol
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .readonly(publicKey: .wrappedSOLMint, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .sysvarRent, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.initializeAccount.bytes)
+        )
+        // - - Direct Swap instruction
+//        let minAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+//        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init(
+//            keys: [
+//                .readonly(publicKey: try PublicKey(string: Pool.btcETH.account), isSigner: false),
+//                .readonly(publicKey: try PublicKey(string: Pool.btcETH.authority), isSigner: false),
+//                .readonly(publicKey: .owner, isSigner: true),
+//                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+//                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountA), isSigner: false),
+//                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountB), isSigner: false),
+//                .writable(publicKey: .ethAssociatedAddress, isSigner: false),
+//                .writable(publicKey: try PublicKey(string: Pool.btcETH.poolTokenMint), isSigner: false),
+//                .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
+//                .readonly(publicKey: TokenProgram.id, isSigner: false)
+//            ],
+//            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+//            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
+//        )
     }
 }
 
@@ -454,6 +530,12 @@ private class MockDestinationFinder: DestinationFinder {
                 destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
                 destinationOwner: owner,
                 needsCreation: false
+            )
+        case .wrappedSOLMint where testCase == 5:
+            return DestinationFinderResult(
+                destination: .init(address: owner, mint: .wrappedSOLMint),
+                destinationOwner: owner,
+                needsCreation: true
             )
         default:
             fatalError()
