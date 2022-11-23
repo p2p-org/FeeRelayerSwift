@@ -166,59 +166,59 @@ final class SwapTransactionBuilderTests: XCTestCase {
         XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
         XCTAssertEqual(swapTransaction.transaction.instructions.count, 5) // transfer
 //        // - - TransferSOL instruction
-//        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init( // transfer inputAmount to fee relayer
-//            keys: [
-//                .writable(publicKey: .owner, isSigner: true),
-//                .writable(publicKey: .feePayerAddress, isSigner: false)
-//            ],
-//            programId: SystemProgram.id,
-//            data: SystemProgram.Index.transfer.bytes + inputAmount.bytes)
-//        )
-//        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init( // create wsol and transfer input amount + rent exempt
-//            keys: [
-//                .writable(publicKey: .feePayerAddress, isSigner: true),
-//                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: true)
-//            ],
-//            programId: SystemProgram.id,
-//            data: SystemProgram.Index.create.bytes + (inputAmount + minimumTokenAccountBalance).bytes + UInt64(165).bytes + TokenProgram.id.bytes)
-//        )
-//        XCTAssertEqual(swapTransaction.transaction.instructions[2], .init( // initialize wsol
-//            keys: [
-//                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
-//                .readonly(publicKey: .wrappedSOLMint, isSigner: false),
-//                .readonly(publicKey: .owner, isSigner: false),
-//                .readonly(publicKey: .sysvarRent, isSigner: false)
-//            ],
-//            programId: TokenProgram.id,
-//            data: TokenProgram.Index.initializeAccount.bytes)
-//        )
-//        let minAmountOut = try Pool.solBTC.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
-//        XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // direct swap
-//            keys: [
-//                .readonly(publicKey: "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u", isSigner: false),
-//                .readonly(publicKey: "GqnLhu3bPQ46nTZYNFDnzhwm31iFoqhi3ntXMtc5DPiT", isSigner: false),
-//                .readonly(publicKey: .owner, isSigner: true),
-//                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
-//                .writable(publicKey: "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2", isSigner: false),
-//                .writable(publicKey: "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8", isSigner: false),
-//                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
-//                .writable(publicKey: "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe", isSigner: false),
-//                .writable(publicKey: "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B", isSigner: false),
-//                .readonly(publicKey: TokenProgram.id, isSigner: false)
-//            ],
-//            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
-//            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
-//        )
-//
-//        XCTAssertEqual(swapTransaction.transaction.instructions[4], .init( // close wsol
-//            keys: [
-//                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
-//                .writable(publicKey: .owner, isSigner: false),
-//                .readonly(publicKey: .owner, isSigner: false)
-//            ],
-//            programId: TokenProgram.id,
-//            data: TokenProgram.Index.closeAccount.bytes)
-//        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init( // transfer inputAmount to fee relayer
+            keys: [
+                .writable(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .feePayerAddress, isSigner: false)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.transfer.bytes + inputAmount.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init( // create wsol and transfer input amount + rent exempt
+            keys: [
+                .writable(publicKey: .feePayerAddress, isSigner: true),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: true)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.create.bytes + (inputAmount + minimumTokenAccountBalance).bytes + UInt64(165).bytes + TokenProgram.id.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[2], .init( // initialize wsol
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .readonly(publicKey: .wrappedSOLMint, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .sysvarRent, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.initializeAccount.bytes)
+        )
+        let minAmountOut = try Pool.solBTC.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+        XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // direct swap
+            keys: [
+                .readonly(publicKey: "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u", isSigner: false),
+                .readonly(publicKey: "GqnLhu3bPQ46nTZYNFDnzhwm31iFoqhi3ntXMtc5DPiT", isSigner: false),
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .writable(publicKey: "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2", isSigner: false),
+                .writable(publicKey: "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8", isSigner: false),
+                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+                .writable(publicKey: "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe", isSigner: false),
+                .writable(publicKey: "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B", isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false)
+            ],
+            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
+        )
+
+        XCTAssertEqual(swapTransaction.transaction.instructions[4], .init( // close wsol
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .writable(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.closeAccount.bytes)
+        )
     }
 }
 
