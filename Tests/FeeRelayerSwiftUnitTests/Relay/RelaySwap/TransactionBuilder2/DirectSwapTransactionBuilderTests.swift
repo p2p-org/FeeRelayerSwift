@@ -467,23 +467,40 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             data: TokenProgram.Index.initializeAccount.bytes)
         )
         // - - Direct Swap instruction
-//        let minAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
-//        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init(
-//            keys: [
-//                .readonly(publicKey: try PublicKey(string: Pool.btcETH.account), isSigner: false),
-//                .readonly(publicKey: try PublicKey(string: Pool.btcETH.authority), isSigner: false),
-//                .readonly(publicKey: .owner, isSigner: true),
-//                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
-//                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountA), isSigner: false),
-//                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountB), isSigner: false),
-//                .writable(publicKey: .ethAssociatedAddress, isSigner: false),
-//                .writable(publicKey: try PublicKey(string: Pool.btcETH.poolTokenMint), isSigner: false),
-//                .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
-//                .readonly(publicKey: TokenProgram.id, isSigner: false)
-//            ],
-//            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
-//            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
-//        )
+        let minAmountOut = try Pool.solBTC.reversed.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+        XCTAssertEqual(swapTransaction.transaction.instructions[2], .init(
+            keys: [
+                .readonly(publicKey: try PublicKey(string: Pool.solBTC.reversed.account), isSigner: false),
+                .readonly(publicKey: try PublicKey(string: Pool.solBTC.reversed.authority), isSigner: false),
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.solBTC.reversed.tokenAccountA), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.solBTC.reversed.tokenAccountB), isSigner: false),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.solBTC.reversed.poolTokenMint), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.solBTC.reversed.feeAccount), isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false)
+            ],
+            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // close wsol and receive rent exempt
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .writable(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.closeAccount.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[4], .init( // return the rent exempt to fee payer address
+            keys: [
+                .writable(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .feePayerAddress, isSigner: false)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.transfer.bytes + minimumTokenAccountBalance.bytes)
+        )
     }
 }
 
