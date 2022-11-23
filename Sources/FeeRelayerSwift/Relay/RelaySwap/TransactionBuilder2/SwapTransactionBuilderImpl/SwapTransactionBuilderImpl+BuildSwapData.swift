@@ -30,7 +30,7 @@ extension SwapTransactionBuilderImpl {
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try await Account(network: solanaAPIClient.endpoint.network)
+        let transferAuthority = try await Account(network: network)
         
         // form topUp params
         if pools.count == 1 {

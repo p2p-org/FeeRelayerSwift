@@ -18,7 +18,9 @@ final class CheckSigners2Tests: XCTestCase {
     
     func testSignersWithSourceWSOL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -42,7 +44,9 @@ final class CheckSigners2Tests: XCTestCase {
     
     func testSignersWithDestinationWSOL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,

@@ -12,8 +12,6 @@ extension SwapTransactionBuilderImpl {
     ) async throws {
         var destinationNewAccount: Account?
         
-        let destinationManager = DestinationFinderImpl(solanaAPIClient: solanaAPIClient)
-        
         let destinationInfo = try await destinationManager.findRealDestination(
             owner: owner.publicKey,
             mint: destinationMint,
@@ -25,7 +23,7 @@ extension SwapTransactionBuilderImpl {
         if destinationInfo.needsCreation {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
-                destinationNewAccount = try await Account(network: solanaAPIClient.endpoint.network)
+                destinationNewAccount = try await Account(network: network)
                 output.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
                         from: feePayerAddress,

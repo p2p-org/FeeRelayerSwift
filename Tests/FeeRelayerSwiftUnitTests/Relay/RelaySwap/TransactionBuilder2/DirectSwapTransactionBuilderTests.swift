@@ -20,7 +20,9 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
     // MARK: - Direct swap
     func testBuildDirectSwapSOLToNonCreatedSPL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -132,7 +134,9 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
     
     func testBuildDirectSwapSOLToCreatedSPL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -223,7 +227,9 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
     
     func testBuildDirectSwapSPLToNonCreatedSPL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -292,7 +298,9 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
     
     func testBuildDirectSwapSPLToCreatedSPL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 3),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -344,74 +352,121 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
     }
+    
+    func testBuildDirectSwapSPLToCreatedSPLEvenWhenUserDoesNotGiveDestinationSPLTokenAddress() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(),
+            destinationManager: MockDestinationFinder(testCase: 4),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        let inputAmount: UInt64 = 1000000
+        let slippage: Double = 0.1
+        
+        let output = try await swapTransactionBuilder.prepareSwapTransaction(
+            input: .init(
+                userAccount: accountStorage.account!,
+                pools: [.btcETH],
+                inputAmount: inputAmount,
+                slippage: slippage,
+                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationTokenMint: .ethMint,
+                destinationTokenAddress: nil,
+                blockhash: blockhash
+            )
+        )
+        
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL created
+        XCTAssertEqual(output.transactions.count, 1)
+        // - Swap transaction
+        let swapTransaction = output.transactions[0]
+        XCTAssertEqual(swapTransaction.signers.count, 1) // owner only
+        XCTAssertEqual(swapTransaction.signers[0], accountStorage.account)
+        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 10000, accountBalances: 0)) // payer's, owner's signatures
+        XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
+        XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
+        XCTAssertEqual(swapTransaction.transaction.instructions.count, 1) // transfer
+        // - - Direct Swap instruction
+        let minAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init(
+            keys: [
+                .readonly(publicKey: try PublicKey(string: Pool.btcETH.account), isSigner: false),
+                .readonly(publicKey: try PublicKey(string: Pool.btcETH.authority), isSigner: false),
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountA), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountB), isSigner: false),
+                .writable(publicKey: .ethAssociatedAddress, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.poolTokenMint), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false)
+            ],
+            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
+        )
+    }
 }
 
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+private class MockDestinationFinder: DestinationFinder {
     private let testCase: Int
-    
+
     init(testCase: Int) {
         self.testCase = testCase
-        super.init()
     }
     
-    override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        switch account {
+    func findRealDestination(
+        owner: PublicKey,
+        mint: PublicKey,
+        givenDestination: PublicKey?
+    ) async throws -> DestinationFinderResult {
+        switch mint {
         // Case 0
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 0:
-            return nil
-        // Case 1
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 1:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+        case .btcMint where testCase == 0:
+            return DestinationFinderResult(
+                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationOwner: owner,
+                needsCreation: true
             )
-            return info as? BufferInfo<T>
-        // Case 2
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 2:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+        case .btcMint where testCase == 1:
+            return DestinationFinderResult(
+                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
-        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 2:
-            return nil
-        // Case 3
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 3:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+        case .ethMint where testCase == 2:
+            return DestinationFinderResult(
+                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
+                destinationOwner: owner,
+                needsCreation: true
             )
-            return info as? BufferInfo<T>
-        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 3:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+        case .ethMint where testCase == 3:
+            return DestinationFinderResult(
+                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
-        // Owner
-        case PublicKey.owner.base58EncodedString:
-            let info = BufferInfo<EmptyInfo>(
-                lamports: 0,
-                owner: SystemProgram.id.base58EncodedString,
-                data: .init(),
-                executable: false,
-                rentEpoch: 0
+        case .ethMint where testCase == 4:
+            return DestinationFinderResult(
+                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
         default:
             fatalError()
         }
+    }
+}
+
+private class MockTransitTokenAccountManager: TransitTokenAccountManagerType {
+    func getTransitToken(pools: OrcaSwapSwift.PoolsPair) throws -> FeeRelayerSwift.TokenAccount? {
+        nil
+    }
+    
+    func checkIfNeedsCreateTransitTokenAccount(transitToken: FeeRelayerSwift.TokenAccount?) async throws -> Bool? {
+        nil
     }
 }

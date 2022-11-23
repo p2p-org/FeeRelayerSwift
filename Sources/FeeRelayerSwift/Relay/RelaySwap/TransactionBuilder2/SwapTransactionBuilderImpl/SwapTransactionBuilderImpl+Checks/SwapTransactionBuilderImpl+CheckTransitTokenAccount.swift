@@ -15,16 +15,12 @@ extension SwapTransactionBuilderImpl {
         poolsPair: PoolsPair,
         output: inout SwapTransactionBuilderOutput
     ) async throws {
-        let transitToken = try? TransitTokenAccountManager.getTransitToken(
-            network: solanaAPIClient.endpoint.network,
-            orcaSwap: orcaSwap,
-            owner: owner,
+        let transitToken = try? transitTokenAccountManager.getTransitToken(
             pools: poolsPair
         )
         
-        let needsCreateTransitTokenAccount = try await TransitTokenAccountManager
+        let needsCreateTransitTokenAccount = try await transitTokenAccountManager
             .checkIfNeedsCreateTransitTokenAccount(
-                solanaApiClient: solanaAPIClient,
                 transitToken: transitToken
             )
 

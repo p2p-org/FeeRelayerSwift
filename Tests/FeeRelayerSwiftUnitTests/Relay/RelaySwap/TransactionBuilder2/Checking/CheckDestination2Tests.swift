@@ -25,7 +25,9 @@ final class CheckDestination2Tests: XCTestCase {
     
     func testCheckDestinationWhenDestinationIsCreatedSPLToken() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 0),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -53,7 +55,9 @@ final class CheckDestination2Tests: XCTestCase {
     
     func testCheckDestinationWhenDestinationIsNonCreatedSPLToken() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 1),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -93,7 +97,9 @@ final class CheckDestination2Tests: XCTestCase {
     
     func testCheckDestinationWhenDestinationIsNativeSOL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -136,7 +142,9 @@ final class CheckDestination2Tests: XCTestCase {
     
     func testCheckDestinationSpecialCaseWhenSourceTokenIsNativeSOLAndDestinationIsNonCreatedSPL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 3),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -184,50 +192,45 @@ final class CheckDestination2Tests: XCTestCase {
     }
 }
 
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+private class MockDestinationFinder: DestinationFinder {
     private let testCase: Int
 
-    init(testCase: Int = 0) {
+    init(testCase: Int) {
         self.testCase = testCase
     }
-
-    override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        switch account {
-//        case btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
-//            return nil
-//        case btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
-//            let info = BufferInfo<AccountInfo>(
-//                lamports: 0,
-//                owner: TokenProgram.id.base58EncodedString,
-//                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-//                executable: false,
-//                rentEpoch: 0
-//            )
-//            return info as? BufferInfo<T>
-//        case ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
-//            return nil
-//        case ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
-//            let info = BufferInfo<AccountInfo>(
-//                lamports: 0,
-//                owner: TokenProgram.id.base58EncodedString,
-//                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-//                executable: false,
-//                rentEpoch: 0
-//            )
-//            return info as? BufferInfo<T>
-        case PublicKey.owner.base58EncodedString:
-            let info = BufferInfo<EmptyInfo>(
-                lamports: 0,
-                owner: SystemProgram.id.base58EncodedString,
-                data: .init(),
-                executable: false,
-                rentEpoch: 0
+    
+    func findRealDestination(
+        owner: PublicKey,
+        mint: PublicKey,
+        givenDestination: PublicKey?
+    ) async throws -> DestinationFinderResult {
+        switch givenDestination {
+        case "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK" where testCase == 0:
+            return DestinationFinderResult(
+                destination: .init(address: "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK", mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
-        case "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3" where testCase == 1 || testCase == 3:
-            return nil
+        case .none where testCase == 1:
+            return DestinationFinderResult(
+                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
+        case owner where testCase == 2:
+            return DestinationFinderResult(
+                destination: TokenAccount(address: owner, mint: mint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
+        case .none where testCase == 3:
+            return DestinationFinderResult(
+                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
         default:
-            return try await super.getAccountInfo(account: account)
+            fatalError()
         }
     }
 }

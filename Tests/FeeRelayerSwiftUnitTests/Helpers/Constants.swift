@@ -15,6 +15,10 @@ extension PublicKey {
         "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
     }
     
+    static var usdcAssociatedAddress: PublicKey {
+        "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3"
+    }
+    
     static var usdtMint: PublicKey {
         "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
     }

@@ -15,7 +15,9 @@ final class CheckSwapData2Tests: XCTestCase {
     
     override func setUp() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,

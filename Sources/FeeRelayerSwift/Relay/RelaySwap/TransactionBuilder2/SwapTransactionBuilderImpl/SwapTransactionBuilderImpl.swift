@@ -4,20 +4,26 @@ import SolanaSwift
 
 class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
     
-    let solanaAPIClient: SolanaAPIClient
+    let network: Network
+    let transitTokenAccountManager: TransitTokenAccountManagerType
+    let destinationManager: DestinationFinder
     let orcaSwap: OrcaSwapType
     let feePayerAddress: PublicKey
     let minimumTokenAccountBalance: UInt64
     let lamportsPerSignature: UInt64
     
     init(
-        solanaAPIClient: SolanaAPIClient,
+        network: Network,
+        transitTokenAccountManager: TransitTokenAccountManagerType,
+        destinationManager: DestinationFinder,
         orcaSwap: OrcaSwapType,
         feePayerAddress: PublicKey,
         minimumTokenAccountBalance: UInt64,
         lamportsPerSignature: UInt64
     ) {
-        self.solanaAPIClient = solanaAPIClient
+        self.network = network
+        self.transitTokenAccountManager = transitTokenAccountManager
+        self.destinationManager = destinationManager
         self.orcaSwap = orcaSwap
         self.feePayerAddress = feePayerAddress
         self.minimumTokenAccountBalance = minimumTokenAccountBalance

@@ -18,7 +18,9 @@ final class CheckSource2Tests: XCTestCase {
     
     func testCheckSourceWhenSwappingFromSPLToken() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -46,7 +48,9 @@ final class CheckSource2Tests: XCTestCase {
     
     func testCheckSourceWhenSwappingFromNativeSOL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -95,7 +99,9 @@ final class CheckSource2Tests: XCTestCase {
     
     func testCheckSourceWhenSwappingFromSPLSOL() async throws {
         swapTransactionBuilder = .init(
-            solanaAPIClient: MockSolanaAPIClientBase(),
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,

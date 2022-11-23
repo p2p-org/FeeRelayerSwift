@@ -60,7 +60,7 @@ extension SwapTransactionBuilderImpl {
             let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
                 user: owner,
                 transitTokenMint: transitTokenMint,
-                network: solanaAPIClient.endpoint.network
+                network: network
             )
             
             // create transit token account if needed
@@ -71,7 +71,7 @@ extension SwapTransactionBuilderImpl {
                         userAuthority: owner,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: transitTokenMint,
-                        network: solanaAPIClient.endpoint.network
+                        network: network
                     )
                 )
             }
@@ -85,7 +85,7 @@ extension SwapTransactionBuilderImpl {
                     transitTokenAccount: transitTokenAccountAddress,
                     destinationAddressPubkey: env.userDestinationTokenAccountAddress!,
                     feePayerPubkey: feePayerAddress,
-                    network: solanaAPIClient.endpoint.network
+                    network: network
                 )
             )
         default:

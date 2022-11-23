@@ -18,7 +18,7 @@ extension SwapTransactionBuilderImpl {
         if sourceMint == PublicKey.wrappedSOLMint &&
            (output.userSource == nil || output.userSource == owner) // check for native sol
         {
-            sourceWSOLNewAccount = try await Account(network: solanaAPIClient.endpoint.network)
+            sourceWSOLNewAccount = try await Account(network: network)
             output.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
                     from: owner,

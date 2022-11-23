@@ -9,11 +9,16 @@ private let transitTokenAccount: PublicKey = "JhhACrqV4LhpZY7ogW9Gy2MRLVanXXFxyi
 private let owner: PublicKey = "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm"
 
 final class TransitTokenAccountManagerTests: XCTestCase {
+    var transitTokenAccountManager: TransitTokenAccountManager!
     
     func testGetTransitTokenMintPubkey() throws {
-        let orcaSwap = MockOrcaSwap()
-        let mint = try TransitTokenAccountManager.getTransitTokenMintPubkey(
-            orcaSwap: orcaSwap,
+        transitTokenAccountManager = TransitTokenAccountManager(
+            owner: owner,
+            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+            orcaSwap: MockOrcaSwap()
+        )
+        
+        let mint = try transitTokenAccountManager.getTransitTokenMintPubkey(
             pools: [
                 mockPool(tokenBName: transitTokenSymbol),
                 mockPool(tokenBName: "ETH")
@@ -23,11 +28,13 @@ final class TransitTokenAccountManagerTests: XCTestCase {
     }
     
     func testGetTransitToken() throws {
-        let orcaSwap = MockOrcaSwap()
-        let transitToken = try TransitTokenAccountManager.getTransitToken(
-            network: .mainnetBeta,
-            orcaSwap: orcaSwap,
+        transitTokenAccountManager = TransitTokenAccountManager(
             owner: owner,
+            solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+            orcaSwap: MockOrcaSwap()
+        )
+        
+        let transitToken = try transitTokenAccountManager.getTransitToken(
             pools: [
                 mockPool(tokenBName: transitTokenSymbol),
                 mockPool(tokenBName: "ETH")
@@ -38,26 +45,38 @@ final class TransitTokenAccountManagerTests: XCTestCase {
     }
     
     func testCheckIfNeedsCreateTransitTokenAccount1() async throws {
+        transitTokenAccountManager = TransitTokenAccountManager(
+            owner: owner,
+            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+            orcaSwap: MockOrcaSwap()
+        )
+        
         let transitToken = FeeRelayerSwift.TokenAccount(
             address: transitTokenAccount,
             mint: transitTokenMint
         )
-        let needsCreateTransitTokenAccount = try await TransitTokenAccountManager.checkIfNeedsCreateTransitTokenAccount(
-            solanaApiClient: MockSolanaAPIClient(testCase: 2),
-            transitToken: transitToken
-        )
+        let needsCreateTransitTokenAccount = try await transitTokenAccountManager
+            .checkIfNeedsCreateTransitTokenAccount(
+                transitToken: transitToken
+            )
         XCTAssertEqual(needsCreateTransitTokenAccount, false)
     }
     
     func testCheckIfNeedsCreateTransitTokenAccount2() async throws {
+        transitTokenAccountManager = TransitTokenAccountManager(
+            owner: owner,
+            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            orcaSwap: MockOrcaSwap()
+        )
+        
         let transitToken = FeeRelayerSwift.TokenAccount(
             address: transitTokenAccount,
             mint: transitTokenMint
         )
-        let needsCreateTransitTokenAccount = try await TransitTokenAccountManager.checkIfNeedsCreateTransitTokenAccount(
-            solanaApiClient: MockSolanaAPIClient(testCase: 3),
-            transitToken: transitToken
-        )
+        let needsCreateTransitTokenAccount = try await transitTokenAccountManager
+            .checkIfNeedsCreateTransitTokenAccount(
+                transitToken: transitToken
+            )
         XCTAssertEqual(needsCreateTransitTokenAccount, true)
     }
 }
