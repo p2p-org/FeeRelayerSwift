@@ -257,7 +257,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
         XCTAssertEqual(swapTransaction.transaction.instructions.count, 2) // transfer
         // - - Create Associated Token Account instruction
-        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init( // transfer inputAmount to fee relayer
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init(
             keys: [
                 .writable(publicKey: .feePayerAddress, isSigner: true),
                 .writable(publicKey: .ethAssociatedAddress, isSigner: false),
@@ -272,7 +272,62 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         )
         // - - Direct Swap instruction
         let minAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
-        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init( // create wsol and transfer input amount + rent exempt
+        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init(
+            keys: [
+                .readonly(publicKey: try PublicKey(string: Pool.btcETH.account), isSigner: false),
+                .readonly(publicKey: try PublicKey(string: Pool.btcETH.authority), isSigner: false),
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountA), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.tokenAccountB), isSigner: false),
+                .writable(publicKey: .ethAssociatedAddress, isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.poolTokenMint), isSigner: false),
+                .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
+                .readonly(publicKey: TokenProgram.id, isSigner: false)
+            ],
+            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+            data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
+        )
+    }
+    
+    func testBuildDirectSwapSPLToCreatedSPL() async throws {
+        swapTransactionBuilder = .init(
+            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        let inputAmount: UInt64 = 1000000
+        let slippage: Double = 0.1
+        
+        let output = try await swapTransactionBuilder.prepareSwapTransaction(
+            input: .init(
+                userAccount: accountStorage.account!,
+                pools: [.btcETH],
+                inputAmount: inputAmount,
+                slippage: slippage,
+                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationTokenMint: .ethMint,
+                destinationTokenAddress: .ethAssociatedAddress,
+                blockhash: blockhash
+            )
+        )
+        
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL created
+        XCTAssertEqual(output.transactions.count, 1)
+        // - Swap transaction
+        let swapTransaction = output.transactions[0]
+        XCTAssertEqual(swapTransaction.signers.count, 1) // owner only
+        XCTAssertEqual(swapTransaction.signers[0], accountStorage.account)
+        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 10000, accountBalances: 0)) // payer's, owner's signatures
+        XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
+        XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
+        XCTAssertEqual(swapTransaction.transaction.instructions.count, 1) // transfer
+        // - - Direct Swap instruction
+        let minAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init(
             keys: [
                 .readonly(publicKey: try PublicKey(string: Pool.btcETH.account), isSigner: false),
                 .readonly(publicKey: try PublicKey(string: Pool.btcETH.authority), isSigner: false),
@@ -301,21 +356,24 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
     
     override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
         switch account {
+        // Case 0
         case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 0:
             return nil
+        // Case 1
         case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 1:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
-                owner: testCase > 2 ? SystemProgram.id.base58EncodedString: TokenProgram.id.base58EncodedString,
+                owner: TokenProgram.id.base58EncodedString,
                 data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
                 executable: false,
                 rentEpoch: 0
             )
             return info as? BufferInfo<T>
+        // Case 2
         case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 2:
             let info = BufferInfo<AccountInfo>(
                 lamports: 0,
-                owner: testCase > 2 ? SystemProgram.id.base58EncodedString: TokenProgram.id.base58EncodedString,
+                owner: TokenProgram.id.base58EncodedString,
                 data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
                 executable: false,
                 rentEpoch: 0
@@ -323,6 +381,26 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
             return info as? BufferInfo<T>
         case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 2:
             return nil
+        // Case 3
+        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 3:
+            let info = BufferInfo<AccountInfo>(
+                lamports: 0,
+                owner: TokenProgram.id.base58EncodedString,
+                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
+                executable: false,
+                rentEpoch: 0
+            )
+            return info as? BufferInfo<T>
+        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 3:
+            let info = BufferInfo<AccountInfo>(
+                lamports: 0,
+                owner: TokenProgram.id.base58EncodedString,
+                data: .init(mint: SystemProgram.id, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
+                executable: false,
+                rentEpoch: 0
+            )
+            return info as? BufferInfo<T>
+        // Owner
         case PublicKey.owner.base58EncodedString:
             let info = BufferInfo<EmptyInfo>(
                 lamports: 0,
