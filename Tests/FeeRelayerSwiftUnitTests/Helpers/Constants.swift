@@ -6,9 +6,6 @@ let minimumRelayAccountBalance: UInt64 = 890880
 let lamportsPerSignature: UInt64 = 5000
 let blockhash: String = "CSymwgTNX1j3E4qhKfJAUE41nBWEwXufoYryPbkde5RR"
 
-
-
-
 extension PublicKey {
     static var owner: PublicKey {
         "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG"
