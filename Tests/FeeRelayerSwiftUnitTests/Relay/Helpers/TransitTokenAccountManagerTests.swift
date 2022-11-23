@@ -9,10 +9,10 @@ private let transitTokenAccount: PublicKey = "JhhACrqV4LhpZY7ogW9Gy2MRLVanXXFxyi
 private let owner: PublicKey = "6QuXb6mB6WmRASP2y8AavXh6aabBXEH5ZzrSH5xRrgSm"
 
 final class TransitTokenAccountManagerTests: XCTestCase {
-    var transitTokenAccountManager: TransitTokenAccountManager!
+    var transitTokenAccountManager: TransitTokenAccountManagerImpl!
     
     func testGetTransitTokenMintPubkey() throws {
-        transitTokenAccountManager = TransitTokenAccountManager(
+        transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: owner,
             solanaAPIClient: MockSolanaAPIClient(testCase: 0),
             orcaSwap: MockOrcaSwap()
@@ -28,7 +28,7 @@ final class TransitTokenAccountManagerTests: XCTestCase {
     }
     
     func testGetTransitToken() throws {
-        transitTokenAccountManager = TransitTokenAccountManager(
+        transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: owner,
             solanaAPIClient: MockSolanaAPIClient(testCase: 1),
             orcaSwap: MockOrcaSwap()
@@ -45,7 +45,7 @@ final class TransitTokenAccountManagerTests: XCTestCase {
     }
     
     func testCheckIfNeedsCreateTransitTokenAccount1() async throws {
-        transitTokenAccountManager = TransitTokenAccountManager(
+        transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: owner,
             solanaAPIClient: MockSolanaAPIClient(testCase: 2),
             orcaSwap: MockOrcaSwap()
@@ -63,7 +63,7 @@ final class TransitTokenAccountManagerTests: XCTestCase {
     }
     
     func testCheckIfNeedsCreateTransitTokenAccount2() async throws {
-        transitTokenAccountManager = TransitTokenAccountManager(
+        transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: owner,
             solanaAPIClient: MockSolanaAPIClient(testCase: 3),
             orcaSwap: MockOrcaSwap()

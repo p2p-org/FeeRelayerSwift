@@ -90,7 +90,7 @@ final class CheckTransitTokenAccount2Tests: XCTestCase {
     }
 }
 
-private class MockTransitTokenAccountManager: TransitTokenAccountManagerType {
+private class MockTransitTokenAccountManager: TransitTokenAccountManager {
     let testCase: Int
 
     init(testCase: Int) {

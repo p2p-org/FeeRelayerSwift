@@ -14,7 +14,7 @@ extension SwapTransactionBuilder {
         poolsPair: PoolsPair,
         env: inout BuildContext.Environment
     ) async throws {
-        let transitTokenAccountManager = TransitTokenAccountManager(
+        let transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: owner,
             solanaAPIClient: solanaAPIClient,
             orcaSwap: orcaSwap

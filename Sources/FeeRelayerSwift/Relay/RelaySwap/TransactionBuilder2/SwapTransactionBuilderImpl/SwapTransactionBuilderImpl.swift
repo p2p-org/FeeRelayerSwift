@@ -5,7 +5,7 @@ import SolanaSwift
 class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
     
     let network: Network
-    let transitTokenAccountManager: TransitTokenAccountManagerType
+    let transitTokenAccountManager: TransitTokenAccountManager
     let destinationManager: DestinationFinder
     let orcaSwap: OrcaSwapType
     let feePayerAddress: PublicKey
@@ -14,7 +14,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
     
     init(
         network: Network,
-        transitTokenAccountManager: TransitTokenAccountManagerType,
+        transitTokenAccountManager: TransitTokenAccountManager,
         destinationManager: DestinationFinder,
         orcaSwap: OrcaSwapType,
         feePayerAddress: PublicKey,

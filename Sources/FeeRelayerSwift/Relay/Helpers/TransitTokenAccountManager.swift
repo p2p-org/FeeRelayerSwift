@@ -6,12 +6,12 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-protocol TransitTokenAccountManagerType {
+protocol TransitTokenAccountManager {
     func getTransitToken(pools: PoolsPair) throws -> TokenAccount?
     func checkIfNeedsCreateTransitTokenAccount(transitToken: TokenAccount?) async throws -> Bool?
 }
 
-class TransitTokenAccountManager: TransitTokenAccountManagerType {
+class TransitTokenAccountManagerImpl: TransitTokenAccountManager {
     private let owner: PublicKey
     private let solanaAPIClient: SolanaAPIClient
     private let orcaSwap: OrcaSwapType

@@ -290,7 +290,7 @@ public class RelayServiceImpl: RelayService {
         expectedFee: UInt64
     ) async throws -> [String] {
         
-        let transitTokenAccountManager = TransitTokenAccountManager(
+        let transitTokenAccountManager = TransitTokenAccountManagerImpl(
             owner: account.publicKey,
             solanaAPIClient: solanaApiClient,
             orcaSwap: orcaSwap

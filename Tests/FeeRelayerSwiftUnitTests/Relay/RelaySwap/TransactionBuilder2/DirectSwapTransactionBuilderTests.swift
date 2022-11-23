@@ -461,7 +461,7 @@ private class MockDestinationFinder: DestinationFinder {
     }
 }
 
-private class MockTransitTokenAccountManager: TransitTokenAccountManagerType {
+private class MockTransitTokenAccountManager: TransitTokenAccountManager {
     func getTransitToken(pools: OrcaSwapSwift.PoolsPair) throws -> FeeRelayerSwift.TokenAccount? {
         nil
     }
