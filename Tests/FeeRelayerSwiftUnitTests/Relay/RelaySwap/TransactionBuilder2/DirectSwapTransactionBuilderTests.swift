@@ -4,7 +4,7 @@ import XCTest
 @testable import SolanaSwift
 import OrcaSwapSwift
 
-final class SwapTransactionBuilderTests: XCTestCase {
+final class DirectSwapTransactionBuilderTests: XCTestCase {
     var swapTransactionBuilder: SwapTransactionBuilderImpl!
     var accountStorage: SolanaAccountStorage!
     
