@@ -2,6 +2,18 @@ import Foundation
 import SolanaSwift
 
 public enum RelayProgram {
+    // MARK: - Nested type
+
+    public enum Index {
+        static let topUpWithDirectSwap: UInt8 = 0
+        static let topUpWithTransitiveSwap: UInt8 = 1
+        static let transferSOL: UInt8 = 2
+        static let createTransitToken: UInt8 = 3
+        static let transitiveSwap: UInt8 = 4
+    }
+    
+    // MARK: - Properties
+    
     public static func id(network: Network) -> PublicKey {
         switch network {
         case .mainnetBeta:
@@ -113,7 +125,7 @@ public enum RelayProgram {
             ],
             programId: id(network: network),
             data: [
-                UInt8(2),
+                Index.transferSOL,
                 lamports
             ]
         )
@@ -137,9 +149,7 @@ public enum RelayProgram {
                 .readonly(publicKey: SystemProgram.id, isSigner: false)
             ],
             programId: id(network: network),
-            data: [
-                UInt8(3)
-            ]
+            data: [Index.createTransitToken]
         )
     }
     
@@ -243,7 +253,7 @@ public enum RelayProgram {
             ],
             programId: id(network: network),
             data: [
-                UInt8(0),
+                Index.topUpWithDirectSwap,
                 amountIn,
                 minimumAmountOut
             ]
@@ -307,7 +317,7 @@ public enum RelayProgram {
             ],
             programId: id(network: network),
             data: [
-                UInt8(1),
+                Index.topUpWithTransitiveSwap,
                 amountIn,
                 transitMinimumAmount,
                 minimumAmountOut
@@ -367,7 +377,7 @@ public enum RelayProgram {
             ],
             programId: id(network: network),
             data: [
-                UInt8(4),
+                Index.transitiveSwap,
                 amountIn,
                 transitMinimumAmount,
                 minimumAmountOut
