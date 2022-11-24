@@ -445,7 +445,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 10000, accountBalances: 0)) // payer's, owner's signatures + SPL account creation fee
         XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
         XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
-        XCTAssertEqual(swapTransaction.transaction.instructions.count, 1)
+        XCTAssertEqual(swapTransaction.transaction.instructions.count, 2)
         // - - Transitve Swap instruction
         let transitMinAmountOut = try Pool.solBTC.reversed.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
         let minAmountOut = try Pool.ethSOL.reversed.getMinimumAmountOut(inputAmount: transitMinAmountOut!, slippage: slippage)
@@ -568,7 +568,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         XCTAssertEqual(swapTransaction.transaction.instructions[2], .init( // Create transit token account
             keys: [
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
-                .readonly(publicKey: .wrappedSOLMint, isSigner: false),
+                .readonly(publicKey: .ethMint, isSigner: false),
                 .writable(publicKey: .owner, isSigner: true),
                 .readonly(publicKey: .feePayerAddress, isSigner: true),
                 .readonly(publicKey: TokenProgram.id, isSigner: false),
