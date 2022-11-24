@@ -396,7 +396,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
         let swapTransaction = output.transactions[0]
         XCTAssertEqual(swapTransaction.signers.count, 1) // owner only
         XCTAssertEqual(swapTransaction.signers[0], accountStorage.account)
-        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 10000, accountBalances: minimumTokenAccountBalance)) // payer's, owner's signatures + SPL account creation fee
+        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 10000, accountBalances: 0)) // payer's, owner's signatures + SPL account creation fee
         XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
         XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
         XCTAssertEqual(swapTransaction.transaction.instructions.count, 1)
