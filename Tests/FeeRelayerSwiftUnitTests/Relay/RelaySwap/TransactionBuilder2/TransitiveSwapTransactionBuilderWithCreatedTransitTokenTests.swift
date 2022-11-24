@@ -271,8 +271,8 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
     func testBuildTransitiveSwapSPLToNonCreatedSPLToken() async throws {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
-            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 3),
-            destinationManager: MockDestinationFinder(testCase: 3),
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
+            destinationManager: MockDestinationFinder(testCase: 2),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
@@ -363,8 +363,8 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
     func testBuildTransitiveSwapSPLToCreatedSPLToken() async throws {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
-            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
-            destinationManager: MockDestinationFinder(testCase: 1),
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 3),
+            destinationManager: MockDestinationFinder(testCase: 3),
             orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
