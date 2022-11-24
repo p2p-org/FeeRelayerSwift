@@ -9,7 +9,7 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-struct SwapTransactionBuilderInput {
+public struct SwapTransactionBuilderInput {
     let userAccount: Account
 
     let pools: PoolsPair

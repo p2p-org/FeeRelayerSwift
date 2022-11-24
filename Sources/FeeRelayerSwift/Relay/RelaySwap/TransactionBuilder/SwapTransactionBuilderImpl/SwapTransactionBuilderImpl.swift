@@ -2,7 +2,7 @@ import Foundation
 import OrcaSwapSwift
 import SolanaSwift
 
-class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
+public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
     
     let network: Network
     let transitTokenAccountManager: TransitTokenAccountManager
@@ -12,7 +12,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
     let minimumTokenAccountBalance: UInt64
     let lamportsPerSignature: UInt64
     
-    init(
+    public init(
         network: Network,
         transitTokenAccountManager: TransitTokenAccountManager,
         destinationManager: DestinationFinder,
@@ -30,7 +30,7 @@ class SwapTransactionBuilderImpl : SwapTransactionBuilder2 {
         self.lamportsPerSignature = lamportsPerSignature
     }
     
-    func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
+    public func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         // form output
         var output = SwapTransactionBuilderOutput()
         output.userSource = input.sourceTokenAccount.address

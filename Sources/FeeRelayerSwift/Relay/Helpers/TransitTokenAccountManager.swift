@@ -6,23 +6,23 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-protocol TransitTokenAccountManager {
+public protocol TransitTokenAccountManager {
     func getTransitToken(pools: PoolsPair) throws -> TokenAccount?
     func checkIfNeedsCreateTransitTokenAccount(transitToken: TokenAccount?) async throws -> Bool?
 }
 
-class TransitTokenAccountManagerImpl: TransitTokenAccountManager {
+public class TransitTokenAccountManagerImpl: TransitTokenAccountManager {
     private let owner: PublicKey
     private let solanaAPIClient: SolanaAPIClient
     private let orcaSwap: OrcaSwapType
     
-    init(owner: PublicKey, solanaAPIClient: SolanaAPIClient, orcaSwap: OrcaSwapType) {
+    public init(owner: PublicKey, solanaAPIClient: SolanaAPIClient, orcaSwap: OrcaSwapType) {
         self.owner = owner
         self.solanaAPIClient = solanaAPIClient
         self.orcaSwap = orcaSwap
     }
     
-    func getTransitToken(pools: PoolsPair) throws -> TokenAccount? {
+    public func getTransitToken(pools: PoolsPair) throws -> TokenAccount? {
         guard let transitTokenMintPubkey = try getTransitTokenMintPubkey(pools: pools) else { return nil }
 
         let transitTokenAccountAddress = try RelayProgram.getTransitTokenAccountAddress(
@@ -43,7 +43,7 @@ class TransitTokenAccountManagerImpl: TransitTokenAccountManager {
         return try PublicKey(string: orcaSwap.getMint(tokenName: interTokenName))
     }
     
-    func checkIfNeedsCreateTransitTokenAccount(transitToken: TokenAccount?) async throws -> Bool? {
+    public func checkIfNeedsCreateTransitTokenAccount(transitToken: TokenAccount?) async throws -> Bool? {
         guard let transitToken = transitToken else { return nil }
 
         guard let account: BufferInfo<AccountInfo> = try await solanaAPIClient.getAccountInfo(account: transitToken.address.base58EncodedString) else {

@@ -11,16 +11,29 @@ import XCTest
 @testable import SolanaSwift
 
 final class CheckTransitTokenAccountTests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
 
     func testDirectSwapWithNoTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 0),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [.solBTC],
-            env: &env
+            output: &env
         )
         
         XCTAssertNil(env.needsCreateTransitTokenAccount)
@@ -29,14 +42,22 @@ final class CheckTransitTokenAccountTests: XCTestCase {
     }
     
     func testTransitiveSwapWithNonCreatedTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.needsCreateTransitTokenAccount, true)
@@ -45,14 +66,22 @@ final class CheckTransitTokenAccountTests: XCTestCase {
     }
     
     func testTransitiveSwapWithCreatedTransitTokenAccount() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        
-        try await SwapTransactionBuilder.checkTransitTokenAccount(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
+            destinationManager: MockDestinationFinderBase(),
             orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkTransitTokenAccount(
             owner: .owner,
             poolsPair: [.solBTC, .btcETH], // SOL -> BTC -> ETH
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.needsCreateTransitTokenAccount, false)
@@ -61,29 +90,32 @@ final class CheckTransitTokenAccountTests: XCTestCase {
     }
 }
 
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+private class MockTransitTokenAccountManager: TransitTokenAccountManager {
     let testCase: Int
-    
+
     init(testCase: Int) {
         self.testCase = testCase
-        super.init()
     }
     
-    override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        switch account {
-        case PublicKey.btcTransitTokenAccountAddress.base58EncodedString where testCase == 1:
+    func getTransitToken(pools: OrcaSwapSwift.PoolsPair) throws -> FeeRelayerSwift.TokenAccount? {
+        switch testCase {
+        case 0:
             return nil
-        case PublicKey.btcTransitTokenAccountAddress.base58EncodedString where testCase == 2:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: .btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
-            )
-            return info as? BufferInfo<T>
         default:
-            return try await super.getAccountInfo(account: account)
+            return .init(address: .btcTransitTokenAccountAddress, mint: .btcMint)
+        }
+    }
+    
+    func checkIfNeedsCreateTransitTokenAccount(transitToken: FeeRelayerSwift.TokenAccount?) async throws -> Bool? {
+        switch testCase {
+        case 0:
+            return nil
+        case 1:
+            return true
+        case 2:
+            return false
+        default:
+            fatalError()
         }
     }
 }

@@ -10,25 +10,26 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
     private var userAccount: Account { accountStorage.account! }
     
     private let accountStorage: SolanaAccountStorage
-    private let feeRelayerAPIClient: FeeRelayerAPIClient
     private let solanaApiClient: SolanaAPIClient
     private let orcaSwap: OrcaSwap
 
     private let swapCalculator: SwapFeeRelayerCalculator
     private var feeRelayerCalculator: RelayFeeCalculator
+    
+    private let swapTransactionBuilder: SwapTransactionBuilder
 
     public init(
         accountStorage: SolanaAccountStorage,
-        feeRelayerAPIClient: FeeRelayerAPIClient,
         solanaApiClient: SolanaAPIClient,
         orcaSwap: OrcaSwap,
-        feeRelayerCalculator: RelayFeeCalculator = DefaultRelayFeeCalculator()
+        feeRelayerCalculator: RelayFeeCalculator = DefaultRelayFeeCalculator(),
+        swapTransactionBuilder: SwapTransactionBuilder
     ) {
         self.accountStorage = accountStorage
-        self.feeRelayerAPIClient = feeRelayerAPIClient
         self.solanaApiClient = solanaApiClient
         self.orcaSwap = orcaSwap
         self.feeRelayerCalculator = feeRelayerCalculator
+        self.swapTransactionBuilder = swapTransactionBuilder
 
         swapCalculator = DefaultSwapFeeRelayerCalculator(
             solanaApiClient: solanaApiClient,
@@ -59,38 +60,19 @@ public class SwapFeeRelayerImpl: SwapFeeRelayer {
         )
         
         let latestBlockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
-    
-        var buildContext = SwapTransactionBuilder.BuildContext(
-            feeRelayerContext: context,
-            solanaApiClient: solanaApiClient,
-            orcaSwap: orcaSwap,
-            config: .init(
-                userAccount: userAccount,
-                pools:  preparedParams.actionFeesAndPools.poolsPair,
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceAccount: sourceToken,
-                destinationTokenMint: destinationTokenMint,
-                destinationAddress: destinationAddress,
-                blockhash: latestBlockhash
-            ),
-            env: .init()
-        )
         
-        return try await SwapTransactionBuilder.prepareSwapTransaction(
-            userAccount: buildContext.config.userAccount,
-            sourceTokenAccount: buildContext.config.sourceAccount,
-            destinationTokenMint: buildContext.config.destinationTokenMint,
-            destinationAddress: buildContext.config.destinationAddress,
-            poolsPair: buildContext.config.pools,
-            inputAmount: buildContext.config.inputAmount,
-            slippage: buildContext.config.slippage,
-            solanaAPIClient: buildContext.solanaApiClient,
-            orcaSwap: buildContext.orcaSwap,
-            relayContext: buildContext.feeRelayerContext,
-            blockhash: buildContext.config.blockhash,
-            env: &buildContext.env
+        let input = SwapTransactionBuilderInput(
+            userAccount: userAccount,
+            pools: preparedParams.actionFeesAndPools.poolsPair,
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: sourceToken,
+            destinationTokenMint: destinationTokenMint,
+            destinationTokenAddress: destinationAddress,
+            blockhash: latestBlockhash
         )
+    
+        return try await swapTransactionBuilder.prepareSwapTransaction(input: input)
     }
 
     func prepareForTopUpAndSwap(

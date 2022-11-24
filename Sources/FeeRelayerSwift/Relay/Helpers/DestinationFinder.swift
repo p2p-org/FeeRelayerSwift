@@ -6,14 +6,14 @@ import Foundation
 import SolanaSwift
 
 /// Destination finder result
-struct DestinationFinderResult: Equatable {
+public struct DestinationFinderResult: Equatable {
     let destination: TokenAccount
     let destinationOwner: PublicKey?
     let needsCreation: Bool
 }
 
 /// Destination finding service
-protocol DestinationFinder {
+public protocol DestinationFinder {
     /// User may give SOL address or SPL token address as destination,
     /// so this method will check and give the correct destination
     /// that map user's address and mint address of the token.
@@ -29,14 +29,14 @@ protocol DestinationFinder {
     ) async throws -> DestinationFinderResult
 }
 
-class DestinationFinderImpl: DestinationFinder {
+public class DestinationFinderImpl: DestinationFinder {
     private let solanaAPIClient: SolanaAPIClient
     
-    init(solanaAPIClient: SolanaAPIClient) {
+    public init(solanaAPIClient: SolanaAPIClient) {
         self.solanaAPIClient = solanaAPIClient
     }
     
-    func findRealDestination(
+    public func findRealDestination(
         owner: PublicKey,
         mint: PublicKey,
         givenDestination: PublicKey?

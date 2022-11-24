@@ -11,6 +11,7 @@ import XCTest
 
 final class CheckDestinationTests: XCTestCase {
     private var accountStorage: MockAccountStorage!
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
     var account: SolanaSwift.Account { accountStorage.account! }
     
     override func setUp() async throws {
@@ -19,22 +20,30 @@ final class CheckDestinationTests: XCTestCase {
     
     override func tearDown() async throws {
         accountStorage = nil
+        swapTransactionBuilder = nil
     }
     
     func testCheckDestinationWhenDestinationIsCreatedSPLToken() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 0),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
         let destinationAddress: PublicKey = "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK"
         
-        var env = SwapTransactionBuilder.BuildContext.Environment()
+        var env = SwapTransactionBuilderOutput()
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 0),
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: destinationAddress,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         XCTAssertEqual(env.instructions.count, 0)
@@ -45,17 +54,24 @@ final class CheckDestinationTests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNonCreatedSPLToken() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 1),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 1),
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: nil,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         let decodedInstruction = try JSONEncoder().encode(env.instructions)
@@ -80,18 +96,24 @@ final class CheckDestinationTests: XCTestCase {
     }
     
     func testCheckDestinationWhenDestinationIsNativeSOL() async throws {
-        var env = SwapTransactionBuilder.BuildContext.Environment()
-        let relayContext = createContext()
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 2),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 2),
+        var env = SwapTransactionBuilderOutput()
+        
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .wrappedSOLMint,
             destinationAddress: account.publicKey,
-            feePayerAddress: .feePayerAddress,
-            relayContext: relayContext,
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         XCTAssertNotNil(env.destinationNewAccount)
@@ -100,7 +122,7 @@ final class CheckDestinationTests: XCTestCase {
             SystemProgram.createAccountInstruction(
                 from: .feePayerAddress,
                 toNewPubkey: env.destinationNewAccount!.publicKey,
-                lamports: relayContext.minimumTokenAccountBalance,
+                lamports: minimumTokenAccountBalance,
                 space: AccountInfo.BUFFER_LENGTH,
                 programId: TokenProgram.id
             ),
@@ -119,20 +141,27 @@ final class CheckDestinationTests: XCTestCase {
     }
     
     func testCheckDestinationSpecialCaseWhenSourceTokenIsNativeSOLAndDestinationIsNonCreatedSPL() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinder(testCase: 3),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
         let sourceWSOLNewAccount = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: sourceWSOLNewAccount
         )
         
-        try await SwapTransactionBuilder.checkDestination(
-            solanaAPIClient: MockSolanaAPIClient(testCase: 3),
+        try await swapTransactionBuilder.checkDestination(
             owner: account,
             destinationMint: .usdcMint,
             destinationAddress: nil,
-            feePayerAddress: .feePayerAddress,
-            relayContext: createContext(),
             recentBlockhash: blockhash,
-            env: &env
+            output: &env
         )
         
         // create account instruction is moved to separated instruction
@@ -161,70 +190,47 @@ final class CheckDestinationTests: XCTestCase {
         )
         XCTAssertEqual(env.userDestinationTokenAccountAddress, associatedAddress)
     }
-    
-    // MARK: - Helpers
-    
-    private func createContext() -> RelayContext {
-        .init(
-            minimumTokenAccountBalance: minimumTokenAccountBalance,
-            minimumRelayAccountBalance: minimumRelayAccountBalance,
-            feePayerAddress: .feePayerAddress,
-            lamportsPerSignature: lamportsPerSignature,
-            relayAccountStatus: .created(balance: 0),
-            usageStatus: .init(
-                maxUsage: 10000000,
-                currentUsage: 0,
-                maxAmount: 10000000,
-                amountUsed: 0
-            )
-        )
-    }
 }
 
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+private class MockDestinationFinder: DestinationFinder {
     private let testCase: Int
 
-    init(testCase: Int = 0) {
+    init(testCase: Int) {
         self.testCase = testCase
     }
-
-    override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        switch account {
-//        case btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
-//            return nil
-//        case btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
-//            let info = BufferInfo<AccountInfo>(
-//                lamports: 0,
-//                owner: TokenProgram.id.base58EncodedString,
-//                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-//                executable: false,
-//                rentEpoch: 0
-//            )
-//            return info as? BufferInfo<T>
-//        case ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
-//            return nil
-//        case ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
-//            let info = BufferInfo<AccountInfo>(
-//                lamports: 0,
-//                owner: TokenProgram.id.base58EncodedString,
-//                data: .init(mint: btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-//                executable: false,
-//                rentEpoch: 0
-//            )
-//            return info as? BufferInfo<T>
-        case PublicKey.owner.base58EncodedString:
-            let info = BufferInfo<EmptyInfo>(
-                lamports: 0,
-                owner: SystemProgram.id.base58EncodedString,
-                data: .init(),
-                executable: false,
-                rentEpoch: 0
+    
+    func findRealDestination(
+        owner: PublicKey,
+        mint: PublicKey,
+        givenDestination: PublicKey?
+    ) async throws -> DestinationFinderResult {
+        switch givenDestination {
+        case "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK" where testCase == 0:
+            return DestinationFinderResult(
+                destination: .init(address: "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK", mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
-        case "3uetDDizgTtadDHZzyy9BqxrjQcozMEkxzbKhfZF4tG3" where testCase == 1 || testCase == 3:
-            return nil
+        case .none where testCase == 1:
+            return DestinationFinderResult(
+                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
+        case owner where testCase == 2:
+            return DestinationFinderResult(
+                destination: TokenAccount(address: owner, mint: mint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
+        case .none where testCase == 3:
+            return DestinationFinderResult(
+                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
         default:
-            return try await super.getAccountInfo(account: account)
+            fatalError()
         }
     }
 }

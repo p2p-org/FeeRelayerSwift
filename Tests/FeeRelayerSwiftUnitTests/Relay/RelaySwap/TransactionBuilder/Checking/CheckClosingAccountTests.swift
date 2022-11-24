@@ -10,14 +10,32 @@ import SolanaSwift
 @testable import FeeRelayerSwift
 
 final class CheckClosingAccountTests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func setUp() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+    }
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testClosingAccountWithSourceWSOL() async throws {
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: newWSOL
         )
         
-        try SwapTransactionBuilder.checkClosingAccount(
+        try swapTransactionBuilder.checkClosingAccount(
             owner: owner.publicKey,
             feePayer: .feePayerAddress,
             destinationTokenMint: .btcMint,
@@ -39,12 +57,12 @@ final class CheckClosingAccountTests: XCTestCase {
     func testSignersWithDestinationWSOL() async throws {
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             destinationNewAccount: newWSOL,
             accountCreationFee: minimumTokenAccountBalance
         )
         
-        try SwapTransactionBuilder.checkClosingAccount(
+        try swapTransactionBuilder.checkClosingAccount(
             owner: owner.publicKey,
             feePayer: .feePayerAddress,
             destinationTokenMint: .wrappedSOLMint,
