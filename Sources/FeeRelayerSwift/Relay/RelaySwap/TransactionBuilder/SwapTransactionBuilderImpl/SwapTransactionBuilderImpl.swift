@@ -7,7 +7,6 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
     let network: Network
     let transitTokenAccountManager: TransitTokenAccountManager
     let destinationManager: DestinationFinder
-    let orcaSwap: OrcaSwapType
     let feePayerAddress: PublicKey
     let minimumTokenAccountBalance: UInt64
     let lamportsPerSignature: UInt64
@@ -16,7 +15,6 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
         network: Network,
         transitTokenAccountManager: TransitTokenAccountManager,
         destinationManager: DestinationFinder,
-        orcaSwap: OrcaSwapType,
         feePayerAddress: PublicKey,
         minimumTokenAccountBalance: UInt64,
         lamportsPerSignature: UInt64
@@ -24,7 +22,6 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
         self.network = network
         self.transitTokenAccountManager = transitTokenAccountManager
         self.destinationManager = destinationManager
-        self.orcaSwap = orcaSwap
         self.feePayerAddress = feePayerAddress
         self.minimumTokenAccountBalance = minimumTokenAccountBalance
         self.lamportsPerSignature = lamportsPerSignature

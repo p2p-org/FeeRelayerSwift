@@ -22,7 +22,6 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 0),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -46,7 +45,6 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -70,7 +68,6 @@ final class CheckTransitTokenAccountTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

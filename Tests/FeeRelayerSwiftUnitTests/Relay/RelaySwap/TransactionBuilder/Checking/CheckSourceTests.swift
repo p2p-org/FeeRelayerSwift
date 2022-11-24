@@ -21,7 +21,6 @@ final class CheckSourceTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -51,7 +50,6 @@ final class CheckSourceTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -102,7 +100,6 @@ final class CheckSourceTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

@@ -22,7 +22,6 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 0),
             destinationManager: MockDestinationFinder(testCase: 0),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -157,7 +156,6 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
             destinationManager: MockDestinationFinder(testCase: 1),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -273,7 +271,6 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
             destinationManager: MockDestinationFinder(testCase: 2),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -365,7 +362,6 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 3),
             destinationManager: MockDestinationFinder(testCase: 3),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -443,7 +439,6 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 4),
             destinationManager: MockDestinationFinder(testCase: 4),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

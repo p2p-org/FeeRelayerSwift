@@ -22,7 +22,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 0),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -136,7 +135,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 1),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -229,7 +227,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 2),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -300,7 +297,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 3),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -357,7 +353,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 4),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -414,7 +409,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
             destinationManager: MockDestinationFinder(testCase: 5),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

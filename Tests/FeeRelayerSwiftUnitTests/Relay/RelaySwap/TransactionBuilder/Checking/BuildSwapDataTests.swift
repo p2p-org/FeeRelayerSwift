@@ -14,7 +14,6 @@ final class BuildSwapDataTests: XCTestCase {
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
             destinationManager: MockDestinationFinderBase(),
-            orcaSwap: MockOrcaSwapBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
