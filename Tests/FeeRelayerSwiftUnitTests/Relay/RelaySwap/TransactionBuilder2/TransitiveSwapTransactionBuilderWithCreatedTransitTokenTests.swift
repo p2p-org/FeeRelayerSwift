@@ -437,6 +437,120 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
             data: [RelayProgram.Index.transitiveSwap] + inputAmount.bytes + transitMinAmountOut!.bytes + minAmountOut!.bytes)
         )
     }
+    
+    func testBuildTransitiveSwapToSOL() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 4),
+            destinationManager: MockDestinationFinder(testCase: 4),
+            orcaSwap: MockOrcaSwapBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
+        let inputAmount: UInt64 = 1000000
+        let slippage: Double = 0.1
+        
+        // BTC -> ETH -> SOL
+        let output = try await swapTransactionBuilder.prepareSwapTransaction(
+            input: .init(
+                userAccount: accountStorage.account!,
+                pools: [.btcETH, .ethSOL],
+                inputAmount: inputAmount,
+                slippage: slippage,
+                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationTokenMint: .wrappedSOLMint,
+                destinationTokenAddress: .owner,
+                blockhash: blockhash
+            )
+        )
+        
+        XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
+        XCTAssertEqual(output.transactions.count, 1)
+        // - Swap transaction
+        let swapTransaction = output.transactions[0]
+        XCTAssertEqual(swapTransaction.signers.count, 2) // owner, destination wsol
+        XCTAssertEqual(swapTransaction.signers[0], accountStorage.account)
+        XCTAssertEqual(swapTransaction.expectedFee, .init(transaction: 15000, accountBalances: 0)) // payer's, owner's, destination wsol's signatures
+        XCTAssertEqual(swapTransaction.transaction.feePayer, .feePayerAddress)
+        XCTAssertEqual(swapTransaction.transaction.recentBlockhash, blockhash)
+        XCTAssertEqual(swapTransaction.transaction.instructions.count, 5) // transfer
+
+        XCTAssertEqual(swapTransaction.transaction.instructions[0], .init( // create destination wsol
+            keys: [
+                .writable(publicKey: .feePayerAddress, isSigner: true),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: true)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.create.bytes + minimumTokenAccountBalance.bytes + UInt64(165).bytes + TokenProgram.id.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[1], .init( // initialize wsol
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .readonly(publicKey: .wrappedSOLMint, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .sysvarRent, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.initializeAccount.bytes)
+        )
+        
+        // - - Transitve Swap instruction
+        let transitMinAmountOut = try Pool.btcETH.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
+        let minAmountOut = try Pool.ethSOL.getMinimumAmountOut(inputAmount: transitMinAmountOut!, slippage: slippage)
+        let transitTokenPublicKey = try RelayProgram.getTransitTokenAccountAddress(
+            user: .owner,
+            transitTokenMint: .ethMint,
+            network: .mainnetBeta
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[2], .init(
+            keys: [
+                .writable(publicKey: .feePayerAddress, isSigner: true),
+                .readonly(publicKey: TokenProgram.id, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .btcAssociatedAddress, isSigner: false),
+                .writable(publicKey: transitTokenPublicKey, isSigner: false),
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                
+                .readonly(publicKey: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP", isSigner: false),
+                .readonly(publicKey: Pool.btcETH.account.publicKey, isSigner: false),
+                .readonly(publicKey: Pool.btcETH.authority.publicKey, isSigner: false),
+                .writable(publicKey: Pool.btcETH.tokenAccountA.publicKey, isSigner: false),
+                .writable(publicKey: Pool.btcETH.tokenAccountB.publicKey, isSigner: false),
+                .writable(publicKey: Pool.btcETH.poolTokenMint.publicKey, isSigner: false),
+                .writable(publicKey: Pool.btcETH.feeAccount.publicKey, isSigner: false),
+                
+                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: Pool.ethSOL.account.publicKey, isSigner: false),
+                .readonly(publicKey: Pool.ethSOL.authority.publicKey, isSigner: false),
+                .writable(publicKey: Pool.ethSOL.tokenAccountA.publicKey, isSigner: false),
+                .writable(publicKey: Pool.ethSOL.tokenAccountB.publicKey, isSigner: false),
+                .writable(publicKey: Pool.ethSOL.poolTokenMint.publicKey, isSigner: false),
+                .writable(publicKey: Pool.ethSOL.feeAccount.publicKey, isSigner: false)
+            ],
+            programId: RelayProgram.id(network: .mainnetBeta),
+            data: [RelayProgram.Index.transitiveSwap] + inputAmount.bytes + transitMinAmountOut!.bytes + minAmountOut!.bytes)
+        )
+        
+        XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // close wsol and receive rent exempt
+            keys: [
+                .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
+                .writable(publicKey: .owner, isSigner: false),
+                .readonly(publicKey: .owner, isSigner: false)
+            ],
+            programId: TokenProgram.id,
+            data: TokenProgram.Index.closeAccount.bytes)
+        )
+        XCTAssertEqual(swapTransaction.transaction.instructions[4], .init( // return the rent exempt to fee payer address
+            keys: [
+                .writable(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .feePayerAddress, isSigner: false)
+            ],
+            programId: SystemProgram.id,
+            data: SystemProgram.Index.transfer.bytes + minimumTokenAccountBalance.bytes)
+        )
+    }
 }
 
 private class MockDestinationFinder: DestinationFinder {
@@ -464,6 +578,12 @@ private class MockDestinationFinder: DestinationFinder {
                 destinationOwner: owner,
                 needsCreation: false
             )
+        case .wrappedSOLMint where testCase == 4:
+            return DestinationFinderResult(
+                destination: .init(address: owner, mint: .wrappedSOLMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
         default:
             fatalError()
         }
@@ -484,6 +604,8 @@ private class MockTransitTokenAccountManager: TransitTokenAccountManager {
             mint = .btcMint
         case 2, 3:
             mint = .wrappedSOLMint
+        case 4:
+            mint = .ethMint
         default:
             fatalError()
         }
