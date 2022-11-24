@@ -17,7 +17,6 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         accountStorage = nil
     }
     
-    // MARK: - Direct swap
     func testBuildDirectSwapSOLToNonCreatedSPL() async throws {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
@@ -106,15 +105,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let minAmountOut = try Pool.solBTC.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
         XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // direct swap
             keys: [
-                .readonly(publicKey: "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u", isSigner: false),
-                .readonly(publicKey: "GqnLhu3bPQ46nTZYNFDnzhwm31iFoqhi3ntXMtc5DPiT", isSigner: false),
+                .readonly(publicKey: Pool.solBTC.account.publicKey, isSigner: false),
+                .readonly(publicKey: Pool.solBTC.authority.publicKey, isSigner: false),
                 .readonly(publicKey: .owner, isSigner: true),
                 .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
-                .writable(publicKey: "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2", isSigner: false),
-                .writable(publicKey: "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8", isSigner: false),
+                .writable(publicKey: Pool.solBTC.tokenAccountA.publicKey, isSigner: false),
+                .writable(publicKey: Pool.solBTC.tokenAccountB.publicKey, isSigner: false),
                 .writable(publicKey: .btcAssociatedAddress, isSigner: false),
-                .writable(publicKey: "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe", isSigner: false),
-                .writable(publicKey: "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B", isSigner: false),
+                .writable(publicKey: Pool.solBTC.poolTokenMint.publicKey, isSigner: false),
+                .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
             programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
@@ -199,15 +198,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let minAmountOut = try Pool.solBTC.getMinimumAmountOut(inputAmount: inputAmount, slippage: slippage)
         XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // direct swap
             keys: [
-                .readonly(publicKey: "7N2AEJ98qBs4PwEwZ6k5pj8uZBKMkZrKZeiC7A64B47u", isSigner: false),
-                .readonly(publicKey: "GqnLhu3bPQ46nTZYNFDnzhwm31iFoqhi3ntXMtc5DPiT", isSigner: false),
+                .readonly(publicKey: Pool.solBTC.account.publicKey, isSigner: false),
+                .readonly(publicKey: Pool.solBTC.authority.publicKey, isSigner: false),
                 .readonly(publicKey: .owner, isSigner: true),
                 .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
-                .writable(publicKey: "5eqcnUasgU2NRrEAeWxvFVRTTYWJWfAJhsdffvc6nJc2", isSigner: false),
-                .writable(publicKey: "9G5TBPbEUg2iaFxJ29uVAT8ZzxY77esRshyHiLYZKRh8", isSigner: false),
+                .writable(publicKey: Pool.solBTC.tokenAccountA.publicKey, isSigner: false),
+                .writable(publicKey: Pool.solBTC.tokenAccountB.publicKey, isSigner: false),
                 .writable(publicKey: .btcAssociatedAddress, isSigner: false),
-                .writable(publicKey: "Acxs19v6eUMTEfdvkvWkRB4bwFCHm3XV9jABCy7c1mXe", isSigner: false),
-                .writable(publicKey: "4yPG4A9jB3ibDMVXEN2aZW4oA1e1xzzA3z5VWjkZd18B", isSigner: false),
+                .writable(publicKey: Pool.solBTC.poolTokenMint.publicKey, isSigner: false),
+                .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
             programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",

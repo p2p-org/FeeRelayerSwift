@@ -104,3 +104,9 @@ extension Pool {
         )
     }
 }
+
+extension String {
+    var publicKey: PublicKey {
+        try! toPublicKey()
+    }
+}
