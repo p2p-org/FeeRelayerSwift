@@ -103,6 +103,36 @@ extension Pool {
             isStable: nil
         )
     }
+    
+    static var ethSOL: Pool {
+        .init(
+            account: "4vWJYxLx9F7WPQeeYzg9cxhDeaPjwruZXCffaSknWFxy",
+            authority: "Hmjv9wvRctYXHRaX7dTdHB4MsFk4mZgKQrqrgQJXNXii",
+            nonce: 252,
+            poolTokenMint: "7bb88DAnQY7LSoWEuqezCcbk4vutQbuRqgJMqpX8h6dL",
+            tokenAccountA: "FidGus13X2HPzd3cuBEFSq32UcBQkF68niwvP6bM4fs2",
+            tokenAccountB: "5x1amFuGMfUVzy49Y4Pc3HyCVD2usjLaofnzB3d8h7rv",
+            feeAccount: "CYGRBB4qAYzSqdnvVaXvyZLg5j7YNVcuqM6gdD2MMUi1",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "ETH",
+            tokenBName: "SOL",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "710916", decimals: 6),
+            tokenBBalance: .init(amount: "10092481679", decimals: 9),
+            isStable: nil
+        )
+    }
 }
 
 extension String {
