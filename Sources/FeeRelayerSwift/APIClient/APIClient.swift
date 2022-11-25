@@ -8,9 +8,6 @@ public protocol FeeRelayerAPIClient {
     /// Get current version of fee relayer server
     var version: Int { get }
 
-    /// Environment identifier
-    var environment: FeeRelayerAPIEnvironment { get }
-
     /// Get fee payer address
     func getFeePayerPubkey() async throws -> String
 
@@ -24,11 +21,6 @@ public protocol FeeRelayerAPIClient {
     func sendTransaction(_ requestType: RequestType) async throws -> String
 }
 
-public enum FeeRelayerAPIEnvironment: String {
-    case prod
-    case dev
-}
-
 enum APIClientError: Error {
     case invalidURL
     case custom(error: Error)
@@ -40,20 +32,13 @@ public class APIClient: FeeRelayerAPIClient {
     // MARK: - Properties
 
     public let version: Int
-    public let environment: FeeRelayerAPIEnvironment
     private let baseUrlString: String
     private var httpClient: HTTPClient
 
     // MARK: - Initializers
 
-    public init(
-        httpClient: HTTPClient = FeeRelayerHTTPClient(),
-        baseUrlString: String,
-        version: Int,
-        environment: FeeRelayerAPIEnvironment = .dev
-    ) {
+    public init(httpClient: HTTPClient = FeeRelayerHTTPClient(), baseUrlString: String, version: Int) {
         self.version = version
-        self.environment = environment
         self.httpClient = httpClient
         self.baseUrlString = baseUrlString
     }
@@ -68,11 +53,8 @@ public class APIClient: FeeRelayerAPIClient {
             urlString += "/v\(version)"
         }
         urlString += "/fee_payer/pubkey"
-        var components = URLComponents(string: urlString)
-        guard let url = components?.url else { throw APIClientError.invalidURL }
-        var request = URLRequest(url: url)
-        request.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
-
+        guard let url = URL(string: urlString) else { throw APIClientError.invalidURL }
+        let request = URLRequest(url: url)
         var res: String?
         do {
             res = try await httpClient.sendRequest(request: request, decoder: JSONDecoder())
@@ -85,19 +67,17 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
-        var urlString = baseUrlString
+        var url = baseUrlString
         if version > 1 {
-            urlString += "/v\(version)"
+            url += "/v\(version)"
         }
-        urlString += "/free_fee_limits/\(authority)"
-        var components = URLComponents(string: urlString)
-        guard let url = components?.url else { throw APIClientError.invalidURL }
+        url += "/free_fee_limits/\(authority)"
+        guard let url = URL(string: url) else { throw APIClientError.unknown }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
 
         Logger.log(event: "FeeRelayerSwift requestFreeFeeLimits", message: urlRequest.cURL(), logLevel: .debug)
 
@@ -111,19 +91,17 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     public func feeTokenData(mint: String) async throws -> FeeTokenData {
-        var urlString = baseUrlString
+        var url = baseUrlString
         if version > 1 {
-            urlString += "/v\(version)"
+            url += "/v\(version)"
         }
-        urlString += "/fee_token_data/\(mint)"
-        var components = URLComponents(string: urlString)
-        guard let url = components?.url else { throw APIClientError.invalidURL }
+        url += "/fee_token_data/\(mint)"
+        guard let url = URL(string: url) else { throw APIClientError.unknown }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
 
         Logger.log(event: "FeeRelayerSwift getFeeTokenData", message: urlRequest.cURL(), logLevel: .debug)
 
@@ -155,16 +133,13 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
-        var urlString = baseUrlString
+        var url = baseUrlString
         if version > 1 {
-            urlString += "/v\(version)"
+            url += "/v\(version)"
         }
-        urlString += requestType.path
-        var components = URLComponents(string: urlString)
-        guard let url = components?.url else { throw APIClientError.invalidURL }
-        var urlRequest = URLRequest(url: url)
+        url += requestType.path
+        var urlRequest = URLRequest(url: URL(string: url)!)
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
         urlRequest.httpMethod = "POST"
         urlRequest.httpBody = try requestType.getParams()
 
