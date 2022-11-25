@@ -69,10 +69,9 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/fee_payer/pubkey"
         var components = URLComponents(string: urlString)
-        components?.queryItems?.append(URLQueryItem(
-            name: URLKeys.environment.rawValue,
-            value: environment.rawValue
-        ))
+        components?.queryItems = [
+            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
+        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
         let request = URLRequest(url: url)
 
@@ -94,10 +93,9 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/free_fee_limits/\(authority)"
         var components = URLComponents(string: urlString)
-        components?.queryItems?.append(URLQueryItem(
-            name: URLKeys.environment.rawValue,
-            value: environment.rawValue
-        ))
+        components?.queryItems = [
+            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
+        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
@@ -123,10 +121,9 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/fee_token_data/\(mint)"
         var components = URLComponents(string: urlString)
-        components?.queryItems?.append(URLQueryItem(
-            name: URLKeys.environment.rawValue,
-            value: environment.rawValue
-        ))
+        components?.queryItems = [
+            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
+        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
@@ -170,10 +167,6 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += requestType.path
         var components = URLComponents(string: urlString)
-        components?.queryItems?.append(URLQueryItem(
-            name: URLKeys.environment.rawValue,
-            value: environment.rawValue
-        ))
         guard let url = components?.url else { throw APIClientError.invalidURL }
         var urlRequest = URLRequest(url: url)
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
