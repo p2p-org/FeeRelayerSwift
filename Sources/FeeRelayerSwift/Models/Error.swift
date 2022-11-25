@@ -90,6 +90,11 @@ public struct FeeRelayerError: Swift.Error, Decodable, Equatable {
             else if errorLog?.contains("Given pool token amount results in zero trading tokens") == true {
                 type = .givenPoolTokenAmountResultsInZeroTradingTokens
             }
+            
+            // swap instruction exceeds desired slippage limit
+            else if errorLog?.contains("Swap instruction exceeds desired slippage limit") == true {
+                type = .swapInstructionExceedsDesiredSlippageLimit
+            }
 
             // un parsed error
             else {
@@ -206,6 +211,7 @@ public struct ClientError {
         case connectionClosedBeforeMessageCompleted = "Connection closed before message completed"
         case givenPoolTokenAmountResultsInZeroTradingTokens =
             "Given pool token amount results in zero trading tokens"
+        case swapInstructionExceedsDesiredSlippageLimit = "Swap instruction exceeds desired slippage limit"
     }
 }
 

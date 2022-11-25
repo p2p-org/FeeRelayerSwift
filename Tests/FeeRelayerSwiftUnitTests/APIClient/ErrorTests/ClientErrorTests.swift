@@ -70,4 +70,16 @@ class ClientErrorTests: XCTestCase, ErrorTestsType {
         XCTAssertEqual(error.clientError?.type, .givenPoolTokenAmountResultsInZeroTradingTokens)
         XCTAssertEqual(error.clientError?.errorLog, "Given pool token amount results in zero trading tokens")
     }
+    
+    func testSwapInstructionExceedsDesiredSlippageLimitError() throws {
+        // given pool token amount results in zero trading tokens
+        let error = try doTest(
+            string: ClientError.swapInstructionExceedsDesiredSlippageLimit,
+            expectedErrorCode: 6,
+            expectedMessage: "Solana RPC client error: RPC response error -32002: Transaction simulation failed: Error processing Instruction 1: custom program error: 0x10 [26 log messages]"
+        )
+        
+        XCTAssertEqual(error.clientError?.type, .swapInstructionExceedsDesiredSlippageLimit)
+        XCTAssertEqual(error.clientError?.errorLog, "Swap instruction exceeds desired slippage limit")
+    }
 }
