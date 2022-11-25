@@ -41,6 +41,14 @@ extension PublicKey {
     static var btcTransitTokenAccountAddress: PublicKey {
         "8eYZfAwWoEfsNMmXhCPUAiTpG8EzMgzW8nzr7km3sL2s"
     }
+    
+    static var swapProgramId: PublicKey {
+        "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP"
+    }
+    
+    static var deprecatedSwapProgramId: PublicKey {
+        "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"
+    }
 }
 
 extension Pool {

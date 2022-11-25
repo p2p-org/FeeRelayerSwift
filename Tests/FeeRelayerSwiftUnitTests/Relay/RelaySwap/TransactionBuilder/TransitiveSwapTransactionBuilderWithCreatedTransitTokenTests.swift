@@ -118,7 +118,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
                 .writable(publicKey: .ethAssociatedAddress, isSigner: false),
                 
-                .readonly(publicKey: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP", isSigner: false),
+                .readonly(publicKey: .swapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.tokenAccountA.publicKey, isSigner: false),
@@ -126,7 +126,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: Pool.solBTC.poolTokenMint.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.btcETH.tokenAccountA.publicKey, isSigner: false),
@@ -231,7 +231,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
                 .writable(publicKey: .ethAssociatedAddress, isSigner: false),
                 
-                .readonly(publicKey: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP", isSigner: false),
+                .readonly(publicKey: .swapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.tokenAccountA.publicKey, isSigner: false),
@@ -239,7 +239,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: Pool.solBTC.poolTokenMint.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.btcETH.tokenAccountA.publicKey, isSigner: false),
@@ -330,7 +330,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
                 .writable(publicKey: .ethAssociatedAddress, isSigner: false),
                 
-                .readonly(publicKey: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP", isSigner: false),
+                .readonly(publicKey: .swapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.reversed.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.reversed.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.reversed.tokenAccountA.publicKey, isSigner: false),
@@ -338,7 +338,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: Pool.solBTC.reversed.poolTokenMint.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.reversed.feeAccount.publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.reversed.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.reversed.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.ethSOL.reversed.tokenAccountA.publicKey, isSigner: false),
@@ -405,7 +405,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
                 .writable(publicKey: .ethAssociatedAddress, isSigner: false),
                 
-                .readonly(publicKey: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP", isSigner: false),
+                .readonly(publicKey: .swapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.reversed.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.solBTC.reversed.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.reversed.tokenAccountA.publicKey, isSigner: false),
@@ -413,7 +413,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: Pool.solBTC.reversed.poolTokenMint.publicKey, isSigner: false),
                 .writable(publicKey: Pool.solBTC.reversed.feeAccount.publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.reversed.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.reversed.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.ethSOL.reversed.tokenAccountA.publicKey, isSigner: false),
@@ -498,7 +498,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: transitTokenPublicKey, isSigner: false),
                 .writable(publicKey: swapTransaction.signers[1].publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.btcETH.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.btcETH.tokenAccountA.publicKey, isSigner: false),
@@ -506,7 +506,7 @@ final class TransitiveSwapTransactionBuilderWithCreatedTransitTokenTests: XCTest
                 .writable(publicKey: Pool.btcETH.poolTokenMint.publicKey, isSigner: false),
                 .writable(publicKey: Pool.btcETH.feeAccount.publicKey, isSigner: false),
                 
-                .readonly(publicKey: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1", isSigner: false),
+                .readonly(publicKey: .deprecatedSwapProgramId, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.account.publicKey, isSigner: false),
                 .readonly(publicKey: Pool.ethSOL.authority.publicKey, isSigner: false),
                 .writable(publicKey: Pool.ethSOL.tokenAccountA.publicKey, isSigner: false),

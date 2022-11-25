@@ -82,7 +82,7 @@ private class MockFeeRelayerAPIClient: MockFeeRelayerAPIClientBase {
         let string: String
         
         switch authority {
-        case "3h1zGmCwsRJnVk5BuRNMLsPaQu1y2aqXqXDWYCgrp5UG":
+        case PublicKey.owner.base58EncodedString:
             string = #"{"authority":[39,247,185,4,85,137,50,166,147,184,221,75,110,103,16,222,41,94,247,132,43,62,172,243,95,204,190,143,153,16,10,197],"limits":{"use_free_fee":true,"max_amount":10000000,"max_count":100,"period":{"secs":86400,"nanos":0}},"processed_fee":{"total_amount":0,"count":\#(testCase)}}"#
         default:
             fatalError()

@@ -113,7 +113,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+            programId: .swapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
         
@@ -203,7 +203,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: Pool.solBTC.feeAccount.publicKey, isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+            programId: .swapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
 
@@ -281,7 +281,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+            programId: .deprecatedSwapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
     }
@@ -335,7 +335,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+            programId: .deprecatedSwapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
     }
@@ -389,7 +389,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: try PublicKey(string: Pool.btcETH.feeAccount), isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1",
+            programId: .deprecatedSwapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
     }
@@ -462,7 +462,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
                 .writable(publicKey: try PublicKey(string: Pool.solBTC.reversed.feeAccount), isSigner: false),
                 .readonly(publicKey: TokenProgram.id, isSigner: false)
             ],
-            programId: "9W959DqEETiGZocYWCQPaJ6sBmUzgfxXfqGeTEdp3aQP",
+            programId: .swapProgramId,
             data: [UInt8(1)] + inputAmount.bytes + minAmountOut!.bytes)
         )
         XCTAssertEqual(swapTransaction.transaction.instructions[3], .init( // close wsol and receive rent exempt
