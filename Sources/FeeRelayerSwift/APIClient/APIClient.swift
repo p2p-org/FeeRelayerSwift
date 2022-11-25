@@ -7,6 +7,7 @@ import Foundation
 public protocol FeeRelayerAPIClient {
     /// Get current version of fee relayer server
     var version: Int { get }
+
     /// Environment identifier
     var environment: FeeRelayerAPIEnvironment { get }
 
@@ -43,7 +44,6 @@ public class APIClient: FeeRelayerAPIClient {
     private let baseUrlString: String
     private var httpClient: HTTPClient
 
-
     // MARK: - Initializers
 
     public init(
@@ -69,11 +69,9 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/fee_payer/pubkey"
         var components = URLComponents(string: urlString)
-        components?.queryItems = [
-            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
-        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
-        let request = URLRequest(url: url)
+        var request = URLRequest(url: url)
+        request.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
 
         var res: String?
         do {
@@ -93,15 +91,13 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/free_fee_limits/\(authority)"
         var components = URLComponents(string: urlString)
-        components?.queryItems = [
-            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
-        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
 
         Logger.log(event: "FeeRelayerSwift requestFreeFeeLimits", message: urlRequest.cURL(), logLevel: .debug)
 
@@ -121,15 +117,13 @@ public class APIClient: FeeRelayerAPIClient {
         }
         urlString += "/fee_token_data/\(mint)"
         var components = URLComponents(string: urlString)
-        components?.queryItems = [
-            URLQueryItem(name: URLKeys.environment.rawValue, value: environment.rawValue)
-        ]
         guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "GET"
         urlRequest.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
 
         Logger.log(event: "FeeRelayerSwift getFeeTokenData", message: urlRequest.cURL(), logLevel: .debug)
 
@@ -170,6 +164,7 @@ public class APIClient: FeeRelayerAPIClient {
         guard let url = components?.url else { throw APIClientError.invalidURL }
         var urlRequest = URLRequest(url: url)
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        urlRequest.addValue(environment.rawValue, forHTTPHeaderField: "X-Environment")
         urlRequest.httpMethod = "POST"
         urlRequest.httpBody = try requestType.getParams()
 
@@ -179,12 +174,6 @@ public class APIClient: FeeRelayerAPIClient {
             logLevel: .debug
         )
         return urlRequest
-    }
-}
-
-extension APIClient {
-    enum URLKeys: String {
-        case environment = "env"
     }
 }
 
