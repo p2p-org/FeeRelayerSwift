@@ -24,7 +24,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> New BTC
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 0),
+            destinationFinder: MockDestinationFinder(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -52,7 +52,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> BTC
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 1),
+            destinationFinder: MockDestinationFinder(testCase: 1),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -80,7 +80,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 2),
+            destinationFinder: MockDestinationFinder(testCase: 2),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -108,7 +108,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 3),
+            destinationFinder: MockDestinationFinder(testCase: 3),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -136,7 +136,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> SOL
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 0),
+            destinationFinder: MockDestinationFinder(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -166,7 +166,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> New BTC
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 4),
+            destinationFinder: MockDestinationFinder(testCase: 4),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -194,7 +194,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> BTC
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 5),
+            destinationFinder: MockDestinationFinder(testCase: 5),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -222,7 +222,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 6),
+            destinationFinder: MockDestinationFinder(testCase: 6),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -250,7 +250,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 7),
+            destinationFinder: MockDestinationFinder(testCase: 7),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -278,7 +278,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> SOL
         
         calculator = .init(
-            solanaApiClient: MockSolanaAPIClient(testCase: 0),
+            destinationFinder: MockDestinationFinder(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -303,48 +303,51 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
     }
 }
 
-private class MockSolanaAPIClient: MockSolanaAPIClientBase {
+private class MockDestinationFinder: DestinationFinder {
     private let testCase: Int
 
     init(testCase: Int = 0) {
         self.testCase = testCase
     }
-
-    override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
-        switch account {
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 0 || testCase == 4:
-            return nil
-        case PublicKey.btcAssociatedAddress.base58EncodedString where testCase == 1 || testCase == 5:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: .btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+    
+    func findRealDestination(
+        owner: PublicKey,
+        mint: PublicKey,
+        givenDestination: PublicKey?
+    ) async throws -> DestinationFinderResult {
+        switch mint {
+        case .btcMint where testCase == 0 || testCase == 4:
+            return DestinationFinderResult(
+                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationOwner: owner,
+                needsCreation: true
             )
-            return info as? BufferInfo<T>
-        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 2 || testCase == 6:
-            return nil
-        case PublicKey.ethAssociatedAddress.base58EncodedString where testCase == 3 || testCase == 7:
-            let info = BufferInfo<AccountInfo>(
-                lamports: 0,
-                owner: TokenProgram.id.base58EncodedString,
-                data: .init(mint: .btcMint, owner: SystemProgram.id, lamports: 0, delegateOption: 0, isInitialized: true, isFrozen: true, state: 0, isNativeOption: 0, rentExemptReserve: nil, isNativeRaw: 0, isNative: true, delegatedAmount: 0, closeAuthorityOption: 0),
-                executable: false,
-                rentEpoch: 0
+        case .btcMint where testCase == 1 || testCase == 5:
+            return DestinationFinderResult(
+                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
+                destinationOwner: owner,
+                needsCreation: false
             )
-            return info as? BufferInfo<T>
-        case PublicKey.owner.base58EncodedString:
-            let info = BufferInfo<EmptyInfo>(
-                lamports: 0,
-                owner: SystemProgram.id.base58EncodedString,
-                data: .init(),
-                executable: false,
-                rentEpoch: 0
+        case .ethMint where testCase == 2 || testCase == 6:
+            return DestinationFinderResult(
+                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
+                destinationOwner: owner,
+                needsCreation: true
             )
-            return info as? BufferInfo<T>
+        case .ethMint where testCase == 3 || testCase == 7:
+            return DestinationFinderResult(
+                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
+                destinationOwner: owner,
+                needsCreation: false
+            )
+        case .wrappedSOLMint:
+            return DestinationFinderResult(
+                destination: .init(address: owner, mint: .wrappedSOLMint),
+                destinationOwner: owner,
+                needsCreation: true
+            )
         default:
-            return try await super.getAccountInfo(account: account)
+            fatalError()
         }
     }
 }

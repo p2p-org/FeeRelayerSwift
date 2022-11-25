@@ -62,7 +62,7 @@ class RelaySwapTests: RelayTests {
         )
         
         return try await swapRelayService
-            .prepareSwapTransaction(
+            .buildSwapTransaction(
                 context,
                 sourceToken: .init(
                     address: try PublicKey(string: testInfo.sourceAddress),

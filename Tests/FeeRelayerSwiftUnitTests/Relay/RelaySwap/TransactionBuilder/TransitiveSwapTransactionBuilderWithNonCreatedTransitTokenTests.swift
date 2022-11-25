@@ -31,17 +31,15 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         let inputAmount: UInt64 = 100000000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC, .btcETH],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC, .btcETH],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, minimumTokenAccountBalance) // WSOL
@@ -181,17 +179,15 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         let inputAmount: UInt64 = 100000000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC, .btcETH],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: .ethAssociatedAddress,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC, .btcETH],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: .ethAssociatedAddress,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, minimumTokenAccountBalance) // WSOL
@@ -311,17 +307,15 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         let inputAmount: UInt64 = 100000000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC.reversed, .ethSOL.reversed],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC.reversed, .ethSOL.reversed],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL creation
@@ -417,17 +411,15 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         let inputAmount: UInt64 = 100000000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC.reversed, .ethSOL.reversed],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC.reversed, .ethSOL.reversed],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No WSOL creation
@@ -509,17 +501,15 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         let slippage: Double = 0.1
         
         // BTC -> ETH -> SOL
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.btcETH, .ethSOL],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .wrappedSOLMint,
-                destinationTokenAddress: .owner,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.btcETH, .ethSOL],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .wrappedSOLMint,
+            destinationTokenAddress: .owner,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created

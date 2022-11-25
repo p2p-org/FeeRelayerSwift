@@ -27,73 +27,82 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
         self.lamportsPerSignature = lamportsPerSignature
     }
     
-    public func prepareSwapTransaction(input: SwapTransactionBuilderInput) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
+    public func buildSwapTransaction(
+        userAccount: Account,
+        pools: PoolsPair,
+        inputAmount: UInt64,
+        slippage: Double,
+        sourceTokenAccount: TokenAccount,
+        destinationTokenMint: PublicKey,
+        destinationTokenAddress: PublicKey?,
+        blockhash: String
+    ) async throws -> (transactions: [PreparedTransaction], additionalPaybackFee: UInt64) {
         // form output
         var output = SwapTransactionBuilderOutput()
-        output.userSource = input.sourceTokenAccount.address
+        output.userSource = sourceTokenAccount.address
         
         // assert userSource
         let associatedToken = try PublicKey.associatedTokenAddress(
             walletAddress: feePayerAddress,
-            tokenMintAddress: input.sourceTokenAccount.mint
+            tokenMintAddress: sourceTokenAccount.mint
         )
         guard output.userSource != associatedToken else { throw FeeRelayerError.wrongAddress }
         
         // check transit token
         try await checkTransitTokenAccount(
-            owner: input.userAccount.publicKey,
-            poolsPair: input.pools,
+            owner: userAccount.publicKey,
+            poolsPair: pools,
             output: &output
         )
         
         // check source
         try await checkSource(
-            owner: input.userAccount.publicKey,
-            sourceMint: input.sourceTokenAccount.mint,
-            inputAmount: input.inputAmount,
+            owner: userAccount.publicKey,
+            sourceMint: sourceTokenAccount.mint,
+            inputAmount: inputAmount,
             output: &output
         )
         
         // check destination
         try await checkDestination(
-            owner: input.userAccount,
-            destinationMint: input.destinationTokenMint,
-            destinationAddress: input.destinationTokenAddress,
-            recentBlockhash: input.blockhash,
+            owner: userAccount,
+            destinationMint: destinationTokenMint,
+            destinationAddress: destinationTokenAddress,
+            recentBlockhash: blockhash,
             output: &output
         )
         
         // build swap data
         let swapData = try await buildSwapData(
-            userAccount: input.userAccount,
-            pools: input.pools,
-            inputAmount: input.inputAmount,
+            userAccount: userAccount,
+            pools: pools,
+            inputAmount: inputAmount,
             minAmountOut: nil,
-            slippage: input.slippage,
+            slippage: slippage,
             transitTokenMintPubkey: output.transitTokenMintPubkey,
             needsCreateTransitTokenAccount: output.needsCreateTransitTokenAccount == true
         )
         
         // check swap data
         try checkSwapData(
-            owner: input.userAccount.publicKey,
-            poolsPair: input.pools,
+            owner: userAccount.publicKey,
+            poolsPair: pools,
             env: &output,
             swapData: swapData
         )
         
         // closing accounts
         try checkClosingAccount(
-            owner: input.userAccount.publicKey,
+            owner: userAccount.publicKey,
             feePayer: feePayerAddress,
-            destinationTokenMint: input.destinationTokenMint,
+            destinationTokenMint: destinationTokenMint,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             env: &output
         )
         
         // check signers
         checkSigners(
-            ownerAccount: input.userAccount,
+            ownerAccount: userAccount,
             env: &output
         )
         
@@ -107,7 +116,7 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
             try makeTransaction(
                 instructions: output.instructions,
                 signers: output.signers,
-                blockhash: input.blockhash,
+                blockhash: blockhash,
                 accountCreationFee: output.accountCreationFee
             )
         )

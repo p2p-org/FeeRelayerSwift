@@ -30,17 +30,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
-                destinationTokenMint: .btcMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
+            destinationTokenMint: .btcMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, minimumTokenAccountBalance) // WSOL
@@ -143,17 +141,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
-                destinationTokenMint: .btcMint,
-                destinationTokenAddress: .btcAssociatedAddress,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: accountStorage.account!.publicKey, mint: .wrappedSOLMint),
+            destinationTokenMint: .btcMint,
+            destinationTokenAddress: .btcAssociatedAddress,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, minimumTokenAccountBalance) // WSOL
@@ -235,17 +231,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.btcETH],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.btcETH],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
@@ -305,17 +299,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.btcETH],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: .ethAssociatedAddress,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.btcETH],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: .ethAssociatedAddress,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
@@ -361,17 +353,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.btcETH],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .ethMint,
-                destinationTokenAddress: nil,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.btcETH],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .ethMint,
+            destinationTokenAddress: nil,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
@@ -417,17 +407,15 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         let inputAmount: UInt64 = 1000000
         let slippage: Double = 0.1
         
-        let output = try await swapTransactionBuilder.prepareSwapTransaction(
-            input: .init(
-                userAccount: accountStorage.account!,
-                pools: [.solBTC.reversed],
-                inputAmount: inputAmount,
-                slippage: slippage,
-                sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationTokenMint: .wrappedSOLMint,
-                destinationTokenAddress: .owner,
-                blockhash: blockhash
-            )
+        let output = try await swapTransactionBuilder.buildSwapTransaction(
+            userAccount: accountStorage.account!,
+            pools: [.solBTC.reversed],
+            inputAmount: inputAmount,
+            slippage: slippage,
+            sourceTokenAccount: .init(address: .btcAssociatedAddress, mint: .btcMint),
+            destinationTokenMint: .wrappedSOLMint,
+            destinationTokenAddress: .owner,
+            blockhash: blockhash
         )
         
         XCTAssertEqual(output.additionalPaybackFee, 0) // No Source WSOL created
