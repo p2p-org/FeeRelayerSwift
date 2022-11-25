@@ -40,20 +40,6 @@ public class RelayServiceImpl: RelayService {
         self.deviceType = deviceType
         self.buildNumber = buildNumber
     }
-    
-    // MARK: - getFeePayer method
-    
-    public func getFeePayer() async throws -> PublicKey {
-        try PublicKey(string: try await feeRelayerAPIClient.getFeePayerPubkey())
-    }
-    
-    // MARK: - Top up and send transaction using relay_transaction method
-    
-    public func getFeeTokenData(
-        mint: String
-    ) async throws -> FeeTokenData {
-        try await feeRelayerAPIClient.feeTokenData(mint: mint)
-    }
 
     public func relayTransaction(
         _ preparedTransaction: PreparedTransaction,

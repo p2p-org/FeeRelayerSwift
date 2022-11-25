@@ -14,10 +14,6 @@ public protocol RelayService {
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]?
-
-    func getFeeTokenData(
-        mint: String
-    ) async throws -> FeeTokenData
     
     func relayTransaction(
         _ preparedTransaction: PreparedTransaction,
@@ -51,6 +47,4 @@ public protocol RelayService {
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
-    
-    func getFeePayer() async throws -> PublicKey
 }

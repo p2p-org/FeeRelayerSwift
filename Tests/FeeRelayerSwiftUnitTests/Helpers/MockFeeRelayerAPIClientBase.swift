@@ -1,5 +1,6 @@
 import Foundation
 import FeeRelayerSwift
+import SolanaSwift
 
 class MockFeeRelayerAPIClientBase: FeeRelayerAPIClient {
     func feeTokenData(mint: String) async throws -> FeeRelayerSwift.FeeTokenData {
@@ -9,7 +10,7 @@ class MockFeeRelayerAPIClientBase: FeeRelayerAPIClient {
     var version: Int = 0
     
     func getFeePayerPubkey() async throws -> String {
-        "FG4Y3yX4AAchp1HvNZ7LfzFTewF2f6nDoMDCohTFrdpT"
+        PublicKey.feePayerAddress.base58EncodedString
     }
     
     func getFreeFeeLimits(for authority: String) async throws -> FeeRelayerSwift.FeeLimitForAuthorityResponse {
