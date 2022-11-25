@@ -10,14 +10,29 @@ import SolanaSwift
 @testable import FeeRelayerSwift
 
 final class CheckSignersTests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testSignersWithSourceWSOL() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             sourceWSOLNewAccount: newWSOL
         )
         
-        SwapTransactionBuilder.checkSigners(
+        swapTransactionBuilder.checkSigners(
             ownerAccount: owner,
             env: &env
         )
@@ -27,13 +42,22 @@ final class CheckSignersTests: XCTestCase {
     }
     
     func testSignersWithDestinationWSOL() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+        
         let owner = try await Account(network: .mainnetBeta)
         let newWSOL = try await Account(network: .mainnetBeta)
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             destinationNewAccount: newWSOL
         )
         
-        SwapTransactionBuilder.checkSigners(
+        swapTransactionBuilder.checkSigners(
             ownerAccount: owner,
             env: &env
         )

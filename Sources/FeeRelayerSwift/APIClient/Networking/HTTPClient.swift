@@ -41,11 +41,19 @@ public final class FeeRelayerHTTPClient: HTTPClient {
             case 401:
                 throw HTTPClientError.unauthorized
             default:
-                #if DEBUG
                 if let log = String(data: data, encoding: .utf8) {
+                    #if DEBUG
                     Logger.log(event: "error", message: log, logLevel: .error)
+                    #endif
+                    // FIXME: - temporarily fix by converting HTTPClientError to SolanaError
+                    let log = log.replacingOccurrences(of: "\"ClientError\"", with: "\"logs\"")
+                    if let fixedData = log.data(using: .utf8),
+                       let responseError = try? JSONDecoder().decode(SolanaSwift.ResponseError.self, from: fixedData)
+                    {
+                        throw SolanaError.invalidResponse(responseError)
+                    }
                 }
-                #endif
+                
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
             }
 //        } catch let error {

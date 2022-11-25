@@ -6,13 +6,13 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-extension SwapTransactionBuilder {
-    static internal func checkClosingAccount(
+extension SwapTransactionBuilderImpl {
+    func checkClosingAccount(
         owner: PublicKey,
         feePayer: PublicKey,
         destinationTokenMint: PublicKey,
         minimumTokenAccountBalance: UInt64,
-        env: inout BuildContext.Environment
+        env: inout SwapTransactionBuilderOutput
     ) throws {
         if let newAccount = env.sourceWSOLNewAccount {
             env.instructions.append(contentsOf: [
@@ -41,3 +41,4 @@ extension SwapTransactionBuilder {
         }
     }
 }
+

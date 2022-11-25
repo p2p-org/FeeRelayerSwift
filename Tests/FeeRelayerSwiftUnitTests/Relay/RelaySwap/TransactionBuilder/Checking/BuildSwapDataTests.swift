@@ -6,21 +6,30 @@ import SolanaSwift
 final class BuildSwapDataTests: XCTestCase {
     private var accountStorage: MockAccountStorage!
     var account: SolanaSwift.Account { accountStorage.account! }
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
     
     override func setUp() async throws {
         accountStorage = try await .init()
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
     }
     
     override func tearDown() async throws {
         accountStorage = nil
+        swapTransactionBuilder = nil
     }
 
     func testBuildDirectSwapData() async throws {
         // SOL -> BTC
-        let swapData = try await SwapTransactionBuilder.buildSwapData(
+        let swapData = try await swapTransactionBuilder.buildSwapData(
             userAccount: account,
-            network: .mainnetBeta,
-            pools: [solBTCPool()],
+            pools: [.solBTC],
             inputAmount: 10000,
             minAmountOut: 100,
             slippage: 0.01,
@@ -48,10 +57,9 @@ final class BuildSwapDataTests: XCTestCase {
         // SOL -> BTC -> ETH
         let needsCreateTransitTokenAccount = Bool.random()
         
-        let swapData = try await SwapTransactionBuilder.buildSwapData(
+        let swapData = try await swapTransactionBuilder.buildSwapData(
             userAccount: account,
-            network: .mainnetBeta,
-            pools: [solBTCPool(), btcETHPool()],
+            pools: [.solBTC, .btcETH],
             inputAmount: 10000000,
             minAmountOut: nil,
             slippage: 0.01,

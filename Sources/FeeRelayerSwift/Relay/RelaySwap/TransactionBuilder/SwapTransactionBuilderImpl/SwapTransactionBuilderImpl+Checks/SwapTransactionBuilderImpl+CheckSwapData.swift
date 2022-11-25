@@ -6,13 +6,11 @@ import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-extension SwapTransactionBuilder {
-     static func checkSwapData(
-        network: SolanaSwift.Network,
+extension SwapTransactionBuilderImpl {
+     func checkSwapData(
         owner: PublicKey,
-        feePayerAddress: PublicKey,
         poolsPair: PoolsPair,
-        env: inout BuildContext.Environment,
+        env: inout SwapTransactionBuilderOutput,
         swapData: SwapData
      ) throws {
         let userTransferAuthority = swapData.transferAuthorityAccount?.publicKey

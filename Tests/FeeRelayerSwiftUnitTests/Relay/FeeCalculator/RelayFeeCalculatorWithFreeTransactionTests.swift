@@ -8,7 +8,27 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
     
     let calculator = DefaultRelayFeeCalculator()
     
-    // MARK: - TopUp
+    func testWhenTransactionIsTotallyFree() async throws {
+        let expectedTxFee = FeeAmount(
+            transaction: 5000,
+            accountBalances: 0
+        )
+        
+        // user is paying with SOL, relay account creation is not needed
+        let case1 = try await calculator.calculateNeededTopUpAmount(
+            getContext(
+                relayAccountStatus: .notYetCreated // not important
+            ),
+            expectedFee: expectedTxFee,
+            payingTokenMint: .usdtMint
+        )
+        
+        XCTAssertEqual(
+            case1,
+            .zero
+        )
+    }
+    
     func testWhenRelayAccountIsNotYetCreated() async throws {
         let expectedTxFee = FeeAmount(
             transaction: UInt64.random(in: 1...2) * lamportsPerSignature,

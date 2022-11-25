@@ -11,6 +11,23 @@ import XCTest
 import SolanaSwift
 
 final class CheckSwapDataTests: XCTestCase {
+    var swapTransactionBuilder: SwapTransactionBuilderImpl!
+    
+    override func setUp() async throws {
+        swapTransactionBuilder = .init(
+            network: .mainnetBeta,
+            transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
+            destinationManager: MockDestinationFinderBase(),
+            feePayerAddress: .feePayerAddress,
+            minimumTokenAccountBalance: minimumTokenAccountBalance,
+            lamportsPerSignature: lamportsPerSignature
+        )
+    }
+    
+    override func tearDown() async throws {
+        swapTransactionBuilder = nil
+    }
+    
     func testCheckDirectSwapData() async throws {
         // BTC -> ETH
         let swapData = DirectSwapData(
@@ -26,16 +43,14 @@ final class CheckSwapDataTests: XCTestCase {
             minimumAmountOut: 171
         )
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: .btcAssociatedAddress,
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try SwapTransactionBuilder.checkSwapData(
-            network: .mainnetBeta,
+        try swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            feePayerAddress: .feePayerAddress,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )
@@ -90,17 +105,15 @@ final class CheckSwapDataTests: XCTestCase {
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount
         )
         
-        var env = SwapTransactionBuilder.BuildContext.Environment(
+        var env = SwapTransactionBuilderOutput(
             userSource: "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo",
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
         
-        try SwapTransactionBuilder.checkSwapData(
-            network: .mainnetBeta,
+        try swapTransactionBuilder.checkSwapData(
             owner: .owner,
-            feePayerAddress: .feePayerAddress,
-            poolsPair: [btcETHPool()],
+            poolsPair: [.btcETH],
             env: &env,
             swapData: .init(swapData: swapData, transferAuthorityAccount: nil)
         )

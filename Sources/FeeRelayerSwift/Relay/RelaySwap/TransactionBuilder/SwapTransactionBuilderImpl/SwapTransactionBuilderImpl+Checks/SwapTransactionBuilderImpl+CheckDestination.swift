@@ -1,25 +1,16 @@
-// Copyright 2022 P2P Validator Authors. All rights reserved.
-// Use of this source code is governed by a MIT-style license that can be
-// found in the LICENSE file.
-
 import Foundation
 import SolanaSwift
 import OrcaSwapSwift
 
-extension  SwapTransactionBuilder {
-    internal static func checkDestination(
-        solanaAPIClient: SolanaAPIClient,
-        owner: SolanaSwift.Account,
+extension SwapTransactionBuilderImpl {
+    func checkDestination(
+        owner: Account,
         destinationMint: PublicKey,
         destinationAddress: PublicKey?,
-        feePayerAddress: PublicKey,
-        relayContext: RelayContext,
         recentBlockhash: String,
-        env: inout BuildContext.Environment
+        output: inout SwapTransactionBuilderOutput
     ) async throws {
         var destinationNewAccount: Account?
-        
-        let destinationManager = DestinationFinderImpl(solanaAPIClient: solanaAPIClient)
         
         let destinationInfo = try await destinationManager.findRealDestination(
             owner: owner.publicKey,
@@ -32,12 +23,12 @@ extension  SwapTransactionBuilder {
         if destinationInfo.needsCreation {
             if destinationInfo.destination.mint == .wrappedSOLMint {
                 // For native solana, create and initialize WSOL
-                destinationNewAccount = try await Account(network: solanaAPIClient.endpoint.network)
-                env.instructions.append(contentsOf: [
+                destinationNewAccount = try await Account(network: network)
+                output.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
                         from: feePayerAddress,
                         toNewPubkey: destinationNewAccount!.publicKey,
-                        lamports: relayContext.minimumTokenAccountBalance,
+                        lamports: minimumTokenAccountBalance,
                         space: AccountInfo.BUFFER_LENGTH,
                         programId: TokenProgram.id
                     ),
@@ -48,7 +39,7 @@ extension  SwapTransactionBuilder {
                     ),
                 ])
                 userDestinationTokenAccountAddress = destinationNewAccount!.publicKey
-                env.accountCreationFee += relayContext.minimumTokenAccountBalance
+                output.accountCreationFee += minimumTokenAccountBalance
             } else {
                 // For other token, create associated token address
                 let associatedAddress = try PublicKey.associatedTokenAddress(
@@ -63,23 +54,22 @@ extension  SwapTransactionBuilder {
                 )
 
                 // SPECIAL CASE WHEN WE SWAP FROM SOL TO NON-CREATED SPL TOKEN, THEN WE NEEDS ADDITIONAL TRANSACTION BECAUSE TRANSACTION IS TOO LARGE
-                if env.sourceWSOLNewAccount != nil {
-                    env.additionalTransaction = try makeTransaction(
-                        relayContext,
+                if output.sourceWSOLNewAccount != nil {
+                    output.additionalTransaction = try makeTransaction(
                         instructions: [instruction],
                         signers: [owner],
                         blockhash: recentBlockhash,
-                        accountCreationFee: relayContext.minimumTokenAccountBalance
+                        accountCreationFee: minimumTokenAccountBalance
                     )
                 } else {
-                    env.instructions.append(instruction)
-                    env.accountCreationFee += relayContext.minimumTokenAccountBalance
+                    output.instructions.append(instruction)
+                    output.accountCreationFee += minimumTokenAccountBalance
                 }
                 userDestinationTokenAccountAddress = associatedAddress
             }
         }
         
-        env.destinationNewAccount = destinationNewAccount
-        env.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
+        output.destinationNewAccount = destinationNewAccount
+        output.userDestinationTokenAccountAddress = userDestinationTokenAccountAddress
     }
 }

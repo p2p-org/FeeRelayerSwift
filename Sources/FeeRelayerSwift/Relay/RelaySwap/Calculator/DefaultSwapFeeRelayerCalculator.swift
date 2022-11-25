@@ -7,13 +7,13 @@ import OrcaSwapSwift
 import SolanaSwift
 
 public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
-    let solanaApiClient: SolanaAPIClient
+    let destinationFinder: DestinationFinder
     let accountStorage: SolanaAccountStorage
     
     var userAccount: Account { accountStorage.account! }
 
-    public init(solanaApiClient: SolanaAPIClient, accountStorage: SolanaAccountStorage) {
-        self.solanaApiClient = solanaApiClient
+    public init(destinationFinder: DestinationFinder, accountStorage: SolanaAccountStorage) {
+        self.destinationFinder = destinationFinder
         self.accountStorage = accountStorage
     }
     
@@ -25,7 +25,6 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
-        let destinationFinder = DestinationFinderImpl(solanaAPIClient: solanaApiClient)
         let destinationInfo = try await destinationFinder.findRealDestination(
             owner: userAccount.publicKey,
             mint: destinationTokenMint,
