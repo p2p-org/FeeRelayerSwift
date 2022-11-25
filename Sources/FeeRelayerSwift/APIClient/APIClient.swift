@@ -7,6 +7,8 @@ import Foundation
 public protocol FeeRelayerAPIClient {
     /// Get current version of fee relayer server
     var version: Int { get }
+    /// Environment identifier
+    var environment: FeeRelayerAPIEnvironment { get }
 
     /// Get fee payer address
     func getFeePayerPubkey() async throws -> String
@@ -21,6 +23,11 @@ public protocol FeeRelayerAPIClient {
     func sendTransaction(_ requestType: RequestType) async throws -> String
 }
 
+public enum FeeRelayerAPIEnvironment: String {
+    case prod
+    case dev
+}
+
 enum APIClientError: Error {
     case invalidURL
     case custom(error: Error)
@@ -32,13 +39,21 @@ public class APIClient: FeeRelayerAPIClient {
     // MARK: - Properties
 
     public let version: Int
+    public let environment: FeeRelayerAPIEnvironment
     private let baseUrlString: String
     private var httpClient: HTTPClient
 
+
     // MARK: - Initializers
 
-    public init(httpClient: HTTPClient = FeeRelayerHTTPClient(), baseUrlString: String, version: Int) {
+    public init(
+        httpClient: HTTPClient = FeeRelayerHTTPClient(),
+        baseUrlString: String,
+        version: Int,
+        environment: FeeRelayerAPIEnvironment = .dev
+    ) {
         self.version = version
+        self.environment = environment
         self.httpClient = httpClient
         self.baseUrlString = baseUrlString
     }
@@ -53,8 +68,14 @@ public class APIClient: FeeRelayerAPIClient {
             urlString += "/v\(version)"
         }
         urlString += "/fee_payer/pubkey"
-        guard let url = URL(string: urlString) else { throw APIClientError.invalidURL }
+        var components = URLComponents(string: urlString)
+        components?.queryItems?.append(URLQueryItem(
+            name: URLKeys.environment.rawValue,
+            value: environment.rawValue
+        ))
+        guard let url = components?.url else { throw APIClientError.invalidURL }
         let request = URLRequest(url: url)
+
         var res: String?
         do {
             res = try await httpClient.sendRequest(request: request, decoder: JSONDecoder())
@@ -67,12 +88,17 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
-        var url = baseUrlString
+        var urlString = baseUrlString
         if version > 1 {
-            url += "/v\(version)"
+            urlString += "/v\(version)"
         }
-        url += "/free_fee_limits/\(authority)"
-        guard let url = URL(string: url) else { throw APIClientError.unknown }
+        urlString += "/free_fee_limits/\(authority)"
+        var components = URLComponents(string: urlString)
+        components?.queryItems?.append(URLQueryItem(
+            name: URLKeys.environment.rawValue,
+            value: environment.rawValue
+        ))
+        guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
@@ -91,12 +117,17 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     public func feeTokenData(mint: String) async throws -> FeeTokenData {
-        var url = baseUrlString
+        var urlString = baseUrlString
         if version > 1 {
-            url += "/v\(version)"
+            urlString += "/v\(version)"
         }
-        url += "/fee_token_data/\(mint)"
-        guard let url = URL(string: url) else { throw APIClientError.unknown }
+        urlString += "/fee_token_data/\(mint)"
+        var components = URLComponents(string: urlString)
+        components?.queryItems?.append(URLQueryItem(
+            name: URLKeys.environment.rawValue,
+            value: environment.rawValue
+        ))
+        guard let url = components?.url else { throw APIClientError.invalidURL }
 
         var urlRequest: URLRequest
         urlRequest = URLRequest(url: url)
@@ -133,12 +164,18 @@ public class APIClient: FeeRelayerAPIClient {
     }
 
     private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
-        var url = baseUrlString
+        var urlString = baseUrlString
         if version > 1 {
-            url += "/v\(version)"
+            urlString += "/v\(version)"
         }
-        url += requestType.path
-        var urlRequest = URLRequest(url: URL(string: url)!)
+        urlString += requestType.path
+        var components = URLComponents(string: urlString)
+        components?.queryItems?.append(URLQueryItem(
+            name: URLKeys.environment.rawValue,
+            value: environment.rawValue
+        ))
+        guard let url = components?.url else { throw APIClientError.invalidURL }
+        var urlRequest = URLRequest(url: url)
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.httpMethod = "POST"
         urlRequest.httpBody = try requestType.getParams()
@@ -149,6 +186,12 @@ public class APIClient: FeeRelayerAPIClient {
             logLevel: .debug
         )
         return urlRequest
+    }
+}
+
+extension APIClient {
+    enum URLKeys: String {
+        case environment = "env"
     }
 }
 
