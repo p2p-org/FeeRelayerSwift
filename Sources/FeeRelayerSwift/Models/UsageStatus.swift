@@ -10,7 +10,14 @@ public struct UsageStatus {
     public var currentUsage: Int
     public let maxAmount: UInt64
     public var amountUsed: UInt64
-
+    
+    public init(maxUsage: Int, currentUsage: Int, maxAmount: UInt64, amountUsed: UInt64) {
+        self.maxUsage = maxUsage
+        self.currentUsage = currentUsage
+        self.maxAmount = maxAmount
+        self.amountUsed = amountUsed
+    }
+    
     public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
         var currentUsage = currentUsage
         if forNextTransaction {
