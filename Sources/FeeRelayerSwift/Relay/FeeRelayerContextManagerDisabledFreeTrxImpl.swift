@@ -52,10 +52,7 @@ public actor FeeRelayerContextManagerDisabledFreeTrxImpl: FeeRelayerContextManag
             solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
             solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
             feeRelayerAPIClient.getFeePayerPubkey(),
-            solanaAPIClient.getRelayAccountStatus(
-                try Program.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
-                    .base58EncodedString
-            ),
+            RelayAccountStatus.notYetCreated,
             UsageStatus(maxUsage: 100, currentUsage: 100, maxAmount: 100_000, amountUsed: 0)
         )
 
