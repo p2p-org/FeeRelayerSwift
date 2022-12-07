@@ -17,6 +17,7 @@ public class FeeRelayerService: FeeRelayer {
     public let feeCalculator: FeeRelayerCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
+    private let environment: StatsInfo.Environment
     
     public var account: Account {
         accountStorage.account!
@@ -31,7 +32,8 @@ public class FeeRelayerService: FeeRelayer {
         feeCalculator: FeeRelayerCalculator = DefaultFreeRelayerCalculator(),
         feeRelayerAPIClient: FeeRelayerAPIClient,
         deviceType: StatsInfo.DeviceType,
-        buildNumber: String?
+        buildNumber: String?,
+        environment: StatsInfo.Environment
     ) {
         self.solanaApiClient = solanaApiClient
         self.accountStorage = accountStorage
@@ -40,6 +42,7 @@ public class FeeRelayerService: FeeRelayer {
         self.feeRelayerAPIClient = feeRelayerAPIClient
         self.deviceType = deviceType
         self.buildNumber = buildNumber
+        self.environment = environment
     }
     
     // MARK: - getFeePayer method
@@ -67,7 +70,8 @@ public class FeeRelayerService: FeeRelayer {
                     operationType: configuration.operationType,
                     deviceType: deviceType,
                     currency: configuration.currency,
-                    build: buildNumber
+                    build: buildNumber,
+                    environment: environment
                 )
             )
         ))
@@ -120,7 +124,8 @@ public class FeeRelayerService: FeeRelayer {
                             operationType: config.operationType,
                             deviceType: deviceType,
                             currency: config.currency,
-                            build: buildNumber
+                            build: buildNumber,
+                            environment: environment
                         )
                     )
                 ))]
@@ -186,7 +191,8 @@ public class FeeRelayerService: FeeRelayer {
                             operationType: config.operationType,
                             deviceType: deviceType,
                             currency: config.currency,
-                            build: buildNumber
+                            build: buildNumber,
+                            environment: environment
                         )
                     )
                 ))]
@@ -355,7 +361,8 @@ public class FeeRelayerService: FeeRelayer {
                     signatures: topUpSignatures,
                     blockhash: blockhash,
                     deviceType: self.deviceType,
-                    buildNumber: self.buildNumber
+                    buildNumber: self.buildNumber,
+                    environment: self.environment
                 )
             )
         )
