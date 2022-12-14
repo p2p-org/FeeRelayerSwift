@@ -353,7 +353,7 @@ public enum RelayAccountStatus: Equatable, CustomStringConvertible {
         }
     }
     
-    var balance: UInt64? {
+    public var balance: UInt64? {
         switch self {
         case .notYetCreated:
             return nil
