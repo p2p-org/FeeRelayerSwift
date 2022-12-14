@@ -341,9 +341,17 @@ public struct SwapTransactionSignatures: Encodable {
 }
 
 // MARK: - Others
-public enum RelayAccountStatus: Equatable {
+public enum RelayAccountStatus: Equatable, CustomStringConvertible {
     case notYetCreated
     case created(balance: UInt64)
+    public var description: String {
+        switch self {
+        case .notYetCreated:
+            return "Relay account is not yet created"
+        case .created(let balance):
+            return "Relay account is created, balance: \(balance)"
+        }
+    }
     
     var balance: UInt64? {
         switch self {
