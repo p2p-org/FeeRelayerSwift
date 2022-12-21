@@ -16,6 +16,7 @@ public class RelayServiceImpl: RelayService {
     public let feeCalculator: RelayFeeCalculator
     private let deviceType: StatsInfo.DeviceType
     private let buildNumber: String?
+    private let environment: StatsInfo.Environment
     
     public var account: Account {
         accountStorage.account!
@@ -30,7 +31,8 @@ public class RelayServiceImpl: RelayService {
         feeCalculator: RelayFeeCalculator = DefaultRelayFeeCalculator(),
         feeRelayerAPIClient: FeeRelayerAPIClient,
         deviceType: StatsInfo.DeviceType,
-        buildNumber: String?
+        buildNumber: String?,
+        environment: StatsInfo.Environment
     ) {
         self.solanaApiClient = solanaApiClient
         self.accountStorage = accountStorage
@@ -39,6 +41,7 @@ public class RelayServiceImpl: RelayService {
         self.feeRelayerAPIClient = feeRelayerAPIClient
         self.deviceType = deviceType
         self.buildNumber = buildNumber
+        self.environment = environment
     }
 
     public func relayTransaction(
@@ -52,7 +55,8 @@ public class RelayServiceImpl: RelayService {
                     operationType: configuration.operationType,
                     deviceType: deviceType,
                     currency: configuration.currency,
-                    build: buildNumber
+                    build: buildNumber,
+                    environment: environment
                 )
             )
         ))
@@ -105,7 +109,8 @@ public class RelayServiceImpl: RelayService {
                             operationType: config.operationType,
                             deviceType: deviceType,
                             currency: config.currency,
-                            build: buildNumber
+                            build: buildNumber,
+                            environment: environment
                         )
                     )
                 ))]
@@ -171,7 +176,8 @@ public class RelayServiceImpl: RelayService {
                             operationType: config.operationType,
                             deviceType: deviceType,
                             currency: config.currency,
-                            build: buildNumber
+                            build: buildNumber,
+                            environment: environment
                         )
                     )
                 ))]
@@ -343,7 +349,8 @@ public class RelayServiceImpl: RelayService {
                     signatures: topUpSignatures,
                     blockhash: blockhash,
                     deviceType: self.deviceType,
-                    buildNumber: self.buildNumber
+                    buildNumber: self.buildNumber,
+                    environment: self.environment
                 )
             )
         )

@@ -95,7 +95,9 @@ public struct TopUpWithSwapParams: Encodable {
         signatures: SwapTransactionSignatures,
         blockhash: String,
         deviceType: StatsInfo.DeviceType,
-        buildNumber: String?) {
+        buildNumber: String?,
+        environment: StatsInfo.Environment
+    ) {
             self.userSourceTokenAccount = userSourceTokenAccount
             self.sourceTokenMint = sourceTokenMint
             self.userAuthority = userAuthority
@@ -107,7 +109,8 @@ public struct TopUpWithSwapParams: Encodable {
                 operationType: .topUp,
                 deviceType: deviceType,
                 currency: sourceTokenMint.base58EncodedString,
-                build: buildNumber
+                build: buildNumber,
+                environment: environment
             )
         }
 }
@@ -338,11 +341,19 @@ public struct SwapTransactionSignatures: Encodable {
 }
 
 // MARK: - Others
-public enum RelayAccountStatus: Equatable {
+public enum RelayAccountStatus: Equatable, CustomStringConvertible {
     case notYetCreated
     case created(balance: UInt64)
+    public var description: String {
+        switch self {
+        case .notYetCreated:
+            return "Relay account is not yet created"
+        case .created(let balance):
+            return "Relay account is created, balance: \(balance)"
+        }
+    }
     
-    var balance: UInt64? {
+    public var balance: UInt64? {
         switch self {
         case .notYetCreated:
             return nil
@@ -383,7 +394,16 @@ public struct TransferSolParams: Encodable {
     var blockhash: String
     let statsInfo: StatsInfo
     
-    public init(sender: String, recipient: String, amount: Lamports, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String?) {
+    public init(
+        sender: String,
+        recipient: String,
+        amount: Lamports,
+        signature: String,
+        blockhash: String,
+        deviceType: StatsInfo.DeviceType,
+        buildNumber: String?,
+        environment: StatsInfo.Environment
+    ) {
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
@@ -393,7 +413,8 @@ public struct TransferSolParams: Encodable {
             operationType: .transfer,
             deviceType: deviceType,
             currency: "SOL",
-            build: buildNumber
+            build: buildNumber,
+            environment: environment
         )
     }
     
@@ -419,7 +440,19 @@ public struct TransferSPLTokenParams: Encodable {
     var blockhash: String
     let statsInfo: StatsInfo
     
-    public init(sender: String, recipient: String, mintAddress: String, authority: String, amount: Lamports, decimals: Decimals, signature: String, blockhash: String, deviceType: StatsInfo.DeviceType, buildNumber: String?) {
+    public init(
+        sender: String,
+        recipient: String,
+        mintAddress: String,
+        authority: String,
+        amount: Lamports,
+        decimals: Decimals,
+        signature: String,
+        blockhash: String,
+        deviceType: StatsInfo.DeviceType,
+        buildNumber: String?,
+        environment: StatsInfo.Environment
+    ) {
         self.sender = sender
         self.recipient = recipient
         self.mintAddress = mintAddress
@@ -432,7 +465,8 @@ public struct TransferSPLTokenParams: Encodable {
             operationType: .transfer,
             deviceType: deviceType,
             currency: mintAddress,
-            build: buildNumber
+            build: buildNumber,
+            environment: environment
         )
     }
     

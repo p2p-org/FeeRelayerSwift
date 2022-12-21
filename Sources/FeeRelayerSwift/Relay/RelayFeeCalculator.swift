@@ -54,8 +54,8 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         )
         
         // TODO: Ask Artem
-        if amount.total > 0 && amount.total < 1000 {
-            amount.transaction += 1000 - amount.total
+        if amount.total > 0 && amount.total < 10000 {
+            amount.transaction += 10000 - amount.total
         }
         
         // TODO: amount.transaction = max(1000, amount.total)

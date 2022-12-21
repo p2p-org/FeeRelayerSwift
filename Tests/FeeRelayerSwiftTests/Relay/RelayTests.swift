@@ -59,7 +59,8 @@ class RelayTests: XCTestCase {
             feeCalculator: DefaultRelayFeeCalculator(),
             feeRelayerAPIClient: feeRelayerAPIClient,
             deviceType: .iOS,
-            buildNumber: "UnitTest"
+            buildNumber: "UnitTest",
+            environment: .dev
         )
         
         // Load and update services
