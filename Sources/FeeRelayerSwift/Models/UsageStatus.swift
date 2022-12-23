@@ -5,7 +5,7 @@
 import Foundation
 
 /// A user's usage status for fee relayer service.
-public struct UsageStatus {
+public struct UsageStatus: Equatable {
     public let maxUsage: Int
     public var currentUsage: Int
     public let maxAmount: UInt64

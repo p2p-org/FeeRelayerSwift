@@ -5,13 +5,13 @@
 import Foundation
 import SolanaSwift
 
-public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
+public actor RelayContextManagerImpl: RelayContextManager {
     private let accountStorage: SolanaAccountStorage
     private let solanaAPIClient: SolanaAPIClient
     private let feeRelayerAPIClient: FeeRelayerAPIClient
-
+    
     private var context: RelayContext?
-
+    
     public init(
         accountStorage: SolanaAccountStorage,
         solanaAPIClient: SolanaAPIClient,
@@ -21,25 +21,25 @@ public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
         self.solanaAPIClient = solanaAPIClient
         self.feeRelayerAPIClient = feeRelayerAPIClient
     }
-
+    
     public func getCurrentContext() async throws -> RelayContext {
         if context == nil { try await update() }
         guard let context = context else { throw RelayContextManagerError.invalidContext }
-        return context
+        return context;
     }
-
+    
     public func update() async throws {
         context = try await loadNewContext()
     }
-
+    
     public func validate() async throws -> Bool {
         let newContext = try await loadNewContext()
         return newContext == context
     }
-
+    
     private func loadNewContext() async throws -> RelayContext {
         guard let account = accountStorage.account else { throw FeeRelayerError.unauthorized }
-
+        
         let (
             minimumTokenAccountBalance,
             minimumRelayAccountBalance,
@@ -47,7 +47,7 @@ public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
             feePayerAddress,
             relayAccountStatus,
             usageStatus
-        ) = try await (
+        ) = try await(
             solanaAPIClient.getMinimumBalanceForRentExemption(span: 165),
             solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
             solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
@@ -56,7 +56,8 @@ public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
                 try RelayProgram.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
                     .base58EncodedString
             ),
-            UsageStatus(maxUsage: 100, currentUsage: 100, maxAmount: 100_000, amountUsed: 0)
+            feeRelayerAPIClient.getFreeFeeLimits(for: account.publicKey.base58EncodedString)
+                .asUsageStatus()
         )
 
         return RelayContext(
@@ -66,6 +67,18 @@ public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
             lamportsPerSignature: lamportsPerSignature,
             relayAccountStatus: relayAccountStatus,
             usageStatus: usageStatus
+        )
+    }
+}
+
+
+internal extension FeeLimitForAuthorityResponse {
+    func asUsageStatus() -> UsageStatus {
+        UsageStatus(
+            maxUsage: limits.maxCount,
+            currentUsage: processedFee.count,
+            maxAmount: limits.maxAmount,
+            amountUsed: processedFee.totalAmount
         )
     }
 }

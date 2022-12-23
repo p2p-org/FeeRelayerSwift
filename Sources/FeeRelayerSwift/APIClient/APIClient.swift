@@ -4,39 +4,27 @@
 
 import Foundation
 
-public protocol FeeRelayerAPIClient {
-    /// Get current version of fee relayer server
-    var version: Int { get }
-
-    /// Get fee payer address
-    func getFeePayerPubkey() async throws -> String
-
-    /// Get fee token data
-    func feeTokenData(mint: String) async throws -> FeeTokenData
-
-    /// Get current user's usage
-    func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse
-
-    /// Submit transaction
-    func sendTransaction(_ requestType: RequestType) async throws -> String
-}
-
-enum APIClientError: Error {
-    case invalidURL
-    case custom(error: Error)
-    case cantDecodeError
-    case unknown
-}
-
+/// Default implementation of ``FeeRelayerAPIClient``
 public class APIClient: FeeRelayerAPIClient {
+    
     // MARK: - Properties
-
+    
+    /// Current FeeRelayer's version
     public let version: Int
+    
+    /// Base url of fee relayer server
     private let baseUrlString: String
+    
+    /// HTTPClient to handle requests
     private var httpClient: HTTPClient
 
     // MARK: - Initializers
-
+    
+    /// ``APIClient`` initializer
+    /// - Parameters:
+    ///   - httpClient: httpClient that handles requests
+    ///   - baseUrlString: base url of fee relayer server
+    ///   - version: current version of FeeRelayer
     public init(httpClient: HTTPClient = FeeRelayerHTTPClient(), baseUrlString: String, version: Int) {
         self.version = version
         self.httpClient = httpClient
@@ -45,8 +33,8 @@ public class APIClient: FeeRelayerAPIClient {
 
     // MARK: - Methods
 
-    /// Get fee payer for free transaction
-    /// - Returns: Account's public key that is responsible for paying fee
+    /// Get fee payer account's public key
+    /// - Returns: Public key as String
     public func getFeePayerPubkey() async throws -> String {
         var urlString = baseUrlString
         if version > 1 {
@@ -65,8 +53,11 @@ public class APIClient: FeeRelayerAPIClient {
         guard let res = res else { throw APIClientError.unknown }
         return res
     }
-
-    public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
+    
+    /// Get free fee limits for current user
+    /// - Parameter authority: user's authority
+    /// - Returns: current user's usage limit
+    public func getFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
         var url = baseUrlString
         if version > 1 {
             url += "/v\(version)"
@@ -89,7 +80,16 @@ public class APIClient: FeeRelayerAPIClient {
             throw decodedError
         }
     }
-
+    
+    /// Get free fee limits for current user
+    /// - Parameter authority: user's authority
+    /// - Returns: current user's usage limit
+    @available(*, deprecated, renamed: "getFreeFeeLimits")
+    public func requestFreeFeeLimits(for authority: String) async throws -> FeeLimitForAuthorityResponse {
+        try await getFreeFeeLimits(for: authority)
+    }
+    
+    /// Get fee token data
     public func feeTokenData(mint: String) async throws -> FeeTokenData {
         var url = baseUrlString
         if version > 1 {
@@ -114,14 +114,16 @@ public class APIClient: FeeRelayerAPIClient {
         }
     }
 
-    /// Send transaction to fee relayer
+    /// Send transaction to fee relayer server to process
+    /// - Parameter requestType: FeeRelayer's Request Type
+    /// - Returns: signature, can be confirmed or signature of fee payer account that can be added to process later by client
     public func sendTransaction(_ requestType: RequestType) async throws -> String {
         do {
             let response: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
             return response
         } catch let HTTPClientError.cantDecode(data) {
             guard let ret = String(data: data, encoding: .utf8) else { throw APIClientError.unknown }
-
+            
             let signature = ret.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "").replacingOccurrences(of: "\"", with: "")
             Logger.log(
                 event: "FeeRelayerSwift sendTransaction",
@@ -131,7 +133,12 @@ public class APIClient: FeeRelayerAPIClient {
             return signature
         }
     }
-
+    
+    // MARK: - Helpers
+    
+    /// Form request
+    /// - Parameter requestType: FeeRelayer's ``RequestType``
+    /// - Returns: urlRequest
     private func urlRequest(_ requestType: RequestType) throws -> URLRequest {
         var url = baseUrlString
         if version > 1 {
@@ -152,7 +159,10 @@ public class APIClient: FeeRelayerAPIClient {
     }
 }
 
+// MARK: - Private extension
+
 private extension URLRequest {
+    /// Private extension for printing request
     func cURL(pretty: Bool = false) -> String {
         let newLine = pretty ? "\\\n" : ""
         let method = (pretty ? "--request " : "-X ") + "\(httpMethod ?? "GET") \(newLine)"
