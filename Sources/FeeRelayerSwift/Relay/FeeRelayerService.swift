@@ -649,6 +649,7 @@ public class FeeRelayerService: FeeRelayer {
         // transfer sol back to feerelayer's feePayer
         var preparedTransaction = preparedTransaction
         if autoPayback, paybackFee > 0 {
+            // if payingFeeToken is native sol, use SystemProgram
             if payingFeeToken?.mint == PublicKey.wrappedSOLMint,
                (relayAccountStatus.balance ?? 0) < paybackFee
             {
@@ -659,15 +660,30 @@ public class FeeRelayerService: FeeRelayer {
                         lamports: paybackFee
                     )
                 )
-            } else {
+            }
+            
+            // if payingFeeToken is SPL token, use RelayProgram
+            else {
+                // return paybackFee (WITHOUT additionalPaybackFee) to Fee payer
                 preparedTransaction.transaction.instructions.append(
                     try Program.transferSolInstruction(
                         userAuthorityAddress: account.publicKey,
                         recipient: feePayer,
-                        lamports: paybackFee,
+                        lamports: paybackFee - additionalPaybackFee, // Important: MINUS additionalPaybackFee
                         network: solanaApiClient.endpoint.network
                     )
                 )
+                
+                // Return additional payback fee from USER ACCOUNT to FeePayer using SystemProgram
+                if additionalPaybackFee > 0 {
+                    preparedTransaction.transaction.instructions.append(
+                        SystemProgram.transferInstruction(
+                            from: account.publicKey,
+                            to: feePayer,
+                            lamports: paybackFee
+                        )
+                    )
+                }
             }
         }
         
