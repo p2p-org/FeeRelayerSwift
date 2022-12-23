@@ -40,6 +40,7 @@ public protocol RelayFeeCalculator {
 }
 
 public class DefaultRelayFeeCalculator: RelayFeeCalculator {
+    public static let minimumTopUpAmount: Lamports = 10000
     public init() {}
     
     public func calculateNeededTopUpAmount(
@@ -54,8 +55,8 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         )
         
         // TODO: Ask Artem
-        if amount.total > 0 && amount.total < 10000 {
-            amount.transaction += 10000 - amount.total
+        if amount.total > 0 && amount.total < Self.minimumTopUpAmount {
+            amount.transaction += Self.minimumTopUpAmount - amount.total
         }
         
         // TODO: amount.transaction = max(1000, amount.total)

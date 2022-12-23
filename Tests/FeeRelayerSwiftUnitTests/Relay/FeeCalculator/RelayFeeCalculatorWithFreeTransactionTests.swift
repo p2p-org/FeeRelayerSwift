@@ -14,7 +14,6 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
             accountBalances: 0
         )
         
-        // user is paying with SOL, relay account creation is not needed
         let case1 = try await calculator.calculateNeededTopUpAmount(
             getContextWithFreeTransactionFeesAvailable(
                 relayAccountStatus: .notYetCreated // not important
@@ -60,7 +59,10 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         XCTAssertEqual(
             case2,
-            FeeAmount(transaction: minimumRelayAccountBalance, accountBalances: expectedTxFee.accountBalances)
+            FeeAmount(
+                transaction: minimumRelayAccountBalance,
+                accountBalances: expectedTxFee.accountBalances
+            )
         )
     }
     
@@ -162,9 +164,9 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         )
         
         let amountLeft = expectedTxFee.accountBalances - (currentRelayAccountBalance - minimumRelayAccountBalance)
-        XCTAssertTrue(amountLeft < 10000)
+        XCTAssertTrue(amountLeft < DefaultRelayFeeCalculator.minimumTopUpAmount)
         
-        XCTAssertEqual(case3.total, 10000)
+        XCTAssertEqual(case3.total, DefaultRelayFeeCalculator.minimumTopUpAmount)
     }
     
     private func getContextWithFreeTransactionFeesAvailable(
