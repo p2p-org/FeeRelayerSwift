@@ -51,7 +51,8 @@ class APIClientTests: XCTestCase {
                         operationType: .transfer,
                         deviceType: .iOS,
                         currency: "SOL",
-                        build: "2.0.0"
+                        build: "2.0.0",
+                        environment: .dev
                     )
                 )
             )
