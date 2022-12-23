@@ -162,9 +162,9 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         )
         
         let amountLeft = expectedTxFee.accountBalances - (currentRelayAccountBalance - minimumRelayAccountBalance)
-        XCTAssertTrue(amountLeft < 1000)
+        XCTAssertTrue(amountLeft < 10000)
         
-        XCTAssertEqual(case3.total, 1000)
+        XCTAssertEqual(case3.total, 10000)
     }
     
     private func getContext(
