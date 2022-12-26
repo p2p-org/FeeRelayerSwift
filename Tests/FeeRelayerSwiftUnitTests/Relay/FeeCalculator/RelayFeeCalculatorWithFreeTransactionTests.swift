@@ -123,12 +123,34 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         )
         
         // CASE 3: currentRelayAccountBalance is already more than minimumRelayAccountBalance
+        // and the amount left can cover part of expected account creation fee, but user is paying with nativeSOL
+        
+        currentRelayAccountBalance = minimumRelayAccountBalance
+        currentRelayAccountBalance += UInt64.random(in: 0..<expectedTxFee.accountBalances)
+        
+        let case3 = try await calculator.calculateNeededTopUpAmount(
+            getContextWithFreeTransactionFeesAvailable(
+                relayAccountStatus: .created(balance: currentRelayAccountBalance)
+            ),
+            expectedFee: expectedTxFee,
+            payingTokenMint: .wrappedSOLMint
+        )
+        
+        XCTAssertEqual(
+            case3,
+            FeeAmount(
+                transaction: 0,
+                accountBalances: expectedTxFee.accountBalances // TODO: - When paying with SOL, user will not use relayAccount, change it
+            )
+        )
+        
+        // CASE 4: currentRelayAccountBalance is already more than minimumRelayAccountBalance
         // and the amount left can cover entirely expected account creation fee
         
         currentRelayAccountBalance = minimumRelayAccountBalance + expectedTxFee.accountBalances
         currentRelayAccountBalance += UInt64.random(in: 0..<1000)
         
-        let case3 = try await calculator.calculateNeededTopUpAmount(
+        let case4 = try await calculator.calculateNeededTopUpAmount(
             getContextWithFreeTransactionFeesAvailable(
                 relayAccountStatus: .created(balance: currentRelayAccountBalance)
             ),
@@ -137,7 +159,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         )
         
         XCTAssertEqual(
-            case3,
+            case4,
             .zero
         )
     }
