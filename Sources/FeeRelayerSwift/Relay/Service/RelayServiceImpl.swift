@@ -100,7 +100,8 @@ public class RelayServiceImpl: RelayService {
                     additionalPaybackFee: index == transactions.count - 1 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
                     currency: config.currency,
-                    autoPayback: config.autoPayback
+                    autoPayback: config.autoPayback,
+                    toppedUp: res != nil
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
                     try .init(
@@ -167,7 +168,8 @@ public class RelayServiceImpl: RelayService {
                     additionalPaybackFee: transactions.count > 0 ? config.additionalPaybackFee : 0,
                     operationType: config.operationType,
                     currency: config.currency,
-                    autoPayback: config.autoPayback
+                    autoPayback: config.autoPayback,
+                    toppedUp: res != nil
                 )
                 let signatures = [try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
                     try .init(
@@ -616,7 +618,8 @@ public class RelayServiceImpl: RelayService {
         additionalPaybackFee: UInt64,
         operationType _: StatsInfo.OperationType,
         currency _: String?,
-        autoPayback: Bool
+        autoPayback: Bool,
+        toppedUp: Bool
     ) async throws -> PreparedTransaction {
         let feePayer = context.feePayerAddress
         
@@ -630,7 +633,10 @@ public class RelayServiceImpl: RelayService {
         var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
         
         // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-        if !context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction) {
+        if !context.usageStatus.isFreeTransactionFeeAvailable(
+            transactionFee: preparedTransaction.expectedFee.transaction,
+            forNextTransaction: toppedUp
+        ) {
             paybackFee += preparedTransaction.expectedFee.transaction
         }
         
