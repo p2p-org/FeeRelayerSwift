@@ -18,11 +18,7 @@ public struct UsageStatus: Equatable {
         self.amountUsed = amountUsed
     }
     
-    public func isFreeTransactionFeeAvailable(transactionFee: UInt64, forNextTransaction: Bool = false) -> Bool {
-        var currentUsage = currentUsage
-        if forNextTransaction {
-            currentUsage += 1
-        }
-        return currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
+    public func isFreeTransactionFeeAvailable(transactionFee: UInt64) -> Bool {
+        currentUsage < maxUsage && (amountUsed + transactionFee) <= maxAmount
     }
 }
