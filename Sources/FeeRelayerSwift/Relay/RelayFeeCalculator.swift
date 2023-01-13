@@ -89,7 +89,10 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         }
         
         // is transaction free
-        if context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: expectedTopUpNetworkFee + expectedTransactionNetworkFee, forNextTransaction: true)
+        var usageStatusAfterToppingUp = context.usageStatus
+        usageStatusAfterToppingUp.currentUsage += 1
+        usageStatusAfterToppingUp.amountUsed += expectedTopUpNetworkFee
+        if usageStatusAfterToppingUp.isFreeTransactionFeeAvailable(transactionFee: expectedTransactionNetworkFee)
         {
             neededTransactionNetworkFee = 0
         }
