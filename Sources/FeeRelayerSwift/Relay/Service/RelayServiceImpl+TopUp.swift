@@ -32,8 +32,7 @@ extension RelayServiceImpl {
             let prepareResult = try await prepareForTopUp(
                 context,
                 topUpAmount: topUpAmount.total,
-                payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown,
-                relayAccountStatus: context.relayAccountStatus
+                payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown
             )
             (params, needsCreateUserRelayAddress) = (prepareResult, context.relayAccountStatus == .notYetCreated)
         }
@@ -56,14 +55,12 @@ extension RelayServiceImpl {
     ///   - context: current context of Relay's service
     ///   - topUpAmount: amount that needs to top up
     ///   - payingFeeToken: token to pay fee
-    ///   - relayAccountStatus: status of relay account
     ///   - forceUsingTransitiveSwap: force using transitive swap (for testing purpose only)
     /// - Returns: Prepared params for top up
     func prepareForTopUp(
         _ context: RelayContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
-        relayAccountStatus: RelayAccountStatus,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
     ) async throws -> TopUpPreparedParams {
         // form request
