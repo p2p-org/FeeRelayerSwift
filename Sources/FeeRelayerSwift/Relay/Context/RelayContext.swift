@@ -11,7 +11,7 @@ public struct RelayContext: Hashable {
     public let feePayerAddress: PublicKey
     public let lamportsPerSignature: UInt64
     public let relayAccountStatus: RelayAccountStatus
-    public let usageStatus: UsageStatus
+    public var usageStatus: UsageStatus
     
     public init(
         minimumTokenAccountBalance: UInt64,

@@ -131,6 +131,16 @@ public class RelayServiceImpl: RelayService {
         do {
             var trx: [String] = []
             
+            // update context if top up has been completed
+            var context = context
+            let toppedUp = res != nil
+            if toppedUp {
+                // modify usage status
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += context.lamportsPerSignature * 2 // fee for top up has been used
+            }
+            
+            // relay transaction
             for (index, preparedTransaction) in transactions.enumerated() {
                 let preparedRelayTransaction = try await prepareRelayTransaction(
                     context,
@@ -156,6 +166,10 @@ public class RelayServiceImpl: RelayService {
                 ))]
                 
                 trx.append(contentsOf: signatures)
+                
+                // update context for next transaction
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += preparedTransaction.expectedFee.transaction
             }
 
             return trx
@@ -212,6 +226,16 @@ public class RelayServiceImpl: RelayService {
         do {
             var trx: [String] = []
             
+            // update context if top up has been completed
+            var context = context
+            let toppedUp = res != nil
+            if toppedUp {
+                // modify usage status
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += context.lamportsPerSignature * 2 // fee for top up has been used
+            }
+            
+            // relay transaction
             for preparedTransaction in transactions {
                 let preparedRelayTransaction = try await prepareRelayTransaction(
                     context,
@@ -236,6 +260,10 @@ public class RelayServiceImpl: RelayService {
                     )
                 ))]
                 trx.append(contentsOf: signatures)
+                
+                // update context for next transaction
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += preparedTransaction.expectedFee.transaction
             }
 
             return trx
