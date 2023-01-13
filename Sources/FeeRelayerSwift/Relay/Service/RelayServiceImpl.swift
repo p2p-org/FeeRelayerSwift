@@ -735,9 +735,7 @@ public class RelayServiceImpl: RelayService {
         var paybackFee = additionalPaybackFee + preparedTransaction.expectedFee.accountBalances
         
         // The transaction fee, on the other hand, is only be paid if user used more than number of free transaction fee
-        if !context.usageStatus.isFreeTransactionFeeAvailable(
-            transactionFee: preparedTransaction.expectedFee.transaction
-        ) {
+        if !context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: preparedTransaction.expectedFee.transaction) {
             paybackFee += preparedTransaction.expectedFee.transaction
         }
         
