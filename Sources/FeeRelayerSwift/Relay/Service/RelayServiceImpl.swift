@@ -165,6 +165,10 @@ public class RelayServiceImpl: RelayService {
                 ))]
                 
                 trx.append(contentsOf: signatures)
+                
+                // update context for next transaction
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += preparedTransaction.expectedFee.transaction
             }
 
             return trx
@@ -255,6 +259,10 @@ public class RelayServiceImpl: RelayService {
                     )
                 ))]
                 trx.append(contentsOf: signatures)
+                
+                // update context for next transaction
+                context.usageStatus.currentUsage += 1
+                context.usageStatus.amountUsed += preparedTransaction.expectedFee.transaction
             }
 
             return trx
