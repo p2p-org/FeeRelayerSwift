@@ -25,7 +25,6 @@ public protocol TopUpTransactionBuilder {
         context: RelayContext,
         network: Network,
         sourceToken: TokenAccount,
-        userAuthorityAddress: PublicKey,
         topUpPools: PoolsPair,
         targetAmount: UInt64,
         expectedFee: UInt64,

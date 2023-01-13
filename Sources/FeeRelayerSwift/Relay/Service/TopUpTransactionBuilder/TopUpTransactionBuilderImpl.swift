@@ -24,7 +24,6 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         context: RelayContext,
         network: Network,
         sourceToken: TokenAccount,
-        userAuthorityAddress: PublicKey,
         topUpPools: PoolsPair,
         targetAmount: UInt64,
         expectedFee: UInt64,
@@ -85,7 +84,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                     TokenProgram.approveInstruction(
                         account: userSourceTokenAccountAddress,
                         delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
+                        owner: account.publicKey,
                         multiSigners: [],
                         amount: swap.amountIn
                     )
@@ -97,7 +96,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                 try RelayProgram.topUpSwapInstruction(
                     network: network,
                     topUpSwap: swap,
-                    userAuthorityAddress: userAuthorityAddress,
+                    userAuthorityAddress: account.publicKey,
                     userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                     feePayerAddress: feePayerAddress
                 )
@@ -109,7 +108,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                     TokenProgram.approveInstruction(
                         account: userSourceTokenAccountAddress,
                         delegate: userTransferAuthority,
-                        owner: userAuthorityAddress,
+                        owner: account.publicKey,
                         multiSigners: [],
                         amount: swap.from.amountIn
                     )
@@ -121,7 +120,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                 instructions.append(
                     try RelayProgram.createTransitTokenAccountInstruction(
                         feePayer: feePayerAddress,
-                        userAuthority: userAuthorityAddress,
+                        userAuthority: account.publicKey,
                         transitTokenAccount: transitTokenAccountAddress,
                         transitTokenMint: try PublicKey(string: swap.transitTokenMintPubkey),
                         network: network
@@ -137,7 +136,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                 try RelayProgram.topUpSwapInstruction(
                     network: network,
                     topUpSwap: swap,
-                    userAuthorityAddress: userAuthorityAddress,
+                    userAuthorityAddress: account.publicKey,
                     userSourceTokenAccountAddress: userSourceTokenAccountAddress,
                     feePayerAddress: feePayerAddress
                 )
@@ -149,7 +148,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         // transfer
         instructions.append(
             try RelayProgram.transferSolInstruction(
-                userAuthorityAddress: userAuthorityAddress,
+                userAuthorityAddress: account.publicKey,
                 recipient: feePayerAddress,
                 lamports: expectedFee,
                 network: network
