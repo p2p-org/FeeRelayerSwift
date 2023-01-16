@@ -7,6 +7,12 @@ import XCTest
 final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
     var builder: TopUpTransactionBuilder?
     let topUpPools = [Pool.solUSDC.reversed]
+    let sourceToken = TokenAccount(
+        address: .usdcAssociatedAddress,
+        mint: .usdcMint
+    )
+    
+    let targetAmount: Lamports = minimumTokenAccountBalance + minimumRelayAccountBalance
     
     override func setUp() async throws {
         builder = TopUpTransactionBuilderImpl(
@@ -22,14 +28,6 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
     
     
     func testTopUpTransactionBuilderWhenFreeTransactionAvailableAndRelayAccountIsNotYetCreated() async throws {
-        let sourceToken = TokenAccount(
-            address: .usdcAssociatedAddress,
-            mint: .usdcMint
-        )
-        
-        let targetAmount: Lamports = minimumTokenAccountBalance + minimumRelayAccountBalance
-        
-        // CASE 1: RelayAccount is not yet created
         let transaction1 = try await builder?.buildTopUpTransaction(
             context: getContext(
                 relayAccountStatus: .notYetCreated,
@@ -112,22 +110,6 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
             expectedFee?.total,
             minimumRelayAccountBalance + minimumTokenAccountBalance
         )
-        
-//        builder?.buildTopUpTransaction(
-//            context: getContext(
-//                relayAccountStatus: .notYetCreated,
-//                usageStatus: .init(
-//                    maxUsage: 100,
-//                    currentUsage: 0,
-//                    maxAmount: 100000000,
-//                    amountUsed: 0
-//                )
-//            ),
-//            sourceToken: sourceToken,
-//            topUpPools: topUpPools,
-//            targetAmount: targetAmount,
-//            blockhash: blockhash
-//        )
     }
     
     // MARK: - Helpers
