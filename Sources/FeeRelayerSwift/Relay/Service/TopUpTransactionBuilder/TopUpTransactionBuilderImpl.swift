@@ -3,33 +3,42 @@ import SolanaSwift
 import OrcaSwapSwift
 
 class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
+    
+    // MARK: - Properties
+
+    /// Client that interacts with solana rpc client
+    private let solanaApiClient: SolanaAPIClient
+
+    /// Swap provider client
+    private let orcaSwap: OrcaSwapType
+    
+    /// Solana account
+    private let account: Account
+    
+    // MARK: - Initializer
+
+    init(solanaApiClient: SolanaAPIClient, orcaSwap: OrcaSwapType, account: Account) {
+        self.solanaApiClient = solanaApiClient
+        self.orcaSwap = orcaSwap
+        self.account = account
+    }
+    
     /// Build top up transaction from given data
     /// - Parameters:
-    ///   - account: User account
     ///   - context: Relay context
-    ///   - network: Solana network
     ///   - sourceToken: fromToken to top up
-    ///   - userAuthorityAddress: user's authority address
     ///   - topUpPools: pools using for top up with swap
     ///   - targetAmount: amount for topping up
     ///   - expectedFee: expected top up fee
     ///   - blockhash: recent blockhash
-    ///   - needsCreateTransitTokenAccount: indicate if creating transit token is required
-    ///   - transitTokenMintPubkey: transit token mint
-    ///   - transitTokenAccountAddress: transit token account address
     /// - Returns: swap data to pass to fee relayer api client and prepared top up transaction
     func buildTopUpTransaction(
-        account: Account,
         context: RelayContext,
-        network: Network,
         sourceToken: TokenAccount,
         topUpPools: PoolsPair,
         targetAmount: UInt64,
         expectedFee: UInt64,
-        blockhash: String,
-        needsCreateTransitTokenAccount: Bool?,
-        transitTokenMintPubkey: PublicKey?,
-        transitTokenAccountAddress: PublicKey?
+        blockhash: String
     ) async throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) {
         // assertion
         let userSourceTokenAccountAddress = sourceToken.address
@@ -39,6 +48,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             walletAddress: feePayerAddress,
             tokenMintAddress: sourceTokenMintAddress
         ) ?! FeeRelayerError.unknown
+        let network = solanaApiClient.endpoint.network
         
         guard userSourceTokenAccountAddress != associatedTokenAddress else {
             throw FeeRelayerError.unknown
@@ -61,6 +71,20 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         }
         
         // top up swap
+        let transitTokenAccountManager = TransitTokenAccountManagerImpl(
+            owner: account.publicKey,
+            solanaAPIClient: solanaApiClient,
+            orcaSwap: orcaSwap
+        )
+        
+        let transitToken = try transitTokenAccountManager.getTransitToken(
+            pools: topUpPools
+        )
+        
+        let needsCreateTransitTokenAccount = try await transitTokenAccountManager.checkIfNeedsCreateTransitTokenAccount(
+            transitToken: transitToken
+        )
+        
         let swap = try await prepareSwapData(
             account: account,
             network: network,
@@ -68,7 +92,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             inputAmount: nil,
             minAmountOut: targetAmount,
             slippage: FeeRelayerConstants.topUpSlippage,
-            transitTokenMintPubkey: transitTokenMintPubkey,
+            transitTokenMintPubkey: transitToken?.mint,
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount == true
         )
         let userTransferAuthority = swap.transferAuthorityAccount?.publicKey
@@ -114,7 +138,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             }
             
             // create transit token account
-            if needsCreateTransitTokenAccount == true, let transitTokenAccountAddress = transitTokenAccountAddress {
+            if needsCreateTransitTokenAccount == true, let transitTokenAccountAddress = transitToken?.address {
                 instructions.append(
                     try RelayProgram.createTransitTokenAccountInstruction(
                         feePayer: feePayerAddress,

@@ -108,37 +108,22 @@ extension RelayServiceImpl {
         expectedFee: UInt64
     ) async throws -> [String] {
         
-        let transitTokenAccountManager = TransitTokenAccountManagerImpl(
-            owner: account.publicKey,
-            solanaAPIClient: solanaApiClient,
-            orcaSwap: orcaSwap
-        )
-        
-        let transitToken = try transitTokenAccountManager.getTransitToken(
-            pools: topUpPools
-        )
-        
-        let needsCreateTransitTokenAccount = try await transitTokenAccountManager.checkIfNeedsCreateTransitTokenAccount(
-            transitToken: transitToken
-        )
-        
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
 
         // STEP 3: prepare for topUp
-        let topUpTransactionBuilder = TopUpTransactionBuilderImpl()
+        let topUpTransactionBuilder = TopUpTransactionBuilderImpl(
+            solanaApiClient: solanaApiClient,
+            orcaSwap: orcaSwap,
+            account: account
+        )
         let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) =
             try await topUpTransactionBuilder.buildTopUpTransaction(
-                account: account,
                 context: context,
-                network: solanaApiClient.endpoint.network,
                 sourceToken: sourceToken,
                 topUpPools: topUpPools,
                 targetAmount: targetAmount,
                 expectedFee: expectedFee,
-                blockhash: blockhash,
-                needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
-                transitTokenMintPubkey: transitToken?.mint,
-                transitTokenAccountAddress: transitToken?.address
+                blockhash: blockhash
             )
         
         // STEP 4: send transaction
