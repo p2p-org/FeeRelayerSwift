@@ -94,7 +94,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                 .readonly(publicKey: topUpPools[0].authority.publicKey, isSigner: false),
                 .readonly(publicKey: .owner, isSigner: true),
                 .writable(publicKey: .usdcAssociatedAddress, isSigner: false),
-                .writable(publicKey: "6VfQe3pQpE6mDDsjeertA5USua5hJx2d9c86UymQaJjr", isSigner: false),
+                .writable(publicKey: .relayTemporaryWSOLAccount, isSigner: false),
                 .writable(publicKey: topUpPools[0].tokenAccountA.publicKey, isSigner: false),
                 .writable(publicKey: topUpPools[0].tokenAccountB.publicKey, isSigner: false),
                 .writable(publicKey: topUpPools[0].poolTokenMint.publicKey, isSigner: false),

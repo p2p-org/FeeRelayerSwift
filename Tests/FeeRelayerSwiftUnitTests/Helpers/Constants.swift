@@ -53,6 +53,10 @@ extension PublicKey {
     static var relayAccount: PublicKey {
         "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo"
     }
+    
+    static var relayTemporaryWSOLAccount: PublicKey {
+        "6VfQe3pQpE6mDDsjeertA5USua5hJx2d9c86UymQaJjr"
+    }
 }
 
 extension Pool {
