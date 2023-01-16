@@ -21,13 +21,6 @@ public protocol RelayFeeCalculator {
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
     ) async throws -> FeeAmount
-    
-    /// Calculate expected fee for top up transaction
-    /// - Parameter context: Processing context
-    /// - Returns: Fee amount in SOL
-    func calculateExpectedFeeForTopUp(
-        _ context: RelayContext
-    ) throws -> UInt64
 
     /// Convert fee amount into spl value.
     ///
@@ -145,21 +138,6 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         }
         
         return neededAmount
-    }
-    
-    public func calculateExpectedFeeForTopUp(_ context: RelayContext) throws -> UInt64 {
-        var expectedFee: UInt64 = 0
-        if context.relayAccountStatus == .notYetCreated {
-            expectedFee += context.minimumRelayAccountBalance
-        }
-        
-        let transactionNetworkFee = 2 * context.lamportsPerSignature // feePayer, owner
-        if context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: transactionNetworkFee) == false {
-            expectedFee += transactionNetworkFee
-        }
-        
-        expectedFee += context.minimumTokenAccountBalance
-        return expectedFee
     }
     
     public func calculateFeeInPayingToken(

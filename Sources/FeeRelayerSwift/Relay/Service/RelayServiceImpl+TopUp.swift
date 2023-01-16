@@ -15,59 +15,58 @@ extension RelayServiceImpl {
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
         // if paying fee token is solana, skip the top up
+        // and transfer SOL directly to feePayer address
         if payingFeeToken?.mint == PublicKey.wrappedSOLMint {
             return nil
         }
+        
+        // calculate needed topUpAmount
         let topUpAmount = try await feeCalculator.calculateNeededTopUpAmount(
             context,
             expectedFee: expectedFee,
             payingTokenMint: payingFeeToken?.mint
         )
-        let params: TopUpPreparedParams?
-        if topUpAmount.total <= 0 {
-            // no need to top up
-            params = nil
-        } else {
-            // top up
-            params = try await prepareForTopUp(
-                context,
-                topUpAmount: topUpAmount.total,
-                payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown
-            )
+        
+        // no need to top up if amount <= 0
+        guard topUpAmount.total > 0 else {
+            return nil
         }
-
-        if let topUpParams = params, let payingFeeToken = payingFeeToken {
-            return try await topUp(
-                context,
-                sourceToken: payingFeeToken,
-                targetAmount: topUpParams.amount,
-                topUpPools: topUpParams.poolsPair,
-                expectedFee: topUpParams.expectedFee
-            )
-        }
-        return nil
+        
+        // top up
+        let payingFeeToken = try payingFeeToken ?! FeeRelayerError.unknown
+        
+        let poolsPair = try await getPoolsPairForTopUp(
+            context,
+            topUpAmount: topUpAmount.total,
+            payingFeeToken: payingFeeToken
+        )
+        
+        return try await topUp(
+            context,
+            sourceToken: payingFeeToken,
+            targetAmount: topUpAmount.total,
+            topUpPools: poolsPair
+        )
     }
     
-    /// Prepare parameters for top up
+    /// Get poolsPair for topUp
     /// - Parameters:
     ///   - context: current context of Relay's service
     ///   - topUpAmount: amount that needs to top up
     ///   - payingFeeToken: token to pay fee
     ///   - forceUsingTransitiveSwap: force using transitive swap (for testing purpose only)
-    /// - Returns: Prepared params for top up
-    func prepareForTopUp(
+    /// - Returns: PoolsPair for topUp
+    func getPoolsPairForTopUp(
         _ context: RelayContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
-    ) async throws -> TopUpPreparedParams {
+    ) async throws -> PoolsPair {
         // form request
         let tradableTopUpPoolsPair = try await orcaSwap.getTradablePoolsPairs(
             fromMint: payingFeeToken.mint.base58EncodedString,
             toMint: PublicKey.wrappedSOLMint.base58EncodedString
         )
-        // Get fee
-        let expectedFee = try feeCalculator.calculateExpectedFeeForTopUp(context)
         // Get pools for topping up
         let topUpPools: PoolsPair
         // force using transitive swap (for testing only)
@@ -88,7 +87,7 @@ extension RelayServiceImpl {
             throw FeeRelayerError.swapPoolsNotFound
         }
         // return needed amount and pools
-        return .init(amount: topUpAmount, expectedFee: expectedFee, poolsPair: topUpPools)
+        return topUpPools
     }
     
     /// Top up to fill relay account before relaying any transaction
@@ -104,8 +103,7 @@ extension RelayServiceImpl {
         _ context: RelayContext,
         sourceToken: TokenAccount,
         targetAmount: UInt64,
-        topUpPools: PoolsPair,
-        expectedFee: UInt64
+        topUpPools: PoolsPair
     ) async throws -> [String] {
         
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
@@ -122,7 +120,6 @@ extension RelayServiceImpl {
                 sourceToken: sourceToken,
                 topUpPools: topUpPools,
                 targetAmount: targetAmount,
-                expectedFee: expectedFee,
                 blockhash: blockhash
             )
         
@@ -147,7 +144,7 @@ extension RelayServiceImpl {
                     sourceTokenMint: sourceToken.mint,
                     userAuthority: account.publicKey,
                     topUpSwap: .init(topUpTransaction.swapData),
-                    feeAmount: expectedFee,
+                    feeAmount: topUpTransaction.preparedTransaction.expectedFee.total,
                     signatures: topUpSignatures,
                     blockhash: blockhash,
                     deviceType: self.deviceType,

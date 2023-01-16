@@ -29,7 +29,6 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
     ///   - sourceToken: fromToken to top up
     ///   - topUpPools: pools using for top up with swap
     ///   - targetAmount: amount for topping up
-    ///   - expectedFee: expected top up fee
     ///   - blockhash: recent blockhash
     /// - Returns: swap data to pass to fee relayer api client and prepared top up transaction
     func buildTopUpTransaction(
@@ -37,7 +36,6 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         sourceToken: TokenAccount,
         topUpPools: PoolsPair,
         targetAmount: UInt64,
-        expectedFee: UInt64,
         blockhash: String
     ) async throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) {
         // assertion
@@ -54,8 +52,14 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             throw FeeRelayerError.unknown
         }
         
-        // forming transaction and count fees
-        var accountCreationFee: UInt64 = 0
+        // calculate transaction fee
+        var expectedFee = FeeAmount.zero
+        let expectedTransactionNetworkFee = 2 * context.lamportsPerSignature // feePayer, owner
+        if context.usageStatus.isFreeTransactionFeeAvailable(transactionFee: expectedTransactionNetworkFee) == false {
+            expectedFee.transaction += expectedTransactionNetworkFee
+        }
+        
+        // form transaction
         var instructions = [TransactionInstruction]()
         
         // create user relay account
@@ -67,7 +71,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
                     lamports: context.minimumRelayAccountBalance
                 )
             )
-            accountCreationFee += context.minimumRelayAccountBalance
+            expectedFee.accountBalances += context.minimumRelayAccountBalance
         }
         
         // top up swap
@@ -99,7 +103,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         
         switch swap.swapData {
         case let swap as DirectSwapData:
-            accountCreationFee += context.minimumTokenAccountBalance
+            expectedFee.accountBalances += context.minimumTokenAccountBalance
             // approve
             if let userTransferAuthority = userTransferAuthority {
                 instructions.append(
@@ -151,7 +155,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             }
             
             // Destination WSOL account funding
-            accountCreationFee += context.minimumTokenAccountBalance
+            expectedFee.accountBalances += context.minimumTokenAccountBalance
             
             // top up
             instructions.append(
@@ -172,7 +176,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
             try RelayProgram.transferSolInstruction(
                 userAuthorityAddress: account.publicKey,
                 recipient: feePayerAddress,
-                lamports: expectedFee,
+                lamports: expectedFee.total,
                 network: network
             )
         )
@@ -181,12 +185,6 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         transaction.instructions = instructions
         transaction.feePayer = feePayerAddress
         transaction.recentBlockhash = blockhash
-        
-        // calculate fee first
-        let expectedFee = FeeAmount(
-            transaction: try transaction.calculateTransactionFee(lamportsPerSignatures: context.lamportsPerSignature),
-            accountBalances: accountCreationFee
-        )
         
         // resign transaction
         var signers = [account]

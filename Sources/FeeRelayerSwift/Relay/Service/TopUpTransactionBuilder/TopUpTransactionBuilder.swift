@@ -10,7 +10,6 @@ public protocol TopUpTransactionBuilder {
     ///   - sourceToken: fromToken to top up
     ///   - topUpPools: pools using for top up with swap
     ///   - targetAmount: amount for topping up
-    ///   - expectedFee: expected top up fee
     ///   - blockhash: recent blockhash
     /// - Returns: swap data to pass to fee relayer api client and prepared top up transaction
     func buildTopUpTransaction(
@@ -18,7 +17,6 @@ public protocol TopUpTransactionBuilder {
         sourceToken: TokenAccount,
         topUpPools: PoolsPair,
         targetAmount: UInt64,
-        expectedFee: UInt64,
         blockhash: String
     ) async throws -> (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction)
 }
