@@ -275,7 +275,7 @@ public struct TransitiveSwapData: FeeRelayerRelaySwapType {
     }
 }
 
-public struct DirectSwapData: FeeRelayerRelaySwapType {
+public struct DirectSwapData: FeeRelayerRelaySwapType, Equatable {
     let programId: String
     let accountPubkey: String
     let authorityPubkey: String

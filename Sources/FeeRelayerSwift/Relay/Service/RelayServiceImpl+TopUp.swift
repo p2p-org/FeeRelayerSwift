@@ -114,17 +114,16 @@ extension RelayServiceImpl {
             orcaSwap: orcaSwap,
             account: account
         )
-        let topUpTransaction: (swapData: FeeRelayerRelaySwapType, preparedTransaction: PreparedTransaction) =
-            try await topUpTransactionBuilder.buildTopUpTransaction(
-                context: context,
-                sourceToken: sourceToken,
-                topUpPools: topUpPools,
-                targetAmount: targetAmount,
-                blockhash: blockhash
-            )
+        let (swapData, preparedTransaction) = try await topUpTransactionBuilder.buildTopUpTransaction(
+            context: context,
+            sourceToken: sourceToken,
+            topUpPools: topUpPools,
+            targetAmount: targetAmount,
+            blockhash: blockhash
+        )
         
         // STEP 4: send transaction
-        let signatures = topUpTransaction.preparedTransaction.transaction.signatures
+        let signatures = preparedTransaction.transaction.signatures
         guard signatures.count >= 2 else { throw FeeRelayerError.invalidSignature }
         
         // the second signature is the owner's signature
@@ -143,8 +142,8 @@ extension RelayServiceImpl {
                     userSourceTokenAccount: sourceToken.address,
                     sourceTokenMint: sourceToken.mint,
                     userAuthority: account.publicKey,
-                    topUpSwap: .init(topUpTransaction.swapData),
-                    feeAmount: topUpTransaction.preparedTransaction.expectedFee.total,
+                    topUpSwap: .init(swapData),
+                    feeAmount: preparedTransaction.expectedFee.total,
                     signatures: topUpSignatures,
                     blockhash: blockhash,
                     deviceType: self.deviceType,

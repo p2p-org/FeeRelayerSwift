@@ -141,6 +141,63 @@ extension Pool {
             isStable: nil
         )
     }
+    
+    static var solUSDC: Pool {
+        .init(
+            account: "6fTRDD7sYxCN7oyoSQaN1AWC3P2m8A6gVZzGrpej9DvL",
+            authority: "B52XRdfTsh8iUGbGEBJLHyDMjhaTW8cAFCmpASGJtnNK",
+            nonce: 253,
+            poolTokenMint: "ECFcUGwHHMaZynAQpqRHkYeTBnS5GnPWZywM8aggcs3A",
+            tokenAccountA: "FdiTt7XQ94fGkgorywN1GuXqQzmURHCDgYtUutWRcy4q",
+            tokenAccountB: "7VcwKUtdKnvcgNhZt5BQHsbPrXLxhdVomsgrr7k2N5P5",
+            feeAccount: "4pdzKqAGd1WbXn1L4UpY4r58irTfjFYMYNudBrqbQaYJ",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "SOL",
+            tokenBName: "USDC",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "706218408046", decimals: 9),
+            tokenBBalance: .init(amount: "16374219298", decimals: 6),
+            isStable: nil
+        )
+    }
+    
+//    static var usdcUSDT: Pool {
+//        .init(
+//            account: <#T##String#>,
+//            authority: <#T##String#>,
+//            nonce: <#T##UInt64#>,
+//            poolTokenMint: <#T##String#>,
+//            tokenAccountA: <#T##String#>,
+//            tokenAccountB: <#T##String#>,
+//            feeAccount: <#T##String#>,
+//            hostFeeAccount: <#T##String?#>,
+//            feeNumerator: <#T##UInt64#>,
+//            feeDenominator: <#T##UInt64#>,
+//            ownerTradeFeeNumerator: <#T##UInt64#>,
+//            ownerTradeFeeDenominator: <#T##UInt64#>,
+//            ownerWithdrawFeeNumerator: <#T##UInt64#>,
+//            ownerWithdrawFeeDenominator: <#T##UInt64#>,
+//            hostFeeNumerator: <#T##UInt64#>,
+//            hostFeeDenominator: <#T##UInt64#>,
+//            tokenAName: <#T##String#>,
+//            tokenBName: <#T##String#>,
+//            curveType: <#T##String#>,
+//            amp: <#T##UInt64?#>,
+//            programVersion: <#T##UInt64?#>,
+//            deprecated: <#T##Bool?#>
+//        )
+//    }
 }
 
 extension String {
