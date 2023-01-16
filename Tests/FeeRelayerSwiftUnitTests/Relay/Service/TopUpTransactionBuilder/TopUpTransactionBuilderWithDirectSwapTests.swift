@@ -106,6 +106,19 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
             data: [RelayProgram.Index.topUpWithDirectSwap] + expectedAmountIn.bytes + targetAmount.bytes
         ))
         
+        // - Relay transfer SOL instruction
+        let relayTransferSOLInstruction = transaction!.instructions[2]
+        XCTAssertEqual(relayTransferSOLInstruction, .init(
+            keys: [
+                .readonly(publicKey: .owner, isSigner: true),
+                .writable(publicKey: .relayAccount, isSigner: false),
+                .writable(publicKey: .feePayerAddress, isSigner: false),
+                .readonly(publicKey: SystemProgram.id, isSigner: false)
+            ],
+            programId: RelayProgram.id(network: .mainnetBeta),
+            data: [RelayProgram.Index.transferSOL] + expectedFee!.total.bytes
+        ))
+        
         XCTAssertEqual(
             expectedFee?.total,
             minimumRelayAccountBalance + minimumTokenAccountBalance
