@@ -250,7 +250,7 @@ public struct SwapData: Encodable {
     public let SplTransitive: TransitiveSwapData?
 }
 
-public struct TransitiveSwapData: FeeRelayerRelaySwapType {
+public struct TransitiveSwapData: FeeRelayerRelaySwapType, Equatable {
     let from: DirectSwapData
     let to: DirectSwapData
     let transitTokenMintPubkey: String

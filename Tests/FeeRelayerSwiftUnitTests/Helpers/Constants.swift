@@ -180,32 +180,65 @@ extension Pool {
         )
     }
     
-//    static var usdcUSDT: Pool {
-//        .init(
-//            account: <#T##String#>,
-//            authority: <#T##String#>,
-//            nonce: <#T##UInt64#>,
-//            poolTokenMint: <#T##String#>,
-//            tokenAccountA: <#T##String#>,
-//            tokenAccountB: <#T##String#>,
-//            feeAccount: <#T##String#>,
-//            hostFeeAccount: <#T##String?#>,
-//            feeNumerator: <#T##UInt64#>,
-//            feeDenominator: <#T##UInt64#>,
-//            ownerTradeFeeNumerator: <#T##UInt64#>,
-//            ownerTradeFeeDenominator: <#T##UInt64#>,
-//            ownerWithdrawFeeNumerator: <#T##UInt64#>,
-//            ownerWithdrawFeeDenominator: <#T##UInt64#>,
-//            hostFeeNumerator: <#T##UInt64#>,
-//            hostFeeDenominator: <#T##UInt64#>,
-//            tokenAName: <#T##String#>,
-//            tokenBName: <#T##String#>,
-//            curveType: <#T##String#>,
-//            amp: <#T##UInt64?#>,
-//            programVersion: <#T##UInt64?#>,
-//            deprecated: <#T##Bool?#>
-//        )
-//    }
+    static var usdcUSDT: Pool {
+        .init(
+            account: "8KZjKCNTshjwapD4TjWQonXBdi1Jm4Eks5rgrViK9UCx",
+            authority: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
+            nonce: 253,
+            poolTokenMint: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+            tokenAccountA: "EDukSdAegSUtKsGi6wdKTpaBuYK9ZcVj9Uz1f39ffdgi",
+            tokenAccountB: "9oaFyrMCwxKE6kBQRP5v9Jo5Uh39Y5p2fFaqGtcxnjYr",
+            feeAccount: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "USDC",
+            tokenBName: "USDT",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "4705722687", decimals: 6),
+            tokenBBalance: .init(amount: "4710077640", decimals: 6),
+            isStable: nil
+        )
+    }
+    
+    static var solUSDT: Pool {
+        .init(
+            account: "4bS6bkBdJ4B1Bt4ft3oGF8La7eKpCqz8xnu1AMpMxWSP",
+            authority: "EAvLj3zW236pUSSSzwjL18QuPpkTxkWaVSR5GdX7yiNa",
+            nonce: 255,
+            poolTokenMint: "BmZNYGt7aApGTUUxAQUYsW64cMbb6P7uniokCWaptj4D",
+            tokenAccountA: "BBDQmitNga99M9QsBRnyos9uWPumNbWLC1mfbReJi45C",
+            tokenAccountB: "8xepSs1iXsSw8QrCS1rpZk8KY3fMwUZqDT4dmzDa2trX",
+            feeAccount: "HR2rWgcU6SNCWxJDozDu6qCgSSvUoKCynbhQPGRNqpCG",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "SOL",
+            tokenBName: "USDT",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "85484159388", decimals: 9),
+            tokenBBalance: .init(amount: "2067442317", decimals: 6),
+            isStable: nil
+        )
+    }
 }
 
 extension String {
