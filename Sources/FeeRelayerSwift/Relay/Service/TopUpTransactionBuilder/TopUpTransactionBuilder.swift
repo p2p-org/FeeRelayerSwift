@@ -15,7 +15,6 @@ public protocol TopUpTransactionBuilder {
     ///   - targetAmount: amount for topping up
     ///   - expectedFee: expected top up fee
     ///   - blockhash: recent blockhash
-    ///   - usageStatus: usage status of user
     ///   - needsCreateTransitTokenAccount: indicate if creating transit token is required
     ///   - transitTokenMintPubkey: transit token mint
     ///   - transitTokenAccountAddress: transit token account address
@@ -29,7 +28,6 @@ public protocol TopUpTransactionBuilder {
         targetAmount: UInt64,
         expectedFee: UInt64,
         blockhash: String,
-        usageStatus: UsageStatus?,
         needsCreateTransitTokenAccount: Bool?,
         transitTokenMintPubkey: PublicKey?,
         transitTokenAccountAddress: PublicKey?

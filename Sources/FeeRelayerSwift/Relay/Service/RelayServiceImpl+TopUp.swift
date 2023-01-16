@@ -123,7 +123,6 @@ extension RelayServiceImpl {
         )
         
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
-        let freeTransactionFeeLimit = context.usageStatus
 
         // STEP 3: prepare for topUp
         let topUpTransactionBuilder = TopUpTransactionBuilderImpl()
@@ -137,7 +136,6 @@ extension RelayServiceImpl {
                 targetAmount: targetAmount,
                 expectedFee: expectedFee,
                 blockhash: blockhash,
-                usageStatus: freeTransactionFeeLimit,
                 needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
                 transitTokenMintPubkey: transitToken?.mint,
                 transitTokenAccountAddress: transitToken?.address
