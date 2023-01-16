@@ -20,7 +20,6 @@ final class TopUpTransactionBuilderWithTransitiveSwapWithOutFreeTransactionsTest
         builder = nil
     }
     
-    
     func testTopUpTransactionBuilderWhenRelayAccountIsNotYetCreatedAndTransitTokenIsNotYetCreated() async throws {
         builder = TopUpTransactionBuilderImpl(
             solanaApiClient: MockSolanaAPIClient(testCase: 0),
