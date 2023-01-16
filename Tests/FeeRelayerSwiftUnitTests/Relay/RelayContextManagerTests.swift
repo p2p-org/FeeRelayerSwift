@@ -63,7 +63,7 @@ private class MockSolanaAPIClient: MockSolanaAPIClientBase {
     
     override func getAccountInfo<T>(account: String) async throws -> BufferInfo<T>? where T : BufferLayout {
         switch account {
-        case "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo":
+        case PublicKey.relayAccount.base58EncodedString:
             return nil
         default:
             fatalError()

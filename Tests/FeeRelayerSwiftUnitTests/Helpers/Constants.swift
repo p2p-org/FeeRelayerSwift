@@ -49,6 +49,10 @@ extension PublicKey {
     static var deprecatedSwapProgramId: PublicKey {
         "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"
     }
+    
+    static var relayAccount: PublicKey {
+        "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo"
+    }
 }
 
 extension Pool {
