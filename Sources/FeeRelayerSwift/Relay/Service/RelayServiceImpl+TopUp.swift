@@ -23,24 +23,22 @@ extension RelayServiceImpl {
             expectedFee: expectedFee,
             payingTokenMint: payingFeeToken?.mint
         )
-        var (params, needsCreateUserRelayAddress): (TopUpPreparedParams?, Bool)
+        let params: TopUpPreparedParams?
         if topUpAmount.total <= 0 {
             // no need to top up
-            (params, needsCreateUserRelayAddress) = (nil, context.relayAccountStatus == .notYetCreated)
+            params = nil
         } else {
             // top up
-            let prepareResult = try await prepareForTopUp(
+            params = try await prepareForTopUp(
                 context,
                 topUpAmount: topUpAmount.total,
                 payingFeeToken: try payingFeeToken ?! FeeRelayerError.unknown
             )
-            (params, needsCreateUserRelayAddress) = (prepareResult, context.relayAccountStatus == .notYetCreated)
         }
 
         if let topUpParams = params, let payingFeeToken = payingFeeToken {
             return try await topUp(
                 context,
-                needsCreateUserRelayAddress: needsCreateUserRelayAddress,
                 sourceToken: payingFeeToken,
                 targetAmount: topUpParams.amount,
                 topUpPools: topUpParams.poolsPair,
@@ -104,7 +102,6 @@ extension RelayServiceImpl {
     /// - Returns: transaction's signature
     func topUp(
         _ context: RelayContext,
-        needsCreateUserRelayAddress: Bool,
         sourceToken: TokenAccount,
         targetAmount: UInt64,
         topUpPools: PoolsPair,
