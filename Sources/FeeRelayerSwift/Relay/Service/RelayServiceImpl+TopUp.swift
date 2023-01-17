@@ -10,10 +10,14 @@ extension RelayServiceImpl {
     ///   - payingFeeToken: token to pay fee
     /// - Returns: nil if top up is not needed, transactions' signatures if top up has been sent
     public func checkAndTopUp(
-        _ context: RelayContext,
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
+        // get current context
+        guard let context = contextManager.currentContext else {
+            throw RelayContextManagerError.invalidContext
+        }
+        
         // if paying fee token is solana, skip the top up
         // and transfer SOL directly to feePayer address
         if payingFeeToken?.mint == PublicKey.wrappedSOLMint {
@@ -36,13 +40,11 @@ extension RelayServiceImpl {
         let payingFeeToken = try payingFeeToken ?! FeeRelayerError.unknown
         
         let poolsPair = try await getPoolsPairForTopUp(
-            context,
             topUpAmount: topUpAmount.total,
             payingFeeToken: payingFeeToken
         )
         
         return try await topUp(
-            context,
             sourceToken: payingFeeToken,
             targetAmount: topUpAmount.total,
             topUpPools: poolsPair
@@ -57,7 +59,6 @@ extension RelayServiceImpl {
     ///   - forceUsingTransitiveSwap: force using transitive swap (for testing purpose only)
     /// - Returns: PoolsPair for topUp
     func getPoolsPairForTopUp(
-        _ context: RelayContext,
         topUpAmount: Lamports,
         payingFeeToken: TokenAccount,
         forceUsingTransitiveSwap: Bool = false // true for testing purpose only
@@ -100,11 +101,14 @@ extension RelayServiceImpl {
     ///   - expectedFee: expected fee of the transaction that requires top up
     /// - Returns: transaction's signature
     func topUp(
-        _ context: RelayContext,
         sourceToken: TokenAccount,
         targetAmount: UInt64,
         topUpPools: PoolsPair
     ) async throws -> [String] {
+        // get current context
+        guard let context = contextManager.currentContext else {
+            throw RelayContextManagerError.invalidContext
+        }
         
         let blockhash = try await solanaApiClient.getRecentBlockhash(commitment: nil)
 

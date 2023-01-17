@@ -36,3 +36,20 @@ public struct RelayContext: Hashable {
         hasher.combine(lamportsPerSignature)
     }
 }
+
+/// RelayContext with State
+public enum RelayContextState: Equatable {
+    case initializing
+    case loading
+    case loaded(RelayContext)
+    case error(RelayContextManagerError)
+    
+    var context: RelayContext? {
+        switch self {
+        case .loaded(let relayContext):
+            return relayContext
+        default:
+            return nil
+        }
+    }
+}

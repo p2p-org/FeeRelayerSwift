@@ -19,29 +19,46 @@ final class RelayContextManagerTests: XCTestCase {
         contextManager = nil
         feeRelayerAPIClient = nil
     }
-
-    func testGetCurrentContext() async throws {
-        let context = try await contextManager.getCurrentContext()
-        XCTAssertNotNil(context)
-    }
     
     func testUpdate() async throws {
+        // First test case, expected context is not nil
+        feeRelayerAPIClient.testCase = 0
         try await contextManager.update()
+        let context1 = contextManager.currentContext
+        XCTAssertNotNil(context1)
+        
+        // Seconde test case, expected receiving different context
+        feeRelayerAPIClient.testCase = 1
+        try await contextManager.update()
+        let context2 = contextManager.currentContext
+        XCTAssertNotNil(context2)
+        XCTAssertNotEqual(context1, context2)
+        
+        // Text case did not change, expected receiving the same context
+        try await contextManager.update()
+        let context3 = contextManager.currentContext
+        XCTAssertNotNil(context3)
+        XCTAssertEqual(context2, context3)
     }
     
-    func testValidate() async throws {
+    func testReplaceContext() async throws {
+        // First test case, expected context is not nil
         feeRelayerAPIClient.testCase = 0
-        _ = try await contextManager.getCurrentContext()
-        let validation = try await contextManager.validate()
-        XCTAssertTrue(validation)
-        
-        feeRelayerAPIClient.testCase = 1
-        let validation2 = try await contextManager.validate()
-        XCTAssertFalse(validation2)
-        
         try await contextManager.update()
-        let validation3 = try await contextManager.validate()
-        XCTAssertTrue(validation3)
+        let context1 = contextManager.currentContext!
+        XCTAssertNotNil(context1)
+        
+        // Replace
+        let replacingContext = RelayContext(
+            minimumTokenAccountBalance: context1.minimumRelayAccountBalance + 1,
+            minimumRelayAccountBalance: context1.minimumRelayAccountBalance,
+            feePayerAddress: SystemProgram.id,
+            lamportsPerSignature: context1.lamportsPerSignature,
+            relayAccountStatus: context1.relayAccountStatus,
+            usageStatus: context1.usageStatus
+        )
+        contextManager.replaceContext(by: replacingContext)
+        XCTAssertNotEqual(context1, contextManager.currentContext)
     }
 }
 

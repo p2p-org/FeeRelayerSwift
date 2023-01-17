@@ -3,13 +3,23 @@
 // found in the LICENSE file.
 
 import Foundation
+import Combine
 
-public protocol RelayContextManager: AnyObject {
-    func getCurrentContext() async throws -> RelayContext
+/// Manager class for RelayContext
+public protocol RelayContextManager {
+    /// Current RelayContext
+    var currentContext: RelayContext? { get }
+    
+    /// Publisher for current RelayContext
+    var contextPublisher: AnyPublisher<RelayContextState, Never> { get }
+    
+    /// Update current context
     func update() async throws
-    func validate() async throws -> Bool
+    
+    /// Modify context locally
+    func replaceContext(by context: RelayContext)
 }
 
-public enum RelayContextManagerError: Swift.Error {
+public enum RelayContextManagerError: Swift.Error, Equatable {
     case invalidContext
 }
