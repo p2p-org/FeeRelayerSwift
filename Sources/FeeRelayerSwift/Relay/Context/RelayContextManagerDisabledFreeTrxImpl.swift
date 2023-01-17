@@ -5,7 +5,10 @@
 import Foundation
 import SolanaSwift
 
-public actor FeeRelayerContextManagerDisabledFreeTrxImpl: RelayContextManager {
+@available(*, deprecated, renamed: "RelayContext")
+public typealias FeeRelayerContextManagerDisabledFreeTrxImpl = RelayContextManagerDisabledFreeTrxImpl
+
+public actor RelayContextManagerDisabledFreeTrxImpl: RelayContextManager {
     private let accountStorage: SolanaAccountStorage
     private let solanaAPIClient: SolanaAPIClient
     private let feeRelayerAPIClient: FeeRelayerAPIClient

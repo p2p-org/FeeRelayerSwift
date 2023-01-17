@@ -29,9 +29,12 @@ public final class FeeRelayerHTTPClient: HTTPClient {
     }
     
     public func sendRequest<T: Decodable>(request: URLRequest, decoder: JSONDecoder = JSONDecoder()) async throws -> T {
-//        do {
+        do {
             let (data, response) = try await networkManager.requestData(request: request)
             guard let response = response as? HTTPURLResponse else { throw HTTPClientError.noResponse }
+            
+            print(String(data: data, encoding: .utf8))
+            
             switch response.statusCode {
             case 200 ... 299:
                 guard let decodedResponse = try? decoder.decode(T.self, from: data) else {
@@ -56,9 +59,10 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                 
                 throw HTTPClientError.unexpectedStatusCode(code: response.statusCode, response: data)
             }
-//        } catch let error {
-//            throw error
-//        }
+        } catch let error {
+            print(error)
+            throw error
+        }
     }
 }
 

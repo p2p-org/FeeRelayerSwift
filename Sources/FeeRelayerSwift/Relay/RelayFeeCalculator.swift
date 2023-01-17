@@ -63,7 +63,7 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         return amount
     }
     
-    private func calculateMinTopUpAmount(
+    internal func calculateMinTopUpAmount(
         _ context: RelayContext,
         expectedFee: FeeAmount,
         payingTokenMint: PublicKey?
