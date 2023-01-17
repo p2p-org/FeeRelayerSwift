@@ -105,6 +105,7 @@ public class RelayContextManagerImpl: RelayContextManager {
         } catch {
             // mark as error
             contextSubject.send(.error(.invalidContext))
+            throw error
         }
     }
 
