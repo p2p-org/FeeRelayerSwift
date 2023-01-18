@@ -50,7 +50,8 @@ public class RelayContextManagerImpl: RelayContextManager {
     // MARK: - Methods
 
     /// Update current context
-    public func update() async throws {
+    @discardableResult
+    public func update() async throws -> RelayContext {
         // cancel current task
         updatingTask?.cancel()
         
@@ -98,6 +99,7 @@ public class RelayContextManagerImpl: RelayContextManager {
 
         // mark as completed
         contextSubject.send(result)
+        return result
     }
 
     /// Modify context locally

@@ -14,7 +14,8 @@ public protocol RelayContextManager {
     var contextPublisher: AnyPublisher<RelayContext?, Never> { get }
     
     /// Update current context
-    func update() async throws
+    @discardableResult
+    func update() async throws -> RelayContext
     
     /// Modify context locally
     func replaceContext(by context: RelayContext)

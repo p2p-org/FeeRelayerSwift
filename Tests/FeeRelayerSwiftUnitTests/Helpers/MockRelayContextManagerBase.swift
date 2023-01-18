@@ -11,7 +11,8 @@ class MockRelayContextManagerBase: RelayContextManager {
         fatalError()
     }
     
-    func update() async throws {
+    @discardableResult
+    func update() async throws -> RelayContext {
         fatalError()
     }
     
