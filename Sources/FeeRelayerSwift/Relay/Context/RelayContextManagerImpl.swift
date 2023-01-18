@@ -24,13 +24,13 @@ public class RelayContextManagerImpl: RelayContextManager {
     // MARK: - Properties
 
     /// Subject to handle context data flow
-    private let contextSubject = CurrentValueSubject<RelayContextState, Never>(.initializing)
+    private let contextSubject = CurrentValueSubject<RelayContext?, Never>(nil)
     
     /// Current RelayContext
-    public var currentContext: RelayContext? { contextSubject.value.context }
+    public var currentContext: RelayContext? { contextSubject.value }
     
     /// Publisher for current RelayContext
-    public var contextPublisher: AnyPublisher<RelayContextState, Never> { contextSubject.eraseToAnyPublisher() }
+    public var contextPublisher: AnyPublisher<RelayContext?, Never> { contextSubject.eraseToAnyPublisher() }
     
     /// Updating task
     private var updatingTask: Task<RelayContext, Error>?
@@ -53,9 +53,6 @@ public class RelayContextManagerImpl: RelayContextManager {
     public func update() async throws {
         // cancel current task
         updatingTask?.cancel()
-        
-        // mark as updating
-        contextSubject.send(.loading)
         
         // assign task
         updatingTask = Task { [weak self] () -> RelayContext in
@@ -95,23 +92,17 @@ public class RelayContextManagerImpl: RelayContextManager {
         }
         
         // execute task
-        do {
-            guard let result = try await updatingTask?.value else {
-                throw RelayContextManagerError.invalidContext
-            }
-
-            // mark as completed
-            contextSubject.send(.loaded(result))
-        } catch {
-            // mark as error
-            contextSubject.send(.error(.invalidContext))
-            throw error
+        guard let result = try await updatingTask?.value else {
+            throw RelayContextManagerError.invalidContext
         }
+
+        // mark as completed
+        contextSubject.send(result)
     }
 
     /// Modify context locally
     public func replaceContext(by context: RelayContext) {
-        self.contextSubject.send(.loaded(context))
+        self.contextSubject.send(context)
     }
 }
 

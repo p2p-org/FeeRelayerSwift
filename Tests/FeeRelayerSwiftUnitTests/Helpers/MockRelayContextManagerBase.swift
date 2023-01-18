@@ -7,7 +7,7 @@ class MockRelayContextManagerBase: RelayContextManager {
         fatalError()
     }
     
-    var contextPublisher: AnyPublisher<FeeRelayerSwift.RelayContextState, Never> {
+    var contextPublisher: AnyPublisher<RelayContext?, Never> {
         fatalError()
     }
     

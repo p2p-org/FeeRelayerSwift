@@ -11,7 +11,7 @@ public protocol RelayContextManager {
     var currentContext: RelayContext? { get }
     
     /// Publisher for current RelayContext
-    var contextPublisher: AnyPublisher<RelayContextState, Never> { get }
+    var contextPublisher: AnyPublisher<RelayContext?, Never> { get }
     
     /// Update current context
     func update() async throws
