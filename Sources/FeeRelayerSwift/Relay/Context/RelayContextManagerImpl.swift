@@ -55,9 +55,9 @@ public class RelayContextManagerImpl: RelayContextManager {
         updatingTask?.cancel()
         
         // assign task
-        updatingTask = Task { [weak self] () -> RelayContext in
+        updatingTask = Task { [unowned self] () -> RelayContext in
             // assertion
-            guard let self, let account = self.accountStorage.account
+            guard let account = accountStorage.account
             else { throw RelayContextManagerError.invalidContext }
             
             // retrieve RelayContext
@@ -69,15 +69,15 @@ public class RelayContextManagerImpl: RelayContextManager {
                 relayAccountStatus,
                 usageStatus
             ) = try await(
-                self.solanaAPIClient.getMinimumBalanceForRentExemption(span: 165),
-                self.solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
-                self.solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
-                self.feeRelayerAPIClient.getFeePayerPubkey(),
-                self.solanaAPIClient.getRelayAccountStatus(
+                solanaAPIClient.getMinimumBalanceForRentExemption(span: 165),
+                solanaAPIClient.getMinimumBalanceForRentExemption(span: 0),
+                solanaAPIClient.getFees(commitment: nil).feeCalculator?.lamportsPerSignature ?? 0,
+                feeRelayerAPIClient.getFeePayerPubkey(),
+                solanaAPIClient.getRelayAccountStatus(
                     try RelayProgram.getUserRelayAddress(user: account.publicKey, network: solanaAPIClient.endpoint.network)
                         .base58EncodedString
                 ),
-                self.feeRelayerAPIClient.getFreeFeeLimits(for: account.publicKey.base58EncodedString)
+                feeRelayerAPIClient.getFreeFeeLimits(for: account.publicKey.base58EncodedString)
                     .asUsageStatus()
             )
 
