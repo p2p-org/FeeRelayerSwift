@@ -37,7 +37,7 @@ public class RelayContextManagerImpl: RelayContextManager {
 
     // MARK: - Initializer
 
-    init(
+    public init(
         accountStorage: SolanaAccountStorage,
         solanaAPIClient: SolanaAPIClient,
         feeRelayerAPIClient: FeeRelayerAPIClient
