@@ -21,6 +21,15 @@ public protocol RelayContextManager {
     func replaceContext(by context: RelayContext)
 }
 
+public extension RelayContextManager {
+    func getCurrentContextOrUpdate() async throws -> RelayContext {
+        if let context = currentContext {
+            return context
+        }
+        return try await update()
+    }
+}
+
 public enum RelayContextManagerError: Swift.Error, Equatable {
     case invalidContext
 }

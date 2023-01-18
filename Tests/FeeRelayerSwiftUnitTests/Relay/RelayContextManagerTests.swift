@@ -60,6 +60,16 @@ final class RelayContextManagerTests: XCTestCase {
         contextManager.replaceContext(by: replacingContext)
         XCTAssertNotEqual(context1, contextManager.currentContext)
     }
+    
+    func testGetCurrentContextOrUpdate() async throws {
+        feeRelayerAPIClient.testCase = 0
+        let context1 = contextManager.currentContext
+        XCTAssertNil(context1)
+        let context2 = try await contextManager.getCurrentContextOrUpdate()
+        XCTAssertNotEqual(context1, context2)
+        let context3 = try await contextManager.getCurrentContextOrUpdate()
+        XCTAssertEqual(context2, context3)
+    }
 }
 
 private class MockSolanaAPIClient: MockSolanaAPIClientBase {
