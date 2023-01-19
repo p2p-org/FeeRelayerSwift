@@ -207,10 +207,10 @@ public class RelayServiceImpl: RelayService {
                     autoPayback: config.autoPayback
                 )
                 
-                let signatures: [String]
+                let signature: String
                 
                 if getSignatureOnly {
-                    signatures = [try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
+                    signature = try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
                         try .init(
                             preparedTransaction: preparedRelayTransaction,
                             statsInfo: .init(
@@ -221,9 +221,9 @@ public class RelayServiceImpl: RelayService {
                                 environment: environment
                             )
                         )
-                    ))]
+                    ))
                 } else {
-                    signatures = [try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
+                    signature = try await feeRelayerAPIClient.sendTransaction(.relayTransaction(
                         try .init(
                             preparedTransaction: preparedRelayTransaction,
                             statsInfo: .init(
@@ -234,15 +234,20 @@ public class RelayServiceImpl: RelayService {
                                 environment: environment
                             )
                         )
-                    ))]
+                    ))
                 }
                 
-                trx.append(contentsOf: signatures)
+                trx.append(signature)
                 
                 // update context for next transaction
                 context.usageStatus.currentUsage += 1
                 context.usageStatus.amountUsed += preparedTransaction.expectedFee.transaction
                 contextManager.replaceContext(by: context)
+
+                // wait for transaction to finish if transaction is not the last one
+                if index < transactions.count - 1 {
+                    try await solanaApiClient.waitForConfirmation(signature: signature, ignoreStatus: true)
+                }
             }
 
             return trx
