@@ -50,6 +50,7 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                     if let fixedData = log.data(using: .utf8),
                        let responseError = try? JSONDecoder().decode(CustomError.self, from: fixedData)
                         .ClientError
+                        .first?
                         .RpcResponseError
                     {
                         throw SolanaError.invalidResponse(responseError)
@@ -107,7 +108,7 @@ extension URLSession: NetworkManager {
 }
 
 private struct CustomError: Decodable {
-    let ClientError: _ClientError
+    let ClientError: [_ClientError]
     
     struct _ClientError: Decodable {
         let RpcResponseError: SolanaSwift.ResponseError
