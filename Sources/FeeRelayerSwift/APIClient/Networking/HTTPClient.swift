@@ -44,11 +44,13 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                 if let log = String(data: data, encoding: .utf8) {
                     #if DEBUG
                     Logger.log(event: "error", message: log, logLevel: .error)
+                    print(log)
                     #endif
                     // FIXME: - temporarily fix by converting HTTPClientError to SolanaError
-                    let log = log.replacingOccurrences(of: "\"ClientError\"", with: "\"logs\"")
                     if let fixedData = log.data(using: .utf8),
-                       let responseError = try? JSONDecoder().decode(SolanaSwift.ResponseError.self, from: fixedData)
+                       let responseError = try? JSONDecoder().decode(CustomError.self, from: fixedData)
+                        .ClientError
+                        .RpcResponseError
                     {
                         throw SolanaError.invalidResponse(responseError)
                     }
@@ -101,5 +103,13 @@ extension URLSession {
 extension URLSession: NetworkManager {
     public func requestData(request: URLRequest) async throws -> (Data, URLResponse) {
         try await data(from: request)
+    }
+}
+
+private struct CustomError: Decodable {
+    let ClientError: _ClientError
+    
+    struct _ClientError: Decodable {
+        let RpcResponseError: SolanaSwift.ResponseError
     }
 }
