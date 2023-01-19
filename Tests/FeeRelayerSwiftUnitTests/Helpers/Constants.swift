@@ -49,6 +49,14 @@ extension PublicKey {
     static var deprecatedSwapProgramId: PublicKey {
         "DjVE6JNiYqPL2QXyCUUh8rNjHrbz9hXHNYt99MQ59qw1"
     }
+    
+    static var relayAccount: PublicKey {
+        "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo"
+    }
+    
+    static var relayTemporaryWSOLAccount: PublicKey {
+        "6VfQe3pQpE6mDDsjeertA5USua5hJx2d9c86UymQaJjr"
+    }
 }
 
 extension Pool {
@@ -138,6 +146,96 @@ extension Pool {
             deprecated: true,
             tokenABalance: .init(amount: "710916", decimals: 6),
             tokenBBalance: .init(amount: "10092481679", decimals: 9),
+            isStable: nil
+        )
+    }
+    
+    static var solUSDC: Pool {
+        .init(
+            account: "6fTRDD7sYxCN7oyoSQaN1AWC3P2m8A6gVZzGrpej9DvL",
+            authority: "B52XRdfTsh8iUGbGEBJLHyDMjhaTW8cAFCmpASGJtnNK",
+            nonce: 253,
+            poolTokenMint: "ECFcUGwHHMaZynAQpqRHkYeTBnS5GnPWZywM8aggcs3A",
+            tokenAccountA: "FdiTt7XQ94fGkgorywN1GuXqQzmURHCDgYtUutWRcy4q",
+            tokenAccountB: "7VcwKUtdKnvcgNhZt5BQHsbPrXLxhdVomsgrr7k2N5P5",
+            feeAccount: "4pdzKqAGd1WbXn1L4UpY4r58irTfjFYMYNudBrqbQaYJ",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "SOL",
+            tokenBName: "USDC",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "706218408046", decimals: 9),
+            tokenBBalance: .init(amount: "16374219298", decimals: 6),
+            isStable: nil
+        )
+    }
+    
+    static var usdcUSDT: Pool {
+        .init(
+            account: "8KZjKCNTshjwapD4TjWQonXBdi1Jm4Eks5rgrViK9UCx",
+            authority: "6Aj1GVxoCiEhhYTk9rNySg2QTgvtqSzR119KynihWH3D",
+            nonce: 253,
+            poolTokenMint: "3H5XKkE9uVvxsdrFeN4BLLGCmohiQN6aZJVVcJiXQ4WC",
+            tokenAccountA: "EDukSdAegSUtKsGi6wdKTpaBuYK9ZcVj9Uz1f39ffdgi",
+            tokenAccountB: "9oaFyrMCwxKE6kBQRP5v9Jo5Uh39Y5p2fFaqGtcxnjYr",
+            feeAccount: "EDuiPgd4PuCXe9h2YieMbH7uUMeB4pgeWnP5hfcPvxu3",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "USDC",
+            tokenBName: "USDT",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "4705722687", decimals: 6),
+            tokenBBalance: .init(amount: "4710077640", decimals: 6),
+            isStable: nil
+        )
+    }
+    
+    static var solUSDT: Pool {
+        .init(
+            account: "4bS6bkBdJ4B1Bt4ft3oGF8La7eKpCqz8xnu1AMpMxWSP",
+            authority: "EAvLj3zW236pUSSSzwjL18QuPpkTxkWaVSR5GdX7yiNa",
+            nonce: 255,
+            poolTokenMint: "BmZNYGt7aApGTUUxAQUYsW64cMbb6P7uniokCWaptj4D",
+            tokenAccountA: "BBDQmitNga99M9QsBRnyos9uWPumNbWLC1mfbReJi45C",
+            tokenAccountB: "8xepSs1iXsSw8QrCS1rpZk8KY3fMwUZqDT4dmzDa2trX",
+            feeAccount: "HR2rWgcU6SNCWxJDozDu6qCgSSvUoKCynbhQPGRNqpCG",
+            hostFeeAccount: nil,
+            feeNumerator: 30,
+            feeDenominator: 10000,
+            ownerTradeFeeNumerator: 0,
+            ownerTradeFeeDenominator: 0,
+            ownerWithdrawFeeNumerator: 0,
+            ownerWithdrawFeeDenominator: 0,
+            hostFeeNumerator: 0,
+            hostFeeDenominator: 0,
+            tokenAName: "SOL",
+            tokenBName: "USDT",
+            curveType: "ConstantProduct",
+            amp: nil,
+            programVersion: nil,
+            deprecated: true,
+            tokenABalance: .init(amount: "85484159388", decimals: 9),
+            tokenBBalance: .init(amount: "2067442317", decimals: 6),
             isStable: nil
         )
     }

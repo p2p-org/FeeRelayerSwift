@@ -1,16 +1,22 @@
 import Foundation
 import FeeRelayerSwift
+import Combine
 
 class MockRelayContextManagerBase: RelayContextManager {
-    func getCurrentContext() async throws -> FeeRelayerSwift.RelayContext {
+    var currentContext: FeeRelayerSwift.RelayContext? {
         fatalError()
     }
     
-    func update() async throws {
+    var contextPublisher: AnyPublisher<RelayContext?, Never> {
         fatalError()
     }
     
-    func validate() async throws -> Bool {
+    @discardableResult
+    func update() async throws -> RelayContext {
+        fatalError()
+    }
+    
+    func replaceContext(by context: RelayContext) {
         fatalError()
     }
 }

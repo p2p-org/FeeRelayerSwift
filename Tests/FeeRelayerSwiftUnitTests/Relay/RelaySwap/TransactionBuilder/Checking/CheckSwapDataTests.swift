@@ -17,7 +17,7 @@ final class CheckSwapDataTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinderBase(),
+            destinationAnalysator: MockDestinationAnalysatorBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -75,6 +75,7 @@ final class CheckSwapDataTests: XCTestCase {
     func testCheckTransitiveSwapData() async throws {
         // SOL -> BTC -> ETH
         let needsCreateTransitTokenAccount = true
+        let userSource = try await Account(network: .mainnetBeta).publicKey
         
         let swapData = TransitiveSwapData(
             from: .init(
@@ -106,7 +107,7 @@ final class CheckSwapDataTests: XCTestCase {
         )
         
         var env = SwapTransactionBuilderOutput(
-            userSource: "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo",
+            userSource: userSource,
             needsCreateTransitTokenAccount: needsCreateTransitTokenAccount,
             userDestinationTokenAccountAddress: .ethAssociatedAddress
         )
@@ -143,7 +144,7 @@ final class CheckSwapDataTests: XCTestCase {
         XCTAssertEqual(swapInstruction.keys[0], .writable(publicKey: .feePayerAddress, isSigner: true))
         XCTAssertEqual(swapInstruction.keys[1], .readonly(publicKey: TokenProgram.id, isSigner: false))
         XCTAssertEqual(swapInstruction.keys[2], .readonly(publicKey: .owner, isSigner: true))
-        XCTAssertEqual(swapInstruction.keys[3], .writable(publicKey: "CgbNQZHjhRWf2VQ96YfVLTsL9abwEuFuTM63G8Yu4KYo", isSigner: false))
+        XCTAssertEqual(swapInstruction.keys[3], .writable(publicKey: userSource, isSigner: false))
         XCTAssertEqual(swapInstruction.keys[4], .writable(publicKey: .btcTransitTokenAccountAddress, isSigner: false))
         XCTAssertEqual(swapInstruction.keys[5], .writable(publicKey: .ethAssociatedAddress, isSigner: false))
         XCTAssertEqual(swapInstruction.keys[6], .readonly(publicKey: .swapProgramId, isSigner: false))

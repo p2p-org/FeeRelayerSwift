@@ -24,7 +24,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> New BTC
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -52,7 +52,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> BTC
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 1),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 1),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -80,7 +80,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 2),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 2),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -108,7 +108,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 3),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 3),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -136,7 +136,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> SOL
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -166,7 +166,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> New BTC
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 4),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 4),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -194,7 +194,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // SOL -> BTC
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 5),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 5),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -222,7 +222,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 6),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 6),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -250,7 +250,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> New ETH
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 7),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 7),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -278,7 +278,7 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
         // BTC -> SOL
         
         calculator = .init(
-            destinationFinder: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             accountStorage: try await MockAccountStorage()
         )
         
@@ -303,49 +303,28 @@ final class DefaultSwapFeeRelayerCalculatorTests: XCTestCase {
     }
 }
 
-private class MockDestinationFinder: DestinationFinder {
+private class MockDestinationAnalysator: DestinationAnalysator {
     private let testCase: Int
 
     init(testCase: Int = 0) {
         self.testCase = testCase
     }
     
-    func findRealDestination(
+    func analyseDestination(
         owner: PublicKey,
-        mint: PublicKey,
-        givenDestination: PublicKey?
-    ) async throws -> DestinationFinderResult {
+        mint: PublicKey
+    ) async throws -> DestinationAnalysatorResult {
         switch mint {
         case .btcMint where testCase == 0 || testCase == 4:
-            return DestinationFinderResult(
-                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .splAccount(needsCreation: true)
         case .btcMint where testCase == 1 || testCase == 5:
-            return DestinationFinderResult(
-                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .ethMint where testCase == 2 || testCase == 6:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .splAccount(needsCreation: true)
         case .ethMint where testCase == 3 || testCase == 7:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .wrappedSOLMint:
-            return DestinationFinderResult(
-                destination: .init(address: owner, mint: .wrappedSOLMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .wsolAccount
         default:
             fatalError()
         }

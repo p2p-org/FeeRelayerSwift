@@ -12,6 +12,8 @@ class MockOrcaSwapBase: OrcaSwapType {
             return PublicKey.ethMint.base58EncodedString
         case "SOL":
             return PublicKey.wrappedSOLMint.base58EncodedString
+        case "USDT":
+            return PublicKey.usdtMint.base58EncodedString
         default:
             fatalError()
         }

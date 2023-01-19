@@ -53,17 +53,6 @@ public struct FeeLimitForAuthorityResponse: Codable {
     }
 }
 
-// MARK: - Relay info
-public struct RelayCache {
-    public var minimumTokenAccountBalance: UInt64?
-    public var minimumRelayAccountBalance: UInt64?
-    public var feePayerAddress: String?
-    public var lamportsPerSignature: UInt64?
-    public var relayAccountStatus: RelayAccountStatus?
-    public var preparedParams: TopUpAndActionPreparedParams?
-    public var freeTransactionFeeLimit: UsageStatus?
-}
-
 // MARK: - Top up
 public struct TopUpWithSwapParams: Encodable {
     let userSourceTokenAccount: PublicKey
@@ -261,7 +250,7 @@ public struct SwapData: Encodable {
     public let SplTransitive: TransitiveSwapData?
 }
 
-public struct TransitiveSwapData: FeeRelayerRelaySwapType {
+public struct TransitiveSwapData: FeeRelayerRelaySwapType, Equatable {
     let from: DirectSwapData
     let to: DirectSwapData
     let transitTokenMintPubkey: String
@@ -286,7 +275,7 @@ public struct TransitiveSwapData: FeeRelayerRelaySwapType {
     }
 }
 
-public struct DirectSwapData: FeeRelayerRelaySwapType {
+public struct DirectSwapData: FeeRelayerRelaySwapType, Equatable {
     let programId: String
     let accountPubkey: String
     let authorityPubkey: String
@@ -361,17 +350,6 @@ public enum RelayAccountStatus: Equatable, CustomStringConvertible {
             return balance
         }
     }
-}
-
-public struct TopUpPreparedParams {
-    public let amount: UInt64
-    public let expectedFee: UInt64
-    public let poolsPair: PoolsPair
-}
-
-public struct TopUpAndActionPreparedParams {
-    public let topUpPreparedParam: TopUpPreparedParams?
-    public let actionFeesAndPools: FeesAndPools
 }
 
 public struct FeesAndPools {
