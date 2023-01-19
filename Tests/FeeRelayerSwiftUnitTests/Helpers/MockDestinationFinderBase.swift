@@ -2,12 +2,11 @@ import Foundation
 import SolanaSwift
 @testable import FeeRelayerSwift
 
-class MockDestinationFinderBase: DestinationFinder {
-    func findRealDestination(
+class MockDestinationAnalysatorBase: DestinationAnalysator {
+    func analyseDestination(
         owner: PublicKey,
-        mint: PublicKey,
-        givenDestination: PublicKey?
-    ) async throws -> DestinationFinderResult {
+        mint: PublicKey
+    ) async throws -> DestinationAnalysatorResult {
         fatalError()
     }
 }

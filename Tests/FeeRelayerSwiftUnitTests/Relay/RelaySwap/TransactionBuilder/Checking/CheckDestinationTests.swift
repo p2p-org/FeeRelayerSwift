@@ -27,7 +27,7 @@ final class CheckDestinationTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -56,7 +56,7 @@ final class CheckDestinationTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinder(testCase: 1),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 1),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -97,7 +97,7 @@ final class CheckDestinationTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinder(testCase: 2),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 2),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -141,7 +141,7 @@ final class CheckDestinationTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinder(testCase: 3),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 3),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -188,43 +188,26 @@ final class CheckDestinationTests: XCTestCase {
     }
 }
 
-private class MockDestinationFinder: DestinationFinder {
+private class MockDestinationAnalysator: DestinationAnalysator {
     private let testCase: Int
 
     init(testCase: Int) {
         self.testCase = testCase
     }
     
-    func findRealDestination(
+    func analyseDestination(
         owner: PublicKey,
-        mint: PublicKey,
-        givenDestination: PublicKey?
-    ) async throws -> DestinationFinderResult {
-        switch givenDestination {
-        case "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK" where testCase == 0:
-            return DestinationFinderResult(
-                destination: .init(address: "2Z2Pbn1bsqN4NSrf1JLC1JRGNchoCVwXqsfeF7zWYTnK", mint: .usdcMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
-        case .none where testCase == 1:
-            return DestinationFinderResult(
-                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
-        case owner where testCase == 2:
-            return DestinationFinderResult(
-                destination: TokenAccount(address: owner, mint: mint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
-        case .none where testCase == 3:
-            return DestinationFinderResult(
-                destination: .init(address: .usdcAssociatedAddress, mint: .usdcMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+        mint: PublicKey
+    ) async throws -> DestinationAnalysatorResult {
+        switch testCase {
+        case 0:
+            return .splAccount(needsCreation: false)
+        case 1:
+            return .splAccount(needsCreation: true)
+        case 2:
+            return .wsolAccount
+        case 3:
+            return .splAccount(needsCreation: true)
         default:
             fatalError()
         }

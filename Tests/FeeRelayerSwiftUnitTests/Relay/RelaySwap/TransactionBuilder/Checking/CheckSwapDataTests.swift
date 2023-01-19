@@ -17,7 +17,7 @@ final class CheckSwapDataTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManagerBase(),
-            destinationManager: MockDestinationFinderBase(),
+            destinationAnalysator: MockDestinationAnalysatorBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

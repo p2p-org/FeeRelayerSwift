@@ -7,13 +7,13 @@ import OrcaSwapSwift
 import SolanaSwift
 
 public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
-    let destinationFinder: DestinationFinder
+    let destinationAnalysator: DestinationAnalysator
     let accountStorage: SolanaAccountStorage
     
     var userAccount: Account { accountStorage.account! }
 
-    public init(destinationFinder: DestinationFinder, accountStorage: SolanaAccountStorage) {
-        self.destinationFinder = destinationFinder
+    public init(destinationAnalysator: DestinationAnalysator, accountStorage: SolanaAccountStorage) {
+        self.destinationAnalysator = destinationAnalysator
         self.accountStorage = accountStorage
     }
     
@@ -25,12 +25,6 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         destinationTokenMint: PublicKey,
         destinationAddress: PublicKey?
     ) async throws -> FeeAmount {
-        let destinationInfo = try await destinationFinder.findRealDestination(
-            owner: userAccount.publicKey,
-            mint: destinationTokenMint,
-            givenDestination: destinationAddress
-        )
-
         var expectedFee = FeeAmount.zero
 
         // fee for payer's signature
@@ -39,21 +33,36 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
         // fee for owner's signature
         expectedFee.transaction += lamportsPerSignature
 
+        // CHECK SOURCE
         // when source token is native SOL
         if sourceTokenMint == PublicKey.wrappedSOLMint {
             expectedFee.transaction += lamportsPerSignature
         }
 
-        // when needed to create destination
-        if destinationInfo.needsCreation, destinationTokenMint != PublicKey.wrappedSOLMint {
-            expectedFee.accountBalances += minimumTokenAccountBalance
-        }
-
+        // CHECK DESTINATION
         // when destination is native SOL
         if destinationTokenMint == PublicKey.wrappedSOLMint {
             expectedFee.transaction += lamportsPerSignature
         }
+        
+        // when destination is not native SOL and needs to be created
+        else if destinationAddress == nil {
+            // analyse the destination
+            let result = try await destinationAnalysator.analyseDestination(
+                owner: userAccount.publicKey,
+                mint: destinationTokenMint
+            )
+            
+            // if destination is non-created spl token, then add the fee
+            switch result {
+            case .splAccount(let needsCreation) where needsCreation:
+                expectedFee.accountBalances += minimumTokenAccountBalance
+            default:
+                break
+            }
+        }
 
+        // CHECK OTHER
         // in transitive swap, there will be situation when swapping from SOL -> SPL that needs spliting transaction to 2 transactions
         if swapPoolsCount == 2, sourceTokenMint == PublicKey.wrappedSOLMint, destinationAddress == nil {
             expectedFee.transaction += lamportsPerSignature * 2
