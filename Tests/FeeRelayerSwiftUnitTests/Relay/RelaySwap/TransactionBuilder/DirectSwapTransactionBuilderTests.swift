@@ -21,7 +21,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -132,7 +132,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 1),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 1),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -222,7 +222,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 2),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 2),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -290,7 +290,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 3),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 3),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -344,7 +344,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 4),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 4),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -398,7 +398,7 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(),
-            destinationManager: MockDestinationFinder(testCase: 5),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 5),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -485,56 +485,31 @@ final class DirectSwapTransactionBuilderTests: XCTestCase {
     }
 }
 
-private class MockDestinationFinder: DestinationFinder {
+private class MockDestinationAnalysator: DestinationAnalysator {
     private let testCase: Int
 
     init(testCase: Int) {
         self.testCase = testCase
     }
     
-    func findRealDestination(
+    func analyseDestination(
         owner: PublicKey,
-        mint: PublicKey,
-        givenDestination: PublicKey?
-    ) async throws -> DestinationFinderResult {
+        mint: PublicKey
+    ) async throws -> DestinationAnalysatorResult {
         switch mint {
         // Case 0
         case .btcMint where testCase == 0:
-            return DestinationFinderResult(
-                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .splAccount(needsCreation: true)
         case .btcMint where testCase == 1:
-            return DestinationFinderResult(
-                destination: .init(address: .btcAssociatedAddress, mint: .btcMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .ethMint where testCase == 2:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .splAccount(needsCreation: true)
         case .ethMint where testCase == 3:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .ethMint where testCase == 4:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .wrappedSOLMint where testCase == 5:
-            return DestinationFinderResult(
-                destination: .init(address: owner, mint: .wrappedSOLMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .wsolAccount
         default:
             fatalError()
         }

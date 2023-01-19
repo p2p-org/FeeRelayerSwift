@@ -21,7 +21,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 0),
-            destinationManager: MockDestinationFinderBase(),
+            destinationAnalysator: MockDestinationAnalysatorBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -44,7 +44,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
-            destinationManager: MockDestinationFinderBase(),
+            destinationAnalysator: MockDestinationAnalysatorBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -67,7 +67,7 @@ final class CheckTransitTokenAccountTests: XCTestCase {
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
-            destinationManager: MockDestinationFinderBase(),
+            destinationAnalysator: MockDestinationAnalysatorBase(),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature

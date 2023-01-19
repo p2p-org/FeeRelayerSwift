@@ -21,7 +21,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 0),
-            destinationManager: MockDestinationFinder(testCase: 0),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 0),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -169,7 +169,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 1),
-            destinationManager: MockDestinationFinder(testCase: 1),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 1),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -297,7 +297,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 2),
-            destinationManager: MockDestinationFinder(testCase: 2),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 2),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -401,7 +401,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 3),
-            destinationManager: MockDestinationFinder(testCase: 3),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 3),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -491,7 +491,7 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
         swapTransactionBuilder = .init(
             network: .mainnetBeta,
             transitTokenAccountManager: MockTransitTokenAccountManager(testCase: 4),
-            destinationManager: MockDestinationFinder(testCase: 4),
+            destinationAnalysator: MockDestinationAnalysator(testCase: 4),
             feePayerAddress: .feePayerAddress,
             minimumTokenAccountBalance: minimumTokenAccountBalance,
             lamportsPerSignature: lamportsPerSignature
@@ -612,37 +612,24 @@ final class TransitiveSwapTransactionBuilderWithNonCreatedTransitTokenTests: XCT
     }
 }
 
-private class MockDestinationFinder: DestinationFinder {
+private class MockDestinationAnalysator: DestinationAnalysator {
     private let testCase: Int
 
     init(testCase: Int) {
         self.testCase = testCase
     }
     
-    func findRealDestination(
+    func analyseDestination(
         owner: PublicKey,
-        mint: PublicKey,
-        givenDestination: PublicKey?
-    ) async throws -> DestinationFinderResult {
+        mint: PublicKey
+    ) async throws -> DestinationAnalysatorResult {
         switch mint {
         case .ethMint where testCase == 0 || testCase == 2:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .splAccount(needsCreation: true)
         case .ethMint where testCase == 1 || testCase == 3:
-            return DestinationFinderResult(
-                destination: .init(address: .ethAssociatedAddress, mint: .ethMint),
-                destinationOwner: owner,
-                needsCreation: false
-            )
+            return .splAccount(needsCreation: false)
         case .wrappedSOLMint where testCase == 4:
-            return DestinationFinderResult(
-                destination: .init(address: owner, mint: .wrappedSOLMint),
-                destinationOwner: owner,
-                needsCreation: true
-            )
+            return .wsolAccount
         default:
             fatalError()
         }
