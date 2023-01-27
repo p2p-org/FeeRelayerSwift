@@ -9,7 +9,7 @@ extension RelayServiceImpl {
     ///   - expectedFee: expected fee for a transaction
     ///   - payingFeeToken: token to pay fee
     /// - Returns: nil if top up is not needed, transactions' signatures if top up has been sent
-    public func checkAndTopUp(
+    func topUpIfNeeded(
         expectedFee: FeeAmount,
         payingFeeToken: TokenAccount?
     ) async throws -> [String]? {
