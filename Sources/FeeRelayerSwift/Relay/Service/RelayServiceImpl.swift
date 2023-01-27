@@ -95,7 +95,6 @@ public class RelayServiceImpl: RelayService {
     
     /// Top up (if needed) and relay transaction to RelayService
     /// - Parameters:
-    ///   - context: current context of Relay's service
     ///   - transaction: transaction that needs to be relayed
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
@@ -111,7 +110,6 @@ public class RelayServiceImpl: RelayService {
     
     /// Top up (if needed) and relay multiple transactions to RelayService
     /// - Parameters:
-    ///   - context: current context of Relay's service
     ///   - transactions: transactions that need to be relayed
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
@@ -128,7 +126,6 @@ public class RelayServiceImpl: RelayService {
     
     /// Top up (if needed) and get feePayer's signature for a transaction
     /// - Parameters:
-    ///   - context: current context of Relay's service
     ///   - transaction: transaction that needs feePayer's signature
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
@@ -144,7 +141,6 @@ public class RelayServiceImpl: RelayService {
     
     /// Top up (if needed) and get feePayer's signature for multiple transactions
     /// - Parameters:
-    ///   - context: current context of Relay's service
     ///   - transactions: transactions that needs feePayer's signature
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
@@ -245,7 +241,7 @@ public class RelayServiceImpl: RelayService {
                 contextManager.replaceContext(by: context)
 
                 // wait for transaction to finish if transaction is not the last one
-                if index < transactions.count - 1 {
+                if !getSignatureOnly, index < transactions.count - 1 {
                     try await solanaApiClient.waitForConfirmation(signature: signature, ignoreStatus: true)
                 }
             }
