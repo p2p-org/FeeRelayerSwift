@@ -103,7 +103,7 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
         // check if relay account current balance can cover part of needed amount
         if var relayAccountBalance = context.relayAccountStatus.balance {
             if relayAccountBalance < minimumRelayAccountBalance {
-                neededAmount.transaction += minimumRelayAccountBalance - relayAccountBalance
+                neededAmount.accountBalances += minimumRelayAccountBalance - relayAccountBalance
             } else {
                 relayAccountBalance -= minimumRelayAccountBalance
                 
@@ -129,7 +129,7 @@ public class DefaultRelayFeeCalculator: RelayFeeCalculator {
                 }
             }
         } else {
-            neededAmount.transaction += minimumRelayAccountBalance
+            neededAmount.accountBalances += minimumRelayAccountBalance
         }
         
         // if relay account could not cover all fees and paying token is WSOL, the compensation will be done without the existense of relay account
