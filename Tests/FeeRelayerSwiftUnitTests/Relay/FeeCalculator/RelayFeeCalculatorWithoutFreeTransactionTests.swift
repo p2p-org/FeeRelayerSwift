@@ -33,12 +33,14 @@ class RelayFeeCalculatorWithoutFreeTransactionTests: XCTestCase {
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
         )
+        
+        let amountLeftToFillMinimumRelayAccountBalance = minimumRelayAccountBalance - currentRelayAccountBalance
 
         XCTAssertEqual(
             case1,
             FeeAmount(
                 transaction: expectedTxFee.transaction, // without topUpFee
-                accountBalances: minimumRelayAccountBalance - currentRelayAccountBalance + expectedTxFee.accountBalances
+                accountBalances: amountLeftToFillMinimumRelayAccountBalance + expectedTxFee.accountBalances
             )
         )
     }
@@ -68,12 +70,14 @@ class RelayFeeCalculatorWithoutFreeTransactionTests: XCTestCase {
             expectedFee: expectedTxFee,
             payingTokenMint: .usdtMint
         )
+        
+        let amountLeftToFillMinimumRelayAccountBalance = minimumRelayAccountBalance - currentRelayAccountBalance
 
         XCTAssertEqual(
             case1,
             FeeAmount(
                 transaction:expectedTxFee.transaction + topUpFee,
-                accountBalances: minimumRelayAccountBalance - currentRelayAccountBalance + expectedTxFee.accountBalances
+                accountBalances: amountLeftToFillMinimumRelayAccountBalance + expectedTxFee.accountBalances
             )
         )
         
