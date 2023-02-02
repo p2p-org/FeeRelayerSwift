@@ -120,7 +120,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         XCTAssertEqual(
             case2,
             FeeAmount(
-                transaction: 0, // the transaction fee is free, but we needs to top up additional amount to keeps relay account alive
+                transaction: 0,
                 accountBalances: expectedTxFee.accountBalances - amountLeftAfterFillingMinimumRelayAccountBalance
             )
         )
@@ -178,7 +178,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         // and the amount left can cover big part of expected account creation fee
         
         currentRelayAccountBalance = minimumRelayAccountBalance
-        currentRelayAccountBalance += expectedTxFee.accountBalances - UInt64.random(in: 0..<1000)
+        currentRelayAccountBalance += expectedTxFee.accountBalances - UInt64.random(in: 0..<DefaultRelayFeeCalculator.minimumTopUpAmount)
         
         let case3 = try await calculator.calculateNeededTopUpAmount(
             getContextWithFreeTransactionFeesAvailable(
