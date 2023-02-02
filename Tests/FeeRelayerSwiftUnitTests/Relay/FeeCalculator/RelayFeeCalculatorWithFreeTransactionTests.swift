@@ -60,8 +60,8 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         XCTAssertEqual(
             case2,
             FeeAmount(
-                transaction: minimumRelayAccountBalance,
-                accountBalances: expectedTxFee.accountBalances
+                transaction: 0,
+                accountBalances: minimumRelayAccountBalance + expectedTxFee.accountBalances
             )
         )
     }
@@ -79,6 +79,7 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
         
         // CASE 1: currentRelayAccountBalance is less than minimumRelayAccountBalance,
         // we must top up some lamports to compensate and keep it alive after transaction
+        // as there is some lamports in relay account already, we just needs to top up the rest
         
         currentRelayAccountBalance = UInt64.random(in: 0..<minimumRelayAccountBalance)
         
@@ -90,11 +91,13 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
             payingTokenMint: .usdtMint
         )
         
+        let amountLeftToFillMinimumRelayAccountBalance = minimumRelayAccountBalance - currentRelayAccountBalance
+        
         XCTAssertEqual(
             case1,
             FeeAmount(
-                transaction: minimumRelayAccountBalance - currentRelayAccountBalance, // the transaction fee is free, but we needs to top up additional amount to keeps relay account alive
-                accountBalances: expectedTxFee.accountBalances
+                transaction: 0,
+                accountBalances: amountLeftToFillMinimumRelayAccountBalance  + expectedTxFee.accountBalances
             )
         )
         
