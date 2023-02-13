@@ -23,8 +23,8 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
-          "branch": "main",
-          "revision": "20f4546c93d069d10c19207cfba40a7f79e64c47",
+          "branch": "feature/versioned-transaction",
+          "revision": "7dd507d85a3fd26f9a23dbdad5df0c671d41911b",
           "version": null
         }
       },
