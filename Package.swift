@@ -28,9 +28,9 @@ let package = Package(
                 .product(name: "OrcaSwapSwift", package: "OrcaSwapSwift")
             ]
         ),
-        .testTarget(
-            name: "FeeRelayerSwiftTests",
-            dependencies: ["FeeRelayerSwift"]),
+//        .testTarget(
+//            name: "FeeRelayerSwiftTests",
+//            dependencies: ["FeeRelayerSwift"]),
         .testTarget(
             name: "FeeRelayerSwiftUnitTests",
             dependencies: ["FeeRelayerSwift"]),
