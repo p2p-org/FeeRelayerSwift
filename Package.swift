@@ -17,7 +17,7 @@ let package = Package(
             targets: ["FeeRelayerSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "2.1.1"),
+        .package(url: "https://github.com/p2p-org/solana-swift.git", from: "2.1.1"),
         .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "2.1.1")
     ],
     targets: [
