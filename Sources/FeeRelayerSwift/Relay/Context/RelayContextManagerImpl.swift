@@ -111,10 +111,10 @@ public class RelayContextManagerImpl: RelayContextManager {
 internal extension FeeLimitForAuthorityResponse {
     func asUsageStatus() -> UsageStatus {
         UsageStatus(
-            maxUsage: limits.maxCount,
-            currentUsage: processedFee.count,
-            maxAmount: limits.maxAmount,
-            amountUsed: processedFee.totalAmount
+            maxUsage: limits.maxFeeCount,
+            currentUsage: processedFee.feeCount,
+            maxAmount: limits.maxFeeAmount,
+            amountUsed: processedFee.totalFeeAmount
         )
     }
 }
