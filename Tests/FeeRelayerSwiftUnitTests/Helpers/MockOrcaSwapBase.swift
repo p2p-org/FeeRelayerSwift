@@ -27,11 +27,11 @@ class MockOrcaSwapBase: OrcaSwapType {
         fatalError()
     }
     
-    func findBestPoolsPairForInputAmount(_ inputAmount: UInt64, from poolsPairs: [OrcaSwapSwift.PoolsPair]) throws -> OrcaSwapSwift.PoolsPair? {
+    func findBestPoolsPairForInputAmount(_ inputAmount: UInt64, from poolsPairs: [OrcaSwapSwift.PoolsPair], prefersDirectSwap: Bool) throws -> OrcaSwapSwift.PoolsPair? {
         fatalError()
     }
     
-    func findBestPoolsPairForEstimatedAmount(_ estimatedAmount: UInt64, from poolsPairs: [OrcaSwapSwift.PoolsPair]) throws -> OrcaSwapSwift.PoolsPair? {
+    func findBestPoolsPairForEstimatedAmount(_ estimatedAmount: UInt64, from poolsPairs: [OrcaSwapSwift.PoolsPair], prefersDirectSwap: Bool) throws -> OrcaSwapSwift.PoolsPair? {
         fatalError()
     }
     
