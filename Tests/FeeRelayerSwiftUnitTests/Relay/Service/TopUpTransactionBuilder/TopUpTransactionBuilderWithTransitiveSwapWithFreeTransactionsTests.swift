@@ -534,7 +534,14 @@ final class TopUpTransactionBuilderWithTransitiveSwapWithFreeTransactionsTests: 
             feePayerAddress: .feePayerAddress,
             lamportsPerSignature: lamportsPerSignature,
             relayAccountStatus: relayAccountStatus,
-            usageStatus: .init(maxUsage: 100, currentUsage: 0, maxAmount: 10000000, amountUsed: 0)
+            usageStatus: .init(
+                maxUsage: 100,
+                currentUsage: 0,
+                maxAmount: 10000000,
+                amountUsed: 0,
+                maxTokenAccountCreationAmount: 10000000,
+                maxTokenAccountCreationCount: 30
+            )
         )
     }
 }
