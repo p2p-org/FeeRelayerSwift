@@ -18,7 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/p2p-org/solana-swift.git", branch: "feature/send-via-link"),
-        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "2.1.1")
+        .package(url: "https://github.com/p2p-org/OrcaSwapSwift.git", from: "3.0.0")
     ],
     targets: [
         .target(
