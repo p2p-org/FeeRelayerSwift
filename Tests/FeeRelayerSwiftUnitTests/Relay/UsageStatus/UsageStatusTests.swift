@@ -15,7 +15,9 @@ final class UsageStatusTests: XCTestCase {
             maxAmount: maxAmount,
             amountUsed: .random(in: 0..<(maxAmount - transactionFee)), // amountUsed + transactionFee is less than maxAmount
             maxTokenAccountCreationAmount: 10000000,
-            maxTokenAccountCreationCount: 30
+            maxTokenAccountCreationCount: 30,
+//            tokenAccountCreationAmountUsed: 0,
+            tokenAccountCreationCountUsed: 0
         )
         
         XCTAssertEqual(
@@ -33,7 +35,9 @@ final class UsageStatusTests: XCTestCase {
             maxAmount: maxAmount,
             amountUsed: .random(in: 0..<(maxAmount - transactionFee)), // amountUsed + transactionFee is less than maxAmount
             maxTokenAccountCreationAmount: 10000000,
-            maxTokenAccountCreationCount: 30
+            maxTokenAccountCreationCount: 30,
+//            tokenAccountCreationAmountUsed: 0,
+            tokenAccountCreationCountUsed: 0
         )
         
         XCTAssertEqual(
@@ -51,7 +55,9 @@ final class UsageStatusTests: XCTestCase {
             maxAmount: maxAmount,
             amountUsed: .random(in: maxAmount..<(maxAmount + transactionFee)), // amountUsed + transactionFee is more than maxAmount
             maxTokenAccountCreationAmount: 10000000,
-            maxTokenAccountCreationCount: 30
+            maxTokenAccountCreationCount: 30,
+//            tokenAccountCreationAmountUsed: 0,
+            tokenAccountCreationCountUsed: 0
         )
         
         XCTAssertEqual(
