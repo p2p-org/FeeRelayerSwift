@@ -29,7 +29,7 @@ public struct FeeLimitForAuthorityResponse: Codable {
         let maxFeeAmount: UInt64
         let maxFeeCount: Int
         let maxTokenAccountCreationAmount: UInt64
-        let maxTokenAccountCreationCount: UInt64
+        let maxTokenAccountCreationCount: Int
         let period: Period
     
         enum CodingKeys: String, CodingKey {
