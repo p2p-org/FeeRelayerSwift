@@ -6,6 +6,7 @@ public struct StatsInfo: Codable {
         case transfer = "Transfer"
         case swap = "Swap"
         case other = "Other"
+        case sendViaLink = "SendViaLink"
     }
     
     public enum DeviceType: String, Codable {
