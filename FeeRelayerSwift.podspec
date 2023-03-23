@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'FeeRelayerSwift'
-  s.version          = '3.2.0'
+  s.version          = '3.2.1'
   s.summary          = 'An internal library for handling fee-relayer of p2p-org in Swift.'
 
 # This description is used to generate tags and improve search results.
