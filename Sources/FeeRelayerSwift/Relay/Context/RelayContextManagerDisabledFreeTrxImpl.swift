@@ -18,7 +18,7 @@ public class RelayContextManagerDisabledFreeTrxImpl: RelayContextManagerImpl {
             amountUsed: 1_000_000,
             maxTokenAccountCreationAmount: 10000000,
             maxTokenAccountCreationCount: 30,
-            tokenAccountCreationAmountUsed: 0,
+//            tokenAccountCreationAmountUsed: 0,
             tokenAccountCreationCountUsed: 0
         )
         return context
@@ -33,7 +33,7 @@ public class RelayContextManagerDisabledFreeTrxImpl: RelayContextManagerImpl {
             amountUsed: 1_000_000,
             maxTokenAccountCreationAmount: 10000000,
             maxTokenAccountCreationCount: 30,
-            tokenAccountCreationAmountUsed: 0,
+//            tokenAccountCreationAmountUsed: 0,
             tokenAccountCreationCountUsed: 0
         )
         super.replaceContext(by: context)

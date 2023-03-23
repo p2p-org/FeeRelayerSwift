@@ -38,7 +38,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     amountUsed: 0,
                     maxTokenAccountCreationAmount: 10000000,
                     maxTokenAccountCreationCount: 30,
-                    tokenAccountCreationAmountUsed: 0,
+//                    tokenAccountCreationAmountUsed: 0,
                     tokenAccountCreationCountUsed: 0
                 )
             ),
@@ -140,7 +140,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     amountUsed: 0,
                     maxTokenAccountCreationAmount: 10000000,
                     maxTokenAccountCreationCount: 30,
-                    tokenAccountCreationAmountUsed: 0,
+//                    tokenAccountCreationAmountUsed: 0,
                     tokenAccountCreationCountUsed: 0
                 )
             ),
@@ -231,7 +231,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     amountUsed: 0,
                     maxTokenAccountCreationAmount: 10000000,
                     maxTokenAccountCreationCount: 30,
-                    tokenAccountCreationAmountUsed: 0,
+//                    tokenAccountCreationAmountUsed: 0,
                     tokenAccountCreationCountUsed: 0
                 )
             ),
@@ -333,7 +333,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     amountUsed: 0,
                     maxTokenAccountCreationAmount: 10000000,
                     maxTokenAccountCreationCount: 30,
-                    tokenAccountCreationAmountUsed: 0,
+//                    tokenAccountCreationAmountUsed: 0,
                     tokenAccountCreationCountUsed: 0
                 )
             ),

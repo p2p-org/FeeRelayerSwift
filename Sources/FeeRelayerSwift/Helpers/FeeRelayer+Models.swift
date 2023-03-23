@@ -49,11 +49,16 @@ public struct FeeLimitForAuthorityResponse: Codable {
     struct ProcessedFee: Codable {
         let totalFeeAmount: UInt64
         let feeCount: Int
+        let rentCount: Int
         
+        var tokenAccountCreationCount: Int {
+            rentCount
+        }
         
         enum CodingKeys: String, CodingKey {
             case totalFeeAmount = "total_fee_amount"
             case feeCount = "fee_count"
+            case rentCount = "rent_count"
         }
     }
 }

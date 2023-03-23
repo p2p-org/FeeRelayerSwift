@@ -12,7 +12,7 @@ public struct UsageStatus: Equatable {
     public var amountUsed: UInt64
     public let maxTokenAccountCreationAmount: UInt64
     public let maxTokenAccountCreationCount: Int
-    public let tokenAccountCreationAmountUsed: UInt64
+//    public let tokenAccountCreationAmountUsed: UInt64
     public let tokenAccountCreationCountUsed: Int
     
     public init(
@@ -22,7 +22,7 @@ public struct UsageStatus: Equatable {
         amountUsed: UInt64,
         maxTokenAccountCreationAmount: UInt64,
         maxTokenAccountCreationCount: Int,
-        tokenAccountCreationAmountUsed: UInt64,
+//        tokenAccountCreationAmountUsed: UInt64,
         tokenAccountCreationCountUsed: Int
     ) {
         self.maxUsage = maxUsage
@@ -31,7 +31,7 @@ public struct UsageStatus: Equatable {
         self.amountUsed = amountUsed
         self.maxTokenAccountCreationAmount = maxTokenAccountCreationAmount
         self.maxTokenAccountCreationCount = maxTokenAccountCreationCount
-        self.tokenAccountCreationAmountUsed = tokenAccountCreationAmountUsed
+//        self.tokenAccountCreationAmountUsed = tokenAccountCreationAmountUsed
         self.tokenAccountCreationCountUsed = tokenAccountCreationCountUsed
     }
     
