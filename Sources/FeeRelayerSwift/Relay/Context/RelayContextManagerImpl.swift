@@ -117,7 +117,7 @@ internal extension FeeLimitForAuthorityResponse {
             amountUsed: processedFee.totalFeeAmount,
             maxTokenAccountCreationAmount: limits.maxTokenAccountCreationAmount,
             maxTokenAccountCreationCount: limits.maxTokenAccountCreationCount,
-            tokenAccountCreationCount: processedFee.tokenAccountCreationCount
+            tokenAccountCreationCountUsed: processedFee.tokenAccountCreationCount
         )
     }
 }
