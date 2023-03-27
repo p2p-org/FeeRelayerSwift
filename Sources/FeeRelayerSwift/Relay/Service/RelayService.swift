@@ -14,6 +14,11 @@ public protocol RelayService {
         _ preparedTransaction: PreparedTransaction,
         config configuration: FeeRelayerConfiguration
     ) async throws -> String
+    
+    func signRelayTransaction(
+        _ preparedTransaction: PreparedTransaction,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> String
 
     func topUpIfNeededAndRelayTransactions(
         _ preparedTransaction: [PreparedTransaction],
