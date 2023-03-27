@@ -93,6 +93,29 @@ public class RelayServiceImpl: RelayService {
         ))
     }
     
+    /// Get fee payer's signature without topup
+    /// - Parameters:
+    ///   - preparedTransaction: preparedTransaction that have to be relayed
+    ///   - configuration: relay's configuration
+    /// - Returns: feePayer's signature
+    public func signRelayTransaction(
+        _ preparedTransaction: PreparedTransaction,
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> String {
+        try await feeRelayerAPIClient.sendTransaction(.signRelayTransaction(
+            try .init(
+                preparedTransaction: preparedTransaction,
+                statsInfo: .init(
+                    operationType: configuration.operationType,
+                    deviceType: deviceType,
+                    currency: configuration.currency,
+                    build: buildNumber,
+                    environment: environment
+                )
+            )
+        ))
+    }
+    
     /// Top up (if needed) and relay multiple transactions to RelayService
     /// - Parameters:
     ///   - transactions: transactions that need to be relayed
