@@ -23,8 +23,8 @@
         "package": "SolanaSwift",
         "repositoryURL": "https://github.com/p2p-org/solana-swift.git",
         "state": {
-          "branch": "feature/send-via-link",
-          "revision": "259361a0ffee001d84cc125219c57cc9165e40e2",
+          "branch": "main",
+          "revision": "08455c536c72ba2d175937fbfe2b7781468cb51d",
           "version": null
         }
       },
