@@ -119,6 +119,19 @@ public class APIClient: FeeRelayerAPIClient {
     /// - Returns: signature, can be confirmed or signature of fee payer account that can be added to process later by client
     public func sendTransaction(_ requestType: RequestType) async throws -> String {
         do {
+            // Custom Response for sign_relay_transaction
+            if requestType.path == "/sign_relay_transaction" {
+                // Custom Response type
+                struct Response: Decodable {
+                    let signature: String
+                    let transaction: String
+                }
+                
+                let response: Response = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
+                return response.signature
+            }
+            
+            // Other response
             let response: String = try await httpClient.sendRequest(request: urlRequest(requestType), decoder: JSONDecoder())
             return response
         } catch let HTTPClientError.cantDecode(data) {
