@@ -207,7 +207,11 @@ class RelayFeeCalculatorWithFreeTransactionTests: XCTestCase {
                 maxUsage: 10000000,
                 currentUsage: 0,
                 maxAmount: 10000000,
-                amountUsed: 0
+                amountUsed: 0,
+                maxTokenAccountCreationAmount: 10000000,
+                maxTokenAccountCreationCount: 30,
+//                tokenAccountCreationAmountUsed: 0,
+                tokenAccountCreationCountUsed: 0
             )
         )
     }

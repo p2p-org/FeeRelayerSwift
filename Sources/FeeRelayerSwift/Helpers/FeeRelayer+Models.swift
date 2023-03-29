@@ -26,14 +26,18 @@ public struct FeeLimitForAuthorityResponse: Codable {
 
     struct Limits: Codable {
         let useFreeFee: Bool
-        let maxAmount: UInt64
-        let maxCount: Int
+        let maxFeeAmount: UInt64
+        let maxFeeCount: Int
+        let maxTokenAccountCreationAmount: UInt64
+        let maxTokenAccountCreationCount: Int
         let period: Period
     
         enum CodingKeys: String, CodingKey {
             case useFreeFee = "use_free_fee"
-            case maxAmount = "max_amount"
-            case maxCount = "max_count"
+            case maxFeeAmount = "max_fee_amount"
+            case maxFeeCount = "max_fee_count"
+            case maxTokenAccountCreationAmount = "max_token_account_creation_amount"
+            case maxTokenAccountCreationCount = "max_token_account_creation_count"
             case period
         }
     }
@@ -43,12 +47,18 @@ public struct FeeLimitForAuthorityResponse: Codable {
     }
 
     struct ProcessedFee: Codable {
-        let totalAmount: UInt64
-        let count: Int
+        let totalFeeAmount: UInt64
+        let feeCount: Int
+        let rentCount: Int
+        
+        var tokenAccountCreationCount: Int {
+            rentCount
+        }
         
         enum CodingKeys: String, CodingKey {
-            case totalAmount = "total_amount"
-            case count
+            case totalFeeAmount = "total_fee_amount"
+            case feeCount = "fee_count"
+            case rentCount = "rent_count"
         }
     }
 }
