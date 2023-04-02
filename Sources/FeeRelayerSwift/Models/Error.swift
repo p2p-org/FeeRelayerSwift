@@ -163,6 +163,18 @@ public struct FeeRelayerError: Swift.Error, Decodable, Equatable {
     public static var topUpSuccessButTransactionThrows: Self {
         .init(code: -12, message: "Topping up is successfull, but the transaction failed", data: nil)
     }
+    
+    public static var inconsistenceRelayContext: Self {
+        .init(code: -14, message: "Inconsistence relay context", data: nil)
+    }
+    
+    public static var missingBlockhash: Self {
+        .init(code: -15, message: "Missing recent blockhash", data: nil)
+    }
+    
+    public static var missingRelayFeePayer: Self {
+        .init(code: -16, message: "Missing relay fee payer", data: nil)
+    }
 }
 
 public struct ErrorDetail: Decodable, Equatable {

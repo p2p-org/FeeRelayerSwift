@@ -7,14 +7,13 @@ import SolanaSwift
 
 /// The service that allows users to do gas-less transactions.
 public protocol RelayService {
-    
     var feeCalculator: RelayFeeCalculator { get }
-    
+
     func relayTransaction(
         _ preparedTransaction: PreparedTransaction,
         config configuration: FeeRelayerConfiguration
     ) async throws -> String
-    
+
     func signRelayTransaction(
         _ preparedTransaction: PreparedTransaction,
         config configuration: FeeRelayerConfiguration
@@ -25,42 +24,55 @@ public protocol RelayService {
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
-    
+
     func topUpIfNeededAndSignRelayTransactions(
         _ preparedTransaction: [PreparedTransaction],
         fee payingFeeToken: TokenAccount?,
         config configuration: FeeRelayerConfiguration
     ) async throws -> [TransactionID]
+
+    /// Top up user relay account
+    func topUp(
+        amount: FeeAmount,
+        payingFeeToken: TokenAccount?,
+        relayContext: RelayContext
+    ) async throws -> [TransactionID]?
+
+    /// Verify and sign transaction.
+    func signTransaction(
+        transactions: [VersionedTransaction],
+        config configuration: FeeRelayerConfiguration
+    ) async throws -> [VersionedTransaction]
 }
 
-extension RelayService {
+public extension RelayService {
     /// Top up (if needed) and relay transaction to RelayService
     /// - Parameters:
     ///   - transaction: transaction that needs to be relayed
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
     /// - Returns: transaction's signature
-    public func topUpIfNeededAndRelayTransaction(
+    func topUpIfNeededAndRelayTransaction(
         _ transaction: PreparedTransaction,
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
     ) async throws -> TransactionID {
         try await topUpIfNeededAndRelayTransactions([transaction], fee: fee, config: config).first
-        ?! FeeRelayerError.unknown
+            ?! FeeRelayerError.unknown
     }
-    
+
     /// Top up (if needed) and get feePayer's signature for a transaction
     /// - Parameters:
     ///   - transaction: transaction that needs feePayer's signature
     ///   - fee: token to pay fee
     ///   - config: relay's configuration
     /// - Returns: feePayer's signature
-    public func topUpIfNeededAndSignRelayTransactions(
+    func topUpIfNeededAndSignRelayTransactions(
         _ transaction: PreparedTransaction,
         fee: TokenAccount?,
         config: FeeRelayerConfiguration
     ) async throws -> TransactionID {
         try await topUpIfNeededAndSignRelayTransactions([transaction], fee: fee, config: config).first
-        ?! FeeRelayerError.unknown
+            ?! FeeRelayerError.unknown
     }
 }
