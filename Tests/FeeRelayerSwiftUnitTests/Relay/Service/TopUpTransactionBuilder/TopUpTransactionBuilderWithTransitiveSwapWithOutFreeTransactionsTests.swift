@@ -538,10 +538,7 @@ final class TopUpTransactionBuilderWithTransitiveSwapWithOutFreeTransactionsTest
                 currentUsage: 100,
                 maxAmount: 10000000,
                 amountUsed: 10000000,
-                maxTokenAccountCreationAmount: 10000000,
-                maxTokenAccountCreationCount: 30,
-//                tokenAccountCreationAmountUsed: 0,
-                tokenAccountCreationCountUsed: 0
+                reachedLimitLinkCreation: true
             )
         )
     }

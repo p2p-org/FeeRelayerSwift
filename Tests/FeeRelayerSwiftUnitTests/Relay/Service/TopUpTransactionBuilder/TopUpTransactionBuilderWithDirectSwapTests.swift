@@ -36,10 +36,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     currentUsage: 0,
                     maxAmount: 10000000,
                     amountUsed: 0,
-                    maxTokenAccountCreationAmount: 10000000,
-                    maxTokenAccountCreationCount: 30,
-//                    tokenAccountCreationAmountUsed: 0,
-                    tokenAccountCreationCountUsed: 0
+                    reachedLimitLinkCreation: false
                 )
             ),
             sourceToken: sourceToken,
@@ -138,10 +135,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     currentUsage: 0,
                     maxAmount: 10000000,
                     amountUsed: 0,
-                    maxTokenAccountCreationAmount: 10000000,
-                    maxTokenAccountCreationCount: 30,
-//                    tokenAccountCreationAmountUsed: 0,
-                    tokenAccountCreationCountUsed: 0
+                    reachedLimitLinkCreation: false
                 )
             ),
             sourceToken: sourceToken,
@@ -229,10 +223,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     currentUsage: 100,
                     maxAmount: 10000000,
                     amountUsed: 0,
-                    maxTokenAccountCreationAmount: 10000000,
-                    maxTokenAccountCreationCount: 30,
-//                    tokenAccountCreationAmountUsed: 0,
-                    tokenAccountCreationCountUsed: 0
+                    reachedLimitLinkCreation: true
                 )
             ),
             sourceToken: sourceToken,
@@ -331,10 +322,7 @@ final class TopUpTransactionBuilderWithDirectSwapTests: XCTestCase {
                     currentUsage: 100,
                     maxAmount: 10000000,
                     amountUsed: 0,
-                    maxTokenAccountCreationAmount: 10000000,
-                    maxTokenAccountCreationCount: 30,
-//                    tokenAccountCreationAmountUsed: 0,
-                    tokenAccountCreationCountUsed: 0
+                    reachedLimitLinkCreation: true
                 )
             ),
             sourceToken: sourceToken,
