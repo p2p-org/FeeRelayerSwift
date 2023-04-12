@@ -16,10 +16,7 @@ public class RelayContextManagerDisabledFreeTrxImpl: RelayContextManagerImpl {
             currentUsage: 100,
             maxAmount: 1_000_000,
             amountUsed: 1_000_000,
-            maxTokenAccountCreationAmount: 10000000,
-            maxTokenAccountCreationCount: 30,
-//            tokenAccountCreationAmountUsed: 0,
-            tokenAccountCreationCountUsed: 0
+            reachedLimitLinkCreation: true
         )
         return context
     }
@@ -31,10 +28,7 @@ public class RelayContextManagerDisabledFreeTrxImpl: RelayContextManagerImpl {
             currentUsage: 100,
             maxAmount: 1_000_000,
             amountUsed: 1_000_000,
-            maxTokenAccountCreationAmount: 10000000,
-            maxTokenAccountCreationCount: 30,
-//            tokenAccountCreationAmountUsed: 0,
-            tokenAccountCreationCountUsed: 0
+            reachedLimitLinkCreation: true
         )
         super.replaceContext(by: context)
     }
