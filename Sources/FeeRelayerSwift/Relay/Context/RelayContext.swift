@@ -5,7 +5,7 @@
 import Foundation
 import SolanaSwift
 
-public struct RelayContext: Hashable {
+public struct RelayContext: Hashable, Codable {
     public let minimumTokenAccountBalance: UInt64
     public let minimumRelayAccountBalance: UInt64
     public let feePayerAddress: PublicKey

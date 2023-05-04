@@ -336,7 +336,7 @@ public struct SwapTransactionSignatures: Encodable {
 }
 
 // MARK: - Others
-public enum RelayAccountStatus: Equatable, CustomStringConvertible {
+public enum RelayAccountStatus: Equatable, Codable, CustomStringConvertible {
     case notYetCreated
     case created(balance: UInt64)
     public var description: String {
