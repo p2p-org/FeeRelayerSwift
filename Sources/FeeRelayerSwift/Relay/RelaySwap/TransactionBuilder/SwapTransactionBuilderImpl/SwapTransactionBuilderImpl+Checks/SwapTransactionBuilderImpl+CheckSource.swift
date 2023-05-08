@@ -10,7 +10,7 @@ extension SwapTransactionBuilderImpl {
         output: inout SwapTransactionBuilderOutput
     ) async throws {
         
-        var sourceWSOLNewAccount: Account?
+        var sourceWSOLNewAccount: KeyPair?
         
         // Check if source token is NATIVE SOL
         // Treat SPL SOL like another SPL Token (WSOL new account is not needed)
@@ -18,7 +18,7 @@ extension SwapTransactionBuilderImpl {
         if sourceMint == PublicKey.wrappedSOLMint &&
            (output.userSource == nil || output.userSource == owner) // check for native sol
         {
-            sourceWSOLNewAccount = try await Account(network: network)
+            sourceWSOLNewAccount = try await KeyPair(network: network)
             output.instructions.append(contentsOf: [
                 SystemProgram.transferInstruction(
                     from: owner,

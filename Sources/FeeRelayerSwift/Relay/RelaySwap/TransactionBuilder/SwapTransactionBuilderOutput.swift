@@ -4,19 +4,19 @@ import SolanaSwift
 
 struct SwapTransactionBuilderOutput {
     var userSource: PublicKey? = nil
-    var sourceWSOLNewAccount: Account? = nil
+    var sourceWSOLNewAccount: KeyPair? = nil
     
     var transitTokenMintPubkey: PublicKey?
     var transitTokenAccountAddress: PublicKey?
     var needsCreateTransitTokenAccount: Bool?
 
-    var destinationNewAccount: Account? = nil
+    var destinationNewAccount: KeyPair? = nil
     var userDestinationTokenAccountAddress: PublicKey? = nil
 
     var instructions = [TransactionInstruction]()
     var additionalTransaction: PreparedTransaction? = nil
 
-    var signers: [Account] = []
+    var signers: [KeyPair] = []
 
     // Building fee
     var accountCreationFee: Lamports = 0

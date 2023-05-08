@@ -12,7 +12,7 @@ extension SolanaAccountStorage {
         }
     }
     
-    var signer: Account {
+    var signer: KeyPair {
         get throws {
             try account ?! FeeRelayerError.unauthorized
         }

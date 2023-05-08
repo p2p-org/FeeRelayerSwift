@@ -4,7 +4,7 @@ import OrcaSwapSwift
 
 extension SwapTransactionBuilderImpl {
     func checkDestination(
-        owner: Account,
+        owner: KeyPair,
         destinationMint: PublicKey,
         destinationAddress: PublicKey?,
         recentBlockhash: String,
@@ -26,7 +26,7 @@ extension SwapTransactionBuilderImpl {
             switch result {
             case .wsolAccount:
                 // For native solana, create and initialize WSOL
-                let destinationNewAccount = try await Account(network: network)
+                let destinationNewAccount = try await KeyPair(network: network)
                 output.instructions.append(contentsOf: [
                     SystemProgram.createAccountInstruction(
                         from: feePayerAddress,

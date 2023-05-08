@@ -13,11 +13,11 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
     private let orcaSwap: OrcaSwapType
     
     /// Solana account
-    private let account: Account
+    private let account: KeyPair
     
     // MARK: - Initializer
 
-    init(solanaApiClient: SolanaAPIClient, orcaSwap: OrcaSwapType, account: Account) {
+    init(solanaApiClient: SolanaAPIClient, orcaSwap: OrcaSwapType, account: KeyPair) {
         self.solanaApiClient = solanaApiClient
         self.orcaSwap = orcaSwap
         self.account = account
@@ -209,7 +209,7 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
     
     /// Prepare swap data from swap pools
     func prepareSwapData(
-        account: Account,
+        account: KeyPair,
         network: Network,
         pools: PoolsPair,
         inputAmount: UInt64?,
@@ -218,13 +218,13 @@ class TopUpTransactionBuilderImpl: TopUpTransactionBuilder {
         transitTokenMintPubkey: PublicKey? = nil,
         newTransferAuthority: Bool = false,
         needsCreateTransitTokenAccount: Bool
-    ) async throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: Account?) {
+    ) async throws -> (swapData: FeeRelayerRelaySwapType, transferAuthorityAccount: KeyPair?) {
         // preconditions
         guard pools.count > 0 && pools.count <= 2 else { throw FeeRelayerError.swapPoolsNotFound }
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try await Account(network: network)
+        let transferAuthority = try await KeyPair(network: network)
         
         // form topUp params
         if pools.count == 1 {

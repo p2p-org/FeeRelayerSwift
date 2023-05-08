@@ -7,7 +7,7 @@ import SolanaSwift
 
 extension SwapTransactionBuilderImpl {
     func checkSigners(
-        ownerAccount: Account,
+        ownerAccount: KeyPair,
         env: inout SwapTransactionBuilderOutput
     ) {
         env.signers.append(ownerAccount)

@@ -28,7 +28,7 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
     }
     
     public func buildSwapTransaction(
-        userAccount: Account,
+        userAccount: KeyPair,
         pools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double,
@@ -128,7 +128,7 @@ public class SwapTransactionBuilderImpl : SwapTransactionBuilder {
     
     func makeTransaction(
         instructions: [TransactionInstruction],
-        signers: [Account],
+        signers: [KeyPair],
         blockhash: String,
         accountCreationFee: UInt64
     ) throws -> PreparedTransaction {

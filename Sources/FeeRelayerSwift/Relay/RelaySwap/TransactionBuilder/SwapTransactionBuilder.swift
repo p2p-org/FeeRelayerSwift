@@ -16,7 +16,7 @@ public protocol SwapTransactionBuilder {
     ///   - blockhash: latest blockhash
     /// - Returns: prepared transactions and additional payback fee (optional)
     func buildSwapTransaction(
-        userAccount: Account,
+        userAccount: KeyPair,
         pools: PoolsPair,
         inputAmount: UInt64,
         slippage: Double,

@@ -12,11 +12,11 @@ import OrcaSwapSwift
 extension SwapTransactionBuilderImpl {
     struct SwapData {
         let swapData: FeeRelayerRelaySwapType
-        let transferAuthorityAccount: Account?
+        let transferAuthorityAccount: KeyPair?
     }
     
     func buildSwapData(
-        userAccount: Account,
+        userAccount: KeyPair,
         pools: PoolsPair,
         inputAmount: UInt64?,
         minAmountOut: UInt64?,
@@ -30,7 +30,7 @@ extension SwapTransactionBuilderImpl {
         guard !(inputAmount == nil && minAmountOut == nil) else { throw FeeRelayerError.invalidAmount }
         
         // create transferAuthority
-        let transferAuthority = try await Account(network: network)
+        let transferAuthority = try await KeyPair(network: network)
         
         // form topUp params
         if pools.count == 1 {

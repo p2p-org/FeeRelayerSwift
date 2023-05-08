@@ -38,7 +38,7 @@ public class RelayServiceImpl: RelayService {
     let environment: StatsInfo.Environment
 
     /// Solana account
-    public var account: Account {
+    public var account: KeyPair {
         accountStorage.account!
     }
 

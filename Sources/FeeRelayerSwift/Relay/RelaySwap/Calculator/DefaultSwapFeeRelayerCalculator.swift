@@ -10,7 +10,7 @@ public class DefaultSwapFeeRelayerCalculator: SwapFeeRelayerCalculator {
     let destinationAnalysator: DestinationAnalysator
     let accountStorage: SolanaAccountStorage
     
-    var userAccount: Account { accountStorage.account! }
+    var userAccount: KeyPair { accountStorage.account! }
 
     public init(destinationAnalysator: DestinationAnalysator, accountStorage: SolanaAccountStorage) {
         self.destinationAnalysator = destinationAnalysator
