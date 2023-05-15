@@ -53,7 +53,7 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                         .first?
                         .RpcResponseError
                     {
-                        throw SolanaError.invalidResponse(responseError)
+                        throw SolanaSwift.APIClientError.responseError(responseError)
                     }
                 }
                 
