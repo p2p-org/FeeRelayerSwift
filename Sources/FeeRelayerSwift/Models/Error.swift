@@ -160,8 +160,8 @@ public struct FeeRelayerError: Swift.Error, Decodable, Equatable {
         .init(code: -11, message: "Unauthorized", data: nil)
     }
 
-    public static var topUpSuccessButTransactionThrows: Self {
-        .init(code: -12, message: "Topping up is successfull, but the transaction failed", data: nil)
+    public static func topUpSuccessButTransactionThrows(logs: [String]?) -> Self {
+        .init(code: -12, message: "Topping up is successfull, but the transaction failed", data: .init(type: .clientError, data: .init(array: logs)))
     }
     
     public static var inconsistenceRelayContext: Self {

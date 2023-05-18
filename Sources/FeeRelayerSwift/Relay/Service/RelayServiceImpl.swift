@@ -241,7 +241,14 @@ public class RelayServiceImpl: RelayService {
             return trx
         } catch {
             if toppedUp {
-                throw FeeRelayerError.topUpSuccessButTransactionThrows
+                let responseError: SolanaSwift.ResponseError?
+                switch error {
+                case SolanaSwift.APIClientError.responseError(let detail):
+                    responseError = detail
+                default:
+                    responseError = nil
+                }
+                throw FeeRelayerError.topUpSuccessButTransactionThrows(logs: responseError?.data?.logs)
             }
             throw error
         }

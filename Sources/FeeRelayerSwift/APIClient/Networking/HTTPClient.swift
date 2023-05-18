@@ -53,7 +53,13 @@ public final class FeeRelayerHTTPClient: HTTPClient {
                         .first?
                         .RpcResponseError
                     {
-                        throw SolanaSwift.APIClientError.responseError(responseError)
+                        throw SolanaSwift.APIClientError.responseError(
+                            .init(
+                                code: responseError.code,
+                                message: responseError.message,
+                                data: .init(logs: responseError.data?.RpcSimulateTransactionResult?.logs)
+                            )
+                        )
                     }
                 }
                 
@@ -111,6 +117,20 @@ private struct CustomError: Decodable {
     let ClientError: [_ClientError]
     
     struct _ClientError: Decodable {
-        let RpcResponseError: SolanaSwift.ResponseError
+        let RpcResponseError: _RpcResponseError
+        
+        struct _RpcResponseError: Decodable {
+            let code: Int?
+            let message: String?
+            let data: _RpcResponseErrorData?
+            
+            struct _RpcResponseErrorData: Decodable {
+                let RpcSimulateTransactionResult: _RpcSimulateTransactionResult?
+                
+                struct _RpcSimulateTransactionResult: Decodable {
+                    let logs: [String]?
+                }
+            }
+        }
     }
 }
